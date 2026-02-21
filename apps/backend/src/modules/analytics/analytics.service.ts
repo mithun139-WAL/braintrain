@@ -100,4 +100,53 @@ export class AnalyticsService {
             byTopic,
         };
     }
+
+    /**
+     * GET /analytics/progression — dopamine loop endpoint.
+     * Returns last session score, previous session score, and the delta.
+     * Perfect for a "you improved by +X.X points!" banner on the app.
+     */
+    async getProgression(userId: string) {
+        const lastTwo = await this.prisma.interviewSession.findMany({
+            where: { userId, deletedAt: null, status: 'ANALYZED' },
+            include: {
+                evaluation: {
+                    select: { overallScore: true, createdAt: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 2,
+        });
+
+        if (lastTwo.length === 0) {
+            return { lastSession: null, previousSession: null, delta: null };
+        }
+
+        const lastSession = lastTwo[0];
+        const previousSession = lastTwo[1] ?? null;
+
+        const lastScore = lastSession.evaluation?.overallScore ?? null;
+        const prevScore = previousSession?.evaluation?.overallScore ?? null;
+
+        const delta =
+            lastScore !== null && prevScore !== null
+                ? parseFloat((lastScore - prevScore).toFixed(1))
+                : null;
+
+        return {
+            lastSession: {
+                sessionId: lastSession.id,
+                overallScore: lastScore,
+                analyzedAt: lastSession.evaluation?.createdAt?.toISOString() ?? null,
+            },
+            previousSession: previousSession
+                ? {
+                    sessionId: previousSession.id,
+                    overallScore: prevScore,
+                    analyzedAt: previousSession.evaluation?.createdAt?.toISOString() ?? null,
+                }
+                : null,
+            delta,
+        };
+    }
 }

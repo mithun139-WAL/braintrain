@@ -1,6 +1,7 @@
 import {
     Injectable,
     Inject,
+    Logger,
     NotFoundException,
     BadRequestException,
     ConflictException,
@@ -29,27 +30,41 @@ const EVALUATION_QUERY_INCLUDE = {
 
 @Injectable()
 export class EvaluationService {
+    private readonly logger = new Logger(EvaluationService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         @Inject(AI_EVALUATION_PROVIDER)
         private readonly aiProvider: AnswerEvaluationProvider,
     ) { }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /sessions/:id/evaluation/analyze
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── Worker-facing — called by EvaluationWorker (no userId guard) ───────
+    async analyzeSessionInternal(sessionId: string): Promise<SessionEvaluationResponseDto> {
+        return this.runAnalysis(sessionId);
+    }
 
+    // ─── POST /sessions/:id/evaluation/analyze (manual / admin trigger) ────────
     async analyzeSession(
         sessionId: string,
         userId: string,
     ): Promise<SessionEvaluationResponseDto> {
-        // 1. Validate and authorise session
+        // Verify session belongs to user before allowing manual re-trigger
         const session = await this.prisma.interviewSession.findFirst({
             where: { id: sessionId, userId, deletedAt: null },
+        });
+        if (!session) throw new NotFoundException('Session not found or forbidden.');
+        return this.runAnalysis(sessionId);
+    }
+
+    // ─── Core analysis logic (shared by both entry points) ──────────────────
+    private async runAnalysis(sessionId: string): Promise<SessionEvaluationResponseDto> {
+        // 1. Load session + check state
+        const session = await this.prisma.interviewSession.findFirst({
+            where: { id: sessionId, deletedAt: null },
             include: { evaluation: true },
         });
 
-        if (!session) throw new NotFoundException('Session not found or forbidden.');
+        if (!session) throw new NotFoundException('Session not found.');
         if (session.status !== SessionStatus.COMPLETED)
             throw new BadRequestException('Session must be COMPLETED before analysis.');
         if (session.evaluation)
@@ -69,8 +84,33 @@ export class EvaluationService {
         if (unanswered)
             throw new BadRequestException('All questions must have responses before analysis.');
 
-        // 3. Run per-response AI evaluation sequentially
+        // 3. Credit check — never call LLM for users with no evaluation credits (spec §Cost)
+        const user = await this.prisma.user.findUnique({
+            where: { id: session.userId },
+            select: { planType: true, monthlyEvaluationCredits: true },
+        });
+
+        const hasCredits =
+            user?.planType === 'PRO' &&
+            (user?.monthlyEvaluationCredits ?? 0) > 0;
+
+        // If no credits, use stub provider inline; otherwise use the injected AI provider
+        const provider = hasCredits ? this.aiProvider : null;
+
+        if (!hasCredits) {
+            this.logger.warn(
+                `Session ${sessionId}: no evaluation credits (plan=${user?.planType ?? 'FREE'}) — ` +
+                `running stub evaluation (degraded mode)`,
+            );
+        }
+
+        // 4. Run per-response AI evaluation sequentially
         const signals: PerformanceSignal[] = [];
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+        let totalCostUsd = 0;
+
+        const evalStart = Date.now();
 
         for (const q of questionsWithResponses) {
             const response = q.responses[0];
@@ -85,8 +125,19 @@ export class EvaluationService {
                 thinkingTimeMs: response.thinkingTimeMs,
             };
 
-            const signal = await this.aiProvider.evaluate(input);
+            // Use injected provider (OpenAI or Stub based on credits); null = stub mode
+            const signal = provider
+                ? await provider.evaluate(input)
+                : await this.aiProvider.evaluate(input); // aiProvider may itself be stub
             signals.push(signal);
+
+            // Accumulate cost metadata if provider returns it
+            const meta = (signal as any).__meta;
+            if (meta) {
+                totalInputTokens += meta.inputTokens ?? 0;
+                totalOutputTokens += meta.outputTokens ?? 0;
+                totalCostUsd += meta.estimatedCostUsd ?? 0;
+            }
 
             // 4. Persist per-response signal scores immediately
             await this.prisma.responseInstance.update({
@@ -99,14 +150,23 @@ export class EvaluationService {
                     communicationScore: signal.communicationScore,
                     hesitationScore: signal.hesitationScore,
                     technicalScore: signal.technicalScore,
+                    pressureScore: signal.pressureScore,
+                    thinkingDepthScore: signal.thinkingDepthScore,
                     overallScore: signal.overallScore,
                     evaluationExplanation: signal.explanation,
                 },
             });
         }
 
+        const evalDurationMs = Date.now() - evalStart;
+
         // 5. Aggregate signals → session-level averages
         const aggregated = this.aggregateSignals(signals);
+
+        // Extract cost metadata from the last signal that has it (they all use same model)
+        const lastMeta = signals.map(s => (s as any).__meta).filter(Boolean).pop() ?? {};
+        const promptVersion = lastMeta.promptVersion ?? 'stub';
+        const modelUsed = lastMeta.modelUsed ?? 'stub';
 
         // 6. Atomic: create EvaluationReport + transition session to ANALYZED
         const [evaluationReport] = await this.prisma.$transaction([
@@ -125,13 +185,25 @@ export class EvaluationService {
                     thinkingDepthScore: aggregated.thinkingDepthScore,
                     feedbackSummary: aggregated.feedbackSummary,
                     improvementSuggestions: aggregated.improvementSuggestions,
+                    promptVersion,
+                    modelUsed,
+                    inputTokens: totalInputTokens || null,
+                    outputTokens: totalOutputTokens || null,
+                    estimatedCostUsd: totalCostUsd || null,
                 },
             }),
-            this.prisma.interviewSession.updateMany({
-                where: { id: sessionId, userId },
+            this.prisma.interviewSession.update({
+                where: { id: sessionId },
                 data: { status: SessionStatus.ANALYZED },
             }),
         ]);
+
+        this.logger.log(
+            `Session ${sessionId} ANALYZED in ${evalDurationMs}ms | ` +
+            `Provider: ${promptVersion} | ` +
+            `Overall: ${aggregated.overallScore.toFixed(1)} | ` +
+            `Cost: $${totalCostUsd.toFixed(6)}`,
+        );
 
         // 7. Fetch full report + session shape needed by the mapper
         const fullReport = await this.prisma.evaluationReport.findUniqueOrThrow({
@@ -163,7 +235,7 @@ export class EvaluationService {
         });
 
         if (!report)
-            throw new NotFoundException('No evaluation found for this session. Run analyze first.');
+            throw new NotFoundException('No evaluation found for this session.');
 
         return toEvaluationResponseDto(report);
     }
@@ -207,7 +279,11 @@ export class EvaluationService {
         };
 
         const feedbackSummary = this.buildFeedbackSummary(aggregated);
-        const improvementSuggestions = this.buildImprovementSuggestions(aggregated);
+        const improvementSuggestions = this.buildImprovementSuggestions({
+            ...aggregated,
+            pressureScore: aggregated.pressureScore,
+            thinkingDepthScore: aggregated.thinkingDepthScore,
+        });
 
         return { ...aggregated, feedbackSummary, improvementSuggestions };
     }
@@ -233,36 +309,46 @@ export class EvaluationService {
         communicationScore: number;
         hesitationScore: number;
         depthScore: number;
+        pressureScore: number;
+        thinkingDepthScore: number;
     }): Record<string, string[]> {
         const suggestions: Record<string, string[]> = {};
 
         if (scores.structureScore < 60)
             suggestions['structure'] = [
                 'Use the STAR format (Situation, Task, Action, Result)',
-                'Practice with structured outlines before answering',
+                'Outline your answer mentally before speaking',
             ];
 
         if (scores.confidenceScore < 60)
             suggestions['confidence'] = [
                 'Eliminate hedging phrases like "I think" and "maybe"',
-                'State your position assertively, then support it',
-            ];
-
-        if (scores.hesitationScore > 40)
-            suggestions['delivery'] = [
-                'Reduce filler words (um, uh, like)',
-                'Pause deliberately instead of filling silence',
+                'State your position assertively, then support it with evidence',
             ];
 
         if (scores.depthScore < 60)
             suggestions['depth'] = [
-                'Provide specific examples for every claim',
-                'Quantify outcomes where possible',
+                'Provide specific, quantified examples for every claim',
+                'Explain the "why" behind your decisions, not just the "what"',
             ];
 
         if (scores.communicationScore < 60)
             suggestions['communication'] = [
-                'Practice concise delivery — aim for 90–120 seconds per answer',
+                'Practice concise delivery — aim for 60–120 seconds per answer',
+                'Record yourself answering and review for filler words',
+            ];
+
+        // Timing-based suggestions (server-computed signals)
+        if (scores.pressureScore < 50)
+            suggestions['pace'] = [
+                'You answered too quickly — take a breath before responding',
+                'It is fine to say "let me think about that for a moment"',
+            ];
+
+        if (scores.thinkingDepthScore < 50)
+            suggestions['composure'] = [
+                'Practice pausing 4–8 seconds before answering to organize your thoughts',
+                'Deliberate pauses signal confidence, not uncertainty',
             ];
 
         return suggestions;

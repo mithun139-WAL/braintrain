@@ -644,7 +644,32 @@
                                 "<SESSION_ID>",
                                 "complete"
                             ]
-                        }
+                        },
+                        "description": "Transitions session ACTIVE→COMPLETED and atomically creates a PENDING EvaluationJob in the background."
+                    }
+                },
+                {
+                    "name": "Poll Evaluation Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/<SESSION_ID>/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "<SESSION_ID>",
+                                "status"
+                            ]
+                        },
+                        "description": "Poll this after PUT /complete. Returns evaluationStatus: PENDING | PROCESSING | COMPLETED | FAILED. Frontend should poll every 3-5s until COMPLETED."
                     }
                 }
             ]
@@ -783,7 +808,31 @@
                                 "analytics",
                                 "me"
                             ]
-                        }
+                        },
+                        "description": "Cross-session trend, improvement delta per dimension, and per-topic breakdown."
+                    }
+                },
+                {
+                    "name": "Get Progression (Dopamine Loop)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/analytics/progression",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "analytics",
+                                "progression"
+                            ]
+                        },
+                        "description": "Returns score delta between the last two analyzed sessions. Use this to show the 'you improved by X points!' banner. Returns null delta if only 1 session."
                     }
                 }
             ]
@@ -798,6 +847,16 @@
         {
             "key": "jwtToken",
             "value": "YOUR_JWT_TOKEN_HERE",
+            "type": "string"
+        },
+        {
+            "key": "SESSION_ID",
+            "value": "<SESSION_ID>",
+            "type": "string"
+        },
+        {
+            "key": "QUESTION_ID",
+            "value": "<QUESTION_ID>",
             "type": "string"
         }
     ]

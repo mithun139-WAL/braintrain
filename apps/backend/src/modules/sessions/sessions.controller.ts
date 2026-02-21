@@ -34,4 +34,9 @@ export class SessionsController {
     completeSession(@Param('id') id: string, @Req() req: any) {
         return this.sessionsService.completeSession(id, req.user.userId);
     }
+
+    @Get(':id/status')
+    getSessionStatus(@Param('id') id: string, @Req() req: any) {
+        return this.sessionsService.getSessionStatus(id, req.user.userId);
+    }
 }

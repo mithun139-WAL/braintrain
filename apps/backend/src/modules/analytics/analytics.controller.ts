@@ -11,4 +11,9 @@ export class AnalyticsController {
     getAnalytics(@Req() req: any) {
         return this.analyticsService.getAnalytics(req.user.userId);
     }
+
+    @Get('progression')
+    getProgression(@Req() req: any) {
+        return this.analyticsService.getProgression(req.user.userId);
+    }
 }

@@ -15,6 +15,13 @@ enum SessionStatus {
   CANCELLED
 }
 
+enum EvaluationJobStatus {
+  PENDING
+  PROCESSING
+  FAILED
+  COMPLETED
+}
+
 enum DifficultyLevel {
   BEGINNER
   INTERMEDIATE
@@ -48,12 +55,23 @@ model User {
   updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
 
+  // ── SaaS Plan & Usage Limits (Phase 3) ──
+  planType                 String   @default("FREE")  // FREE | PRO
+  monthlySessionCount      Int      @default(0)
+  monthlyEvaluationCredits Int      @default(0)
+  usagePeriodStart         DateTime @default(now())
+
   sessions          InterviewSession[]
   topics            Topic[]
   contextInputs     UserContextInput[]
   otpCodes          OtpCode[]
   skillPreferences  UserSkillPreference[]
   questionBankItems QuestionBank[]
+
+  // ── Indexes ──
+  // email/phoneNumber/googleId already have unique indexes via @unique
+  // deletedAt index for soft-delete scans
+  @@index([deletedAt])
 }
 
 model OtpCode {
@@ -68,7 +86,9 @@ model OtpCode {
 
   user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Lookup by identifier + active codes (isUsed=false + not expired)
   @@index([identifier])
+  @@index([identifier, isUsed, expiresAt])
 }
 
 model SkillTag {
@@ -112,6 +132,10 @@ model Topic {
   subtopics         Topic[]        @relation("Subtopics")
   sessions          InterviewSession[]
   questionBankItems QuestionBank[]
+
+  // List topics for a user: filter by (isGlobal OR createdByUserId) + not deleted
+  @@index([isGlobal, deletedAt])
+  @@index([createdByUserId, deletedAt])
 }
 
 model QuestionBank {
@@ -120,6 +144,7 @@ model QuestionBank {
   topicId         String
   difficulty      DifficultyLevel
   questionType    String          // "behavioral" | "technical"
+  source          String          @default("HUMAN") // "HUMAN" | "GENERATED"
   isGlobal        Boolean         @default(false)
   createdByUserId String?
   usageCount      Int             @default(0)
@@ -130,6 +155,11 @@ model QuestionBank {
   topic           Topic           @relation(fields: [topicId], references: [id])
   createdByUser   User?           @relation(fields: [createdByUserId], references: [id])
 
+  // Primary lookup: bank-first question selection by topic + difficulty (excludes deleted)
+  @@index([topicId, difficulty, deletedAt])
+  // Secondary: filter by source (HUMAN vs GENERATED) for analytics
+  @@index([source, topicId])
+  // Original composite (retained for query compatibility)
   @@index([topicId, difficulty])
 }
 
@@ -150,10 +180,18 @@ model InterviewSession {
   updatedAt         DateTime         @updatedAt
   deletedAt         DateTime?
 
-  user              User             @relation(fields: [userId], references: [id])
-  topic             Topic            @relation(fields: [topicId], references: [id])
+  user              User              @relation(fields: [userId], references: [id])
+  topic             Topic             @relation(fields: [topicId], references: [id])
   questions         QuestionInstance[]
   evaluation        EvaluationReport?
+  evaluationJob     EvaluationJob?
+
+  // Hot path: list sessions for a user (filtered by status, not deleted)
+  @@index([userId, status, deletedAt])
+  // Analytics: sessions by userId ordered by createdAt descending
+  @@index([userId, createdAt])
+  // Topic-level analytics: all sessions for a topic
+  @@index([topicId, userId])
 }
 
 model QuestionInstance {
@@ -169,6 +207,8 @@ model QuestionInstance {
   responses     ResponseInstance[]
 
   @@unique([sessionId, sequenceOrder])
+  // Load all questions for a session in order (most common query)
+  @@index([sessionId, sequenceOrder, deletedAt])
 }
 
 model ResponseInstance {
@@ -188,6 +228,8 @@ model ResponseInstance {
   communicationScore  Float?
   hesitationScore     Float?
   technicalScore      Float?   // null for behavioral questions
+  pressureScore       Float?   // 0–100: calm under time pressure
+  thinkingDepthScore  Float?   // 0–100: deliberate pre-answer composure
   overallScore        Float?
   evaluationExplanation String?
 
@@ -197,6 +239,8 @@ model ResponseInstance {
   question            QuestionInstance @relation(fields: [questionId], references: [id])
 
   @@unique([questionId])
+  // Adaptive engine reads overallScore for last N responses — needs fast lookup
+  @@index([questionId, overallScore])
 }
 
 model EvaluationReport {
@@ -217,6 +261,13 @@ model EvaluationReport {
   pressureScore              Float?   // 0–100: stress indicator from response speed
   thinkingDepthScore         Float?   // 0–100: deliberate pause quality signal
 
+  // ── Cost tracking (Phase 3 — LLM provider) ──
+  promptVersion              String?  @default("stub")
+  modelUsed                  String?  // e.g. "gpt-4o-mini", "stub"
+  inputTokens                Int?
+  outputTokens               Int?
+  estimatedCostUsd           Float?
+
   feedbackSummary            String
   improvementSuggestions     Json
 
@@ -224,6 +275,33 @@ model EvaluationReport {
   deletedAt                  DateTime?
 
   session                    InterviewSession @relation(fields: [sessionId], references: [id])
+
+  // Analytics: fetch all reports for a user ordered by date (via join on session)
+  // sessionId already has @unique — covered.
+  // Cross-session trend: order by createdAt
+  @@index([createdAt])
+  // Cost analytics: find reports by model for billing intelligence
+  @@index([modelUsed, createdAt])
+}
+
+model EvaluationJob {
+  id                     String              @id @default(uuid())
+  sessionId              String              @unique
+  status                 EvaluationJobStatus @default(PENDING)
+  attempts               Int                 @default(0)
+  lastError              String?
+  nextRetryAt            DateTime?           // null = ready immediately; set for exponential backoff
+  evaluationStartedAt    DateTime?
+  evaluationCompletedAt  DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  session  InterviewSession @relation(fields: [sessionId], references: [id])
+
+  // Worker claim query: PENDING jobs where nextRetryAt IS NULL or <= now(), oldest first
+  @@index([status, nextRetryAt, createdAt])
+  // Zombie recovery: PROCESSING jobs older than N minutes
+  @@index([status, evaluationStartedAt])
 }
 
 model UserContextInput {
@@ -237,4 +315,6 @@ model UserContextInput {
   deletedAt        DateTime?
 
   user             User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }

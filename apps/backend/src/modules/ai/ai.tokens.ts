@@ -8,3 +8,15 @@
  *   @Inject(AI_EVALUATION_PROVIDER) private readonly aiProvider: AnswerEvaluationProvider
  */
 export const AI_EVALUATION_PROVIDER = 'AI_EVALUATION_PROVIDER';
+
+/**
+ * DI injection token for the QuestionGenerationProvider.
+ *
+ * Usage in providers array:
+ *   { provide: AI_QUESTION_GENERATION_PROVIDER, useClass: StubQuestionGenerationProvider }
+ *
+ * Usage in constructor:
+ *   @Inject(AI_QUESTION_GENERATION_PROVIDER) private readonly questionGen: QuestionGenerationProvider
+ */
+export const AI_QUESTION_GENERATION_PROVIDER = 'AI_QUESTION_GENERATION_PROVIDER';
+
