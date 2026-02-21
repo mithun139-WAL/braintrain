@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  CREATED
+  ACTIVE
+  COMPLETED
+  ANALYZED
+  CANCELLED
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum InterviewMode {
+  ONE_ON_ONE_AI
+  GROUP_AI
+  HYBRID
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String?  @unique
+  phoneNumber   String?  @unique
+  googleId      String?  @unique
+  passwordHash  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  sessions      InterviewSession[]
+  topics        Topic[]
+  contextInputs UserContextInput[]
+  otpCodes      OtpCode[]
+}
+
+model OtpCode {
+  id          String   @id @default(uuid())
+  userId      String?
+  identifier  String   // email or phone number
+  code        String
+  expiresAt   DateTime
+  isUsed      Boolean  @default(false)
+  attemptCount Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([identifier])
+}
+
+model Topic {
+  id                String   @id @default(uuid())
+  name              String
+  isGlobal          Boolean  @default(false)
+  createdByUserId   String?
+  parentTopicId     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  @@unique([name, isGlobal])
+
+  createdByUser     User?    @relation(fields: [createdByUserId], references: [id])
+  parentTopic       Topic?   @relation("Subtopics", fields: [parentTopicId], references: [id])
+  subtopics         Topic[]  @relation("Subtopics")
+  sessions          InterviewSession[]
+}
+
+model InterviewSession {
+  id                String           @id @default(uuid())
+  userId            String
+  topicId           String
+  mode              InterviewMode
+  difficulty        DifficultyLevel
+  adaptive          Boolean
+  durationMinutes   Int
+  personalityConfig Json?
+  status            SessionStatus
+  startedAt         DateTime?
+  endedAt           DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  user              User             @relation(fields: [userId], references: [id])
+  topic             Topic            @relation(fields: [topicId], references: [id])
+  questions         QuestionInstance[]
+  evaluation        EvaluationReport?
+}
+
+model QuestionInstance {
+  id            String   @id @default(uuid())
+  sessionId     String
+  content       String
+  difficulty    DifficultyLevel
+  sequenceOrder Int
+  generatedAt   DateTime @default(now())
+  deletedAt     DateTime?
+
+  session       InterviewSession @relation(fields: [sessionId], references: [id])
+  responses     ResponseInstance[]
+
+  @@unique([sessionId, sequenceOrder])
+}
+
+model ResponseInstance {
+  id                  String   @id @default(uuid())
+  questionId          String
+  answerText          String?
+  audioUrl            String?
+  responseTimeMs      Int
+  thinkingTimeMs      Int
+  answerLength        Int
+
+  // ── PerformanceSignal scores (populated after AI evaluation) ──
+  clarityScore        Float?
+  structureScore      Float?
+  depthScore          Float?
+  confidenceScore     Float?
+  communicationScore  Float?
+  hesitationScore     Float?
+  technicalScore      Float?   // null for behavioral questions
+  overallScore        Float?
+  evaluationExplanation String?
+
+  createdAt           DateTime @default(now())
+  deletedAt           DateTime?
+
+  question            QuestionInstance @relation(fields: [questionId], references: [id])
+
+  @@unique([questionId])
+}
+
+model EvaluationReport {
+  id                         String   @id @default(uuid())
+  sessionId                  String   @unique
+
+  // ── Aggregated PerformanceSignal dimensions (averaged across session) ──
+  overallScore               Float
+  clarityScore               Float
+  structureScore             Float
+  depthScore                 Float
+  confidenceScore            Float
+  communicationScore         Float
+  hesitationScore            Float
+  technicalScore             Float?   // null for behavioral sessions
+
+  feedbackSummary            String
+  improvementSuggestions     Json
+
+  createdAt                  DateTime @default(now())
+  deletedAt                  DateTime?
+
+  session                    InterviewSession @relation(fields: [sessionId], references: [id])
+}
+
+model UserContextInput {
+  id               String   @id @default(uuid())
+  userId           String
+  rawInput         String
+  parsedIntent     String?
+  extractedTopics  Json?
+  extractedQuestions Json?
+  createdAt        DateTime @default(now())
+  deletedAt        DateTime?
+
+  user             User @relation(fields: [userId], references: [id])
+}
