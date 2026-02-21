@@ -18,10 +18,13 @@
    - [Identity Module](#51-identity-module)
    - [Sessions Module](#52-sessions-module)
    - [Questions Module](#53-questions-module)
-   - [Responses Module](#54-responses-module)
-   - [AI Module](#55-ai-module)
-   - [Evaluation Module](#56-evaluation-module)
-   - [Adaptive Engine Module](#57-adaptive-engine-module)
+   - [Question Bank Module](#54-question-bank-module)
+   - [Responses Module](#55-responses-module)
+   - [AI Module](#56-ai-module)
+   - [Evaluation Module](#57-evaluation-module)
+   - [Adaptive Engine Module](#58-adaptive-engine-module)
+   - [Topics Module](#59-topics-module)
+   - [Analytics Module](#510-analytics-module)
 6. [Core Flows](#6-core-flows)
 7. [Session Lifecycle State Machine](#7-session-lifecycle-state-machine)
 8. [Evaluation Pipeline](#8-evaluation-pipeline)
@@ -44,7 +47,8 @@ BrainTrain's backend is a **behaviour-driven evaluation system** built on four a
 ├─────────────────────────────────────────────────┤
 │  Layer 3 — Signal Layer                         │
 │  PerformanceSignal (structured output)          │
-│  clarityScore, structureScore, depthScore, ...  │
+│  clarityScore, structureScore, depthScore,      │
+│  pressureScore, thinkingDepthScore, ...         │
 ├─────────────────────────────────────────────────┤
 │  Layer 2 — Evaluation Layer                     │
 │  AnswerEvaluationProvider (AI abstraction)      │
@@ -52,7 +56,7 @@ BrainTrain's backend is a **behaviour-driven evaluation system** built on four a
 │  ← OpenAIEvaluationProvider (future)            │
 ├─────────────────────────────────────────────────┤
 │  Layer 1 — Session Layer                        │
-│  Text + Audio responses from the user           │
+│  Text + Audio responses + Behavioral timing     │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -91,29 +95,24 @@ apps/backend/
 │   ├── prisma/                    ← Prisma client wrapper (singleton)
 │   │
 │   ├── modules/
-│   │   ├── identity/              ← Auth: register, login, OTP, Google OAuth
-│   │   ├── sessions/              ← Session lifecycle management
-│   │   ├── questions/             ← Question generation + orchestration
-│   │   ├── responses/             ← Answer submission + ingestion
+│   │   ├── identity/              ← Auth + User Profile + Skill Preferences
+│   │   ├── sessions/              ← Session lifecycle management + LIST
+│   │   ├── topics/                ← Topic CRUD (global + user-owned)
+│   │   ├── questions/             ← Question generation (bank-first + stub fallback)
+│   │   ├── question-bank/         ← Reusable question bank CRUD
+│   │   ├── responses/             ← Answer submission + timing ingestion
 │   │   ├── ai/                    ← AI abstraction layer (interface + providers)
 │   │   │   ├── interfaces/
 │   │   │   │   ├── answer-evaluation-provider.interface.ts
-│   │   │   │   ├── evaluation-input.interface.ts
-│   │   │   │   └── performance-signal.interface.ts
+│   │   │   │   ├── evaluation-input.interface.ts  ← includes responseTimeMs/thinkingTimeMs
+│   │   │   │   └── performance-signal.interface.ts ← includes pressureScore/thinkingDepthScore
 │   │   │   ├── providers/
 │   │   │   │   └── stub-evaluation.provider.ts
 │   │   │   ├── ai.module.ts
 │   │   │   └── ai.tokens.ts
 │   │   ├── evaluation/            ← Session analysis + report generation
-│   │   │   ├── dto/
-│   │   │   │   ├── session-evaluation-response.dto.ts
-│   │   │   │   └── evaluation-response.mapper.ts
-│   │   │   ├── evaluation.controller.ts
-│   │   │   ├── evaluation.service.ts
-│   │   │   └── evaluation.module.ts
-│   │   └── adaptive/              ← Difficulty transition engine
-│   │       ├── adaptive-engine.service.ts
-│   │       └── adaptive.module.ts
+│   │   ├── adaptive/              ← Difficulty transition engine
+│   │   └── analytics/             ← Cross-session insights + trend analytics
 │   │
 │   └── simulation/
 │       └── simulate-archetypes.ts  ← Offline engine validation tool
@@ -124,7 +123,7 @@ apps/backend/
 ## 4. Database Schema
 
 ### `User`
-Stores identity. Supports email/password, phone number, and Google OAuth sign-in.
+Identity + profile fields. Supports email/password, phone number, and Google OAuth sign-in.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -133,20 +132,30 @@ Stores identity. Supports email/password, phone number, and Google OAuth sign-in
 | `phoneNumber` | String? | Unique, optional |
 | `googleId` | String? | Unique, for OAuth |
 | `passwordHash` | String? | bcrypt hashed |
+| `displayName` | String? | User's display name |
+| `bio` | String? | Short bio |
+| `avatarUrl` | String? | Profile image URL |
 | `deletedAt` | DateTime? | Soft delete |
 
 ---
 
-### `OtpCode`
-Supports passwordless login via OTP (email or phone).
+### `SkillTag`
+Global catalog of skill labels (e.g., "React", "System Design", "Leadership").
 
 | Field | Notes |
 |---|---|
-| `identifier` | Email or phone number |
-| `code` | bcrypt-hashed 6-digit OTP |
-| `expiresAt` | 10 minutes from creation |
-| `isUsed` | Prevents replay attacks |
-| `attemptCount` | Rate-limiting hook |
+| `name` | Unique skill name |
+| `isGlobal` | Platform-defined = true |
+
+---
+
+### `UserSkillPreference`
+Join table — user's self-declared skill proficiency.
+
+| Field | Notes |
+|---|---|
+| `userId` + `skillTagId` | Unique pair |
+| `level` | `BEGINNER` \| `INTERMEDIATE` \| `ADVANCED` |
 
 ---
 
@@ -157,8 +166,21 @@ The interview subject. Can be global (platform-defined) or user-created.
 |---|---|
 | `name` | e.g. "React", "System Design", "Leadership" |
 | `isGlobal` | Platform topic = true, User topic = false |
-| `createdByUserId` | null for global topics |
 | `parentTopicId` | Supports subtopic hierarchy |
+
+---
+
+### `QuestionBank`
+Reusable questions contributed by users or the platform. Indexed by `(topicId, difficulty)` for fast retrieval during session question generation.
+
+| Field | Notes |
+|---|---|
+| `content` | The question text |
+| `topicId` | Associated topic |
+| `difficulty` | `BEGINNER` \| `INTERMEDIATE` \| `ADVANCED` |
+| `questionType` | `behavioral` \| `technical` |
+| `isGlobal` | Platform question = true |
+| `usageCount` | incremented each time picked during session |
 
 ---
 
@@ -170,12 +192,12 @@ The central entity. One session = one focused interview on one topic.
 | `userId` | Tenant isolation — strictly enforced |
 | `topicId` | Topic being interviewed on |
 | `mode` | `ONE_ON_ONE_AI`, `GROUP_AI`, `HYBRID` |
+| `interviewLevel` | `SCREENING` \| `TECHNICAL_L1` \| `TECHNICAL_L2` \| `HR` \| `SYSTEM_DESIGN` (optional) |
 | `difficulty` | Base difficulty: `BEGINNER`, `INTERMEDIATE`, `ADVANCED` |
 | `adaptive` | If true, AdaptiveEngine drives difficulty per question |
 | `durationMinutes` | Intended session length |
 | `status` | State machine: see Section 7 |
 | `personalityConfig` | JSON — future AI interviewer persona |
-| `startedAt` / `endedAt` | Lifecycle timestamps |
 
 ---
 
@@ -185,7 +207,7 @@ A single question generated within a session. Not reusable across sessions by de
 | Field | Notes |
 |---|---|
 | `sessionId` | Parent session |
-| `content` | The actual question text |
+| `content` | The actual question text (may come from QuestionBank) |
 | `difficulty` | Difficulty at which this specific question was asked |
 | `sequenceOrder` | 1-indexed; unique per session |
 
@@ -198,22 +220,12 @@ The user's answer to a single question. **One response per question** (enforced 
 
 | Field | Notes |
 |---|---|
-| `answerText` | Text answer (optional if audio provided) |
-| `audioUrl` | URL to audio recording (optional) |
-| `responseTimeMs` | Total time taken to answer |
-| `thinkingTimeMs` | Pause before starting to answer |
+| `answerText` | Text answer |
+| `audioUrl` | URL to audio recording |
+| `responseTimeMs` | Total time taken to answer — **now flows into evaluation** |
+| `thinkingTimeMs` | Pause before starting to answer — **now flows into evaluation** |
 | `answerLength` | Character count of text answer |
-| `clarityScore` | Set by EvaluationService after session analysis |
-| `structureScore` | Set by EvaluationService after session analysis |
-| `depthScore` | Set by EvaluationService after session analysis |
-| `confidenceScore` | Set by EvaluationService after session analysis |
-| `communicationScore` | Set by EvaluationService after session analysis |
-| `hesitationScore` | Inverse — lower is better (0 = no hesitation) |
-| `technicalScore` | null for behavioral questions |
-| `overallScore` | Weighted composite. **Primary signal for AdaptiveEngine** |
-| `evaluationExplanation` | Human-readable note from the evaluator |
-
-**Key design decision**: Scores are `null` at submission time. They are written by `EvaluationService` after the session completes. This separates the fast submission path from the slow evaluation path.
+| `clarityScore` … `overallScore` | Set by EvaluationService |
 
 ---
 
@@ -222,17 +234,12 @@ Session-level aggregated scores. One report per session (enforced via unique con
 
 | Field | Notes |
 |---|---|
-| `sessionId` | Parent session (unique) |
 | `overallScore` | Average of per-response `overallScore` |
-| `clarityScore` | Average of per-response `clarityScore` |
-| `structureScore` | Average of per-response `structureScore` |
-| `depthScore` | Average of per-response `depthScore` |
-| `confidenceScore` | Average of per-response `confidenceScore` |
-| `communicationScore` | Average of per-response `communicationScore` |
-| `hesitationScore` | Average of per-response `hesitationScore` |
-| `technicalScore` | null for behavioral sessions |
+| `clarityScore` … `technicalScore` | Averaged per-response dimensions |
+| `pressureScore` | Avg `pressureScore` from behavioral timing |
+| `thinkingDepthScore` | Avg `thinkingDepthScore` from pre-answer pause |
 | `feedbackSummary` | One-paragraph feedback text |
-| `improvementSuggestions` | JSON: keyed by dimension (structure, confidence, etc.) |
+| `improvementSuggestions` | JSON: keyed by dimension |
 
 ---
 
@@ -242,24 +249,27 @@ Session-level aggregated scores. One report per session (enforced via unique con
 
 **Path**: `src/modules/identity/`
 
-Handles all authentication flows. Every other module trusts `req.user.userId` from the decoded JWT — no other trust mechanism exists.
+Handles authentication and user profile management.
 
-**Auth Methods**:
+**Auth Endpoints** (public):
 
 | Method | Endpoint | Description |
 |---|---|---|
-| Email/Password Register | `POST /auth/register` | Creates user, returns JWT |
-| Email/Password Login | `POST /auth/login` | Validates credentials, returns JWT |
-| OTP Request | `POST /auth/otp/request` | Generates 6-digit OTP (hashed in DB), rate-limited to 1/60s |
-| OTP Verify | `POST /auth/otp/verify` | Validates OTP, creates user if new, returns JWT |
-| Google OAuth | `POST /auth/google` | Verifies Google ID token, links/creates account, returns JWT |
+| POST | `/identity/register` | Creates user, returns JWT |
+| POST | `/identity/login` | Validates credentials, returns JWT |
+| POST | `/identity/request-otp` | Generates 6-digit OTP (hashed, rate-limited 1/60s) |
+| POST | `/identity/verify-otp` | Validates OTP, creates user if new, returns JWT |
+| POST | `/identity/google` | Verifies Google ID token, links/creates account |
 
-**Security model**:
-- Passwords are bcrypt-hashed (salt rounds: 10)
-- OTPs are bcrypt-hashed before storage (prevents DB read attacks)
-- OTPs expire in 10 minutes
-- JWTs are signed and stateless
-- All protected routes use `JwtAuthGuard` with `userId` extracted from token payload
+**Profile Endpoints** (JWT-protected):
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/identity/me` | Full profile with skill preferences |
+| PUT | `/identity/me` | Update `displayName`, `bio`, `avatarUrl` |
+| GET | `/identity/skill-tags` | List global skill tag catalog |
+| POST | `/identity/me/skills` | Upsert `(skillTagId, level)` preference |
+| DELETE | `/identity/me/skills/:skillTagId` | Remove skill preference |
 
 ---
 
@@ -267,22 +277,23 @@ Handles all authentication flows. Every other module trusts `req.user.userId` fr
 
 **Path**: `src/modules/sessions/`
 
-Manages the full lifecycle of an `InterviewSession`. Enforces tenant isolation on every query — `userId` from JWT is always part of the `WHERE` clause.
-
-**Key behaviours**:
-- Topic access is validated: user must own the topic or topic must be global
-- Sessions are created with status `CREATED` — never `ACTIVE` directly
-- State transitions are enforced (cannot skip states)
-- Soft delete support via `deletedAt`
-
-**Endpoints**:
+Manages the full lifecycle of an `InterviewSession`.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/sessions` | Create a new session |
-| `GET` | `/sessions/:id` | Fetch session by ID (must belong to user) |
-| `PUT` | `/sessions/:id/start` | `CREATED → ACTIVE` |
-| `PUT` | `/sessions/:id/complete` | `ACTIVE → COMPLETED` |
+| POST | `/sessions` | Create session (with optional `interviewLevel`) |
+| GET | `/sessions` | List user sessions (paginated, optional `?status=&page=&limit=`) |
+| GET | `/sessions/:id` | Fetch session by ID |
+| PUT | `/sessions/:id/start` | `CREATED → ACTIVE` |
+| PUT | `/sessions/:id/complete` | `ACTIVE → COMPLETED` |
+
+**`GET /sessions` response shape**:
+```json
+{
+  "data": [{ "id", "status", "interviewLevel", "topic": { "name" }, "evaluation": { "overallScore" }, "_count": { "questions" } }],
+  "meta": { "total", "page", "limit", "totalPages" }
+}
+```
 
 ---
 
@@ -290,43 +301,52 @@ Manages the full lifecycle of an `InterviewSession`. Enforces tenant isolation o
 
 **Path**: `src/modules/questions/`
 
-Generates the next question in a session. Integrates with the AdaptiveEngine when `session.adaptive = true`.
+Generates the next question in a session using **bank-first selection**:
 
-**Logic flow**:
 1. Validate session is `ACTIVE` and belongs to user
 2. Count existing questions (enforce max 20)
-3. Determine difficulty:
-   - If `adaptive = true` → ask `AdaptiveEngineService.determineNextDifficulty(sessionId)`
-   - If `adaptive = false` → use session's base difficulty
-4. Generate question content (currently stubbed)
-5. Persist `QuestionInstance` with `sequenceOrder`
-
-**Stub**: Question content is currently a template string. Real implementation will call the AI provider with topic + difficulty context.
+3. Determine difficulty (adaptive or static)
+4. **Try `QuestionBankService.pickQuestion(topicId, difficulty)`** — use bank question if available, incrementing `usageCount`
+5. Fall back to stub generation if bank has no match
+6. Persist `QuestionInstance`
 
 ---
 
-### 5.4 Responses Module
+### 5.4 Question Bank Module
+
+**Path**: `src/modules/question-bank/`
+
+Reusable question repository. Questions here are permanent and indexed for fast retrieval.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/question-bank` | Contribute a question |
+| GET | `/question-bank?topicId=&difficulty=` | List questions for a topic |
+| GET | `/question-bank/:id` | Fetch a single question |
+
+The `pickQuestion` method selects a random question from matching candidates and increments `usageCount`.
+
+---
+
+### 5.5 Responses Module
 
 **Path**: `src/modules/responses/`
 
 Handles answer submission for a specific question.
 
-**Validation chain**:
-1. Question must exist and belong to the requesting user (via nested session ownership)
-2. Session must be `ACTIVE`
-3. No duplicate response for the same question (unique constraint + service guard)
+| Method | Endpoint | Body | Description |
+|---|---|---|---|
+| POST | `/questions/:questionId/responses` | `{ answerText?, audioUrl?, responseTimeMs, thinkingTimeMs }` | Submit answer |
 
-**What is stored at submission time**:
-- `answerText`, `audioUrl`, `responseTimeMs`, `thinkingTimeMs`, `answerLength`
-- All signal scores (`clarityScore`, `overallScore`, etc.) are **null** — set later by EvaluationService
+`responseTimeMs` and `thinkingTimeMs` are **now consumed** during evaluation — passed to `EvaluationInput` and computed into `pressureScore` and `thinkingDepthScore`.
 
 ---
 
-### 5.5 AI Module
+### 5.6 AI Module
 
 **Path**: `src/modules/ai/`
 
-The architectural boundary between domain logic and AI intelligence. **Nothing outside this module knows which AI provider is active.**
+The architectural boundary between domain logic and AI intelligence.
 
 #### Core Interface: `AnswerEvaluationProvider`
 
@@ -341,10 +361,12 @@ interface AnswerEvaluationProvider {
 ```typescript
 interface EvaluationInput {
     question: string;
-    text?: string;           // Text answer
-    audioUrl?: string;       // Audio answer URL (future: Whisper)
+    text?: string;
+    audioUrl?: string;
     questionType: 'behavioral' | 'technical';
     difficulty: DifficultyLevel;
+    responseTimeMs?: number;    // ← NEW: Behavioral timing signal
+    thinkingTimeMs?: number;    // ← NEW: Pre-answer pause signal
 }
 ```
 
@@ -352,153 +374,141 @@ interface EvaluationInput {
 
 ```typescript
 interface PerformanceSignal {
-    clarityScore: number;        // 0–100: coherence and ease of understanding
-    structureScore: number;      // 0–100: STAR / logical flow
-    depthScore: number;          // 0–100: quality and completeness
-    confidenceScore: number;     // 0–100: assertiveness and tone
-    communicationScore: number;  // 0–100: filler density, pacing
-    hesitationScore: number;     // 0–100: INVERSE — lower is better
-    technicalScore: number|null; // 0–100: factual correctness (null for behavioral)
-    overallScore: number;        // 0–100: weighted composite
+    clarityScore: number;
+    structureScore: number;
+    depthScore: number;
+    confidenceScore: number;
+    communicationScore: number;
+    hesitationScore: number;
+    technicalScore: number | null;
+    pressureScore: number;        // ← NEW: 0–100, calm under time pressure
+    thinkingDepthScore: number;   // ← NEW: 0–100, deliberate pre-answer composure
+    overallScore: number;
     explanation: string;
 }
 ```
 
-#### DI Token: `AI_EVALUATION_PROVIDER`
-
-Providers are bound in `ai.module.ts`:
-
-```typescript
-{
-    provide: AI_EVALUATION_PROVIDER,
-    useClass: StubEvaluationProvider,  // ← Change this one line to swap providers
-}
-```
-
-#### Current Provider: `StubEvaluationProvider`
-
-A deterministic, zero-cost implementation using text heuristics:
+#### StubEvaluationProvider Heuristics
 
 | Score | Heuristic |
 |---|---|
-| `clarityScore` | Word count bands (short=30, ideal=75, rambling=65) |
-| `structureScore` | STAR keyword detection: `situation`, `task`, `action`, `result`, `because`, `therefore`, `finally` (base 30, +10 per keyword) |
-| `depthScore` | Word count: <20=25, <80=55, <200=80, 200+=90 |
-| `confidenceScore` | Hedge phrase detection: `i think`, `i guess`, `maybe`, etc. (base 80, -10 per hedge, floor 30) |
-| `communicationScore` | Filler density: `um`, `uh`, `like`, `you know`, `basically` |
-| `hesitationScore` | Filler count + ellipsis patterns × 15 (cap 100) |
-| `technicalScore` | Technical vocabulary: `algorithm`, `cache`, `api`, `async`, etc. |
-| `overallScore` | Weighted sum (different weights for behavioral vs technical) |
+| `clarityScore` | Word count bands |
+| `structureScore` | STAR keyword detection (+10 per marker, base 30) |
+| `depthScore` | Word count tiers |
+| `confidenceScore` | Hedge phrase detection (-10 per hedge, base 80) |
+| `communicationScore` | Filler density penalty |
+| `hesitationScore` | Filler + ellipsis count × 15 (INVERSE) |
+| `technicalScore` | Tech term vocabulary count |
+| `pressureScore` | responseTimeMs: <5s=20, 10–45s=85 (optimal), >90s=40 |
+| `thinkingDepthScore` | thinkingTimeMs: <1s=30, 6–12s=90 (optimal), >20s=35 |
 
-**Behavioral weighting**:
+**Behavioral weighting** (90% text + 10% timing):
 ```
-20% clarity + 20% structure + 20% depth + 20% confidence + 10% communication + 10% (100 - hesitation)
-```
-
-**Technical weighting**:
-```
-20% clarity + 15% structure + 20% depth + 15% confidence + 10% communication + 20% technical - (hesitation × 10%)
+18% clarity + 18% structure + 18% depth + 18% confidence + 8% communication
++ 8% (100-hesitation) + 5% pressureScore + 5% thinkingDepthScore
 ```
 
 ---
 
-### 5.6 Evaluation Module
+### 5.7 Evaluation Module
 
 **Path**: `src/modules/evaluation/`
 
-Orchestrates the full evaluation pipeline when a session is completed.
+**`POST /sessions/:id/evaluation/analyze`**: Runs full evaluation pipeline.
 
-**`POST /sessions/:id/evaluation/analyze`**:
-1. Validate session is `COMPLETED` and belongs to user
-2. Check no evaluation already exists (idempotent guard → 409)
-3. Load all questions + responses for the session
-4. Validate all questions have responses
-5. For each question, call `aiProvider.evaluate(input)` sequentially
-6. Persist per-response `PerformanceSignal` scores to `ResponseInstance`
-7. Aggregate all signals → session-level averages
-8. Atomically create `EvaluationReport` + transition session to `ANALYZED`
-9. Return `SessionEvaluationResponseDto`
+**`GET /sessions/:id/evaluation`**: Returns existing `SessionEvaluationResponseDto`.
 
-**`GET /sessions/:id/evaluation`**:
-- Fetches an existing `EvaluationReport` for a session
-- Returns the same `SessionEvaluationResponseDto`
-- Returns 404 if session hasn't been analyzed yet
-
-#### Response DTO: `SessionEvaluationResponseDto`
+#### Response DTO
 
 ```typescript
 {
-    sessionId: string;
-    overallScore: number;       // 0–100
+  sessionId: string;
+  overallScore: number;         // 0–100
+  summary: string;
 
-    summary: string;            // 1–2 sentence feedback
+  dimensions: {
+    clarity: number;
+    structure: number;
+    depth: number;
+    confidence: number;
+    communication: number;
+    hesitation: number;         // INVERTED: 100 = no hesitation (better UX)
+    technical: number | null;
+    pressure: number;           // ← NEW: calm under time pressure
+    thinkingDepth: number;      // ← NEW: deliberate pre-answer composure
+  };
 
-    dimensions: {
-        clarity: number;
-        structure: number;
-        depth: number;
-        confidence: number;
-        communication: number;
-        hesitation: number;     // INVERTED here: 100 = no hesitation (better UX)
-        technical: number|null;
-    };
-
-    strengths: string[];        // Dimensions scoring ≥ 70
-    improvements: string[];     // Actionable suggestions from weak dimensions
-
-    difficultyProgression: {
-        startedAt: DifficultyLevel;  // Session base difficulty
-        endedAt: DifficultyLevel;    // Difficulty of last question asked
-    };
-
-    evaluatedAt: string;        // ISO timestamp
+  strengths: string[];
+  improvements: string[];
+  difficultyProgression: { startedAt, endedAt };
+  evaluatedAt: string;
 }
 ```
 
-**Strength detection** (threshold: 70):
-> "Clear and coherent communication" / "Well-structured answers (STAR format)" / etc.
-
-**Improvement generation** (triggered below threshold 60):
-> structure < 60 → "Use the STAR format..." / confidence < 60 → "Eliminate hedging phrases..."
-
 ---
 
-### 5.7 Adaptive Engine Module
+### 5.8 Adaptive Engine Module
 
 **Path**: `src/modules/adaptive/`
 
-Reads signal history and determines the difficulty of the **next** question.
+Algorithm unchanged. Reads `overallScore` (now incorporating behavioral signals) from responses to drive difficulty transitions.
 
-**Algorithm**:
+| Threshold | Value |
+|---|---|
+| `INCREASE_ABOVE` | 72 |
+| `DECREASE_BELOW` | 55 |
+| `MIN_SCORED_RESPONSES` | 2 |
 
-```
-1. Fetch session base difficulty
-2. Fetch last 3 answered questions with responses
-3. If no answered questions → return base difficulty
-4. Use difficulty of most recent question as current baseline
-5. Filter responses where overallScore is not null (AI-evaluated)
-6. If fewer than MIN_SCORED_RESPONSES (2) evaluated → hold (no premature transitions)
-7. Compute rolling average of overallScore (last 3)
-8. if avg > 72  → increase difficulty
-   if avg < 55  → decrease difficulty
-   else         → hold
-```
+---
 
-**Transition table**:
+### 5.9 Topics Module
 
-| Current | Increase | Decrease |
+**Path**: `src/modules/topics/`
+
+| Method | Endpoint | Description |
 |---|---|---|
-| BEGINNER | INTERMEDIATE | BEGINNER (floor) |
-| INTERMEDIATE | ADVANCED | BEGINNER |
-| ADVANCED | ADVANCED (ceiling) | INTERMEDIATE |
+| POST | `/topics` | Create user-owned topic |
+| GET | `/topics` | List global + user-owned topics |
+| GET | `/topics/:id` | Get single topic |
+| DELETE | `/topics/:id` | Soft-delete (owner only) |
 
-**Tuned thresholds** (validated via `simulate-archetypes.ts`):
+---
 
-| Threshold | Value | Rationale |
+### 5.10 Analytics Module
+
+**Path**: `src/modules/analytics/`
+
+Cross-session intelligence. Reads from `EvaluationReport` across all sessions for the authenticated user.
+
+| Method | Endpoint | Description |
 |---|---|---|
-| `INCREASE_ABOVE` | 72 | Was 75 — strong candidates no longer stall at the boundary |
-| `DECREASE_BELOW` | 55 | Was 50 — catches genuinely weak performers averaging ~52 |
-| `MIN_SCORED_RESPONSES` | 2 | Prevents transitions before sufficient signal exists |
+| GET | `/analytics/me` | Full cross-session analytics |
+
+**Response shape**:
+```typescript
+{
+  totalSessions: number;
+  analyzedSessions: number;
+
+  trend: Array<{
+    sessionId, topicName, interviewLevel,
+    analyzedAt, overallScore, confidenceScore,
+    clarityScore, structureScore, depthScore
+  }>;
+
+  improvement: {
+    overallDelta: number;       // latest - first session score
+    confidenceDelta: number;
+    clarityDelta: number;
+    topImprovedDimension: string | null;
+    topWeakDimension: string | null;
+  };
+
+  byTopic: Array<{
+    topicId, topicName, sessionCount, avgOverallScore
+  }>;
+}
+```
 
 ---
 
@@ -507,33 +517,32 @@ Reads signal history and determines the difficulty of the **next** question.
 ### Complete Interview Flow
 
 ```
-POST /auth/register or /auth/login
+POST /identity/register or /identity/login
         ↓ JWT token returned
-POST /sessions  { topicId, mode, difficulty, adaptive: true, durationMinutes }
+POST /sessions  { topicId, mode, difficulty, adaptive, interviewLevel? }
         ↓ session.status = CREATED
 PUT  /sessions/:id/start
         ↓ session.status = ACTIVE, startedAt = now
 
   [Loop: repeat for each question]
   POST /sessions/:id/questions/next
-        ↓ AdaptiveEngine calculates difficulty
-        ↓ Question generated, saved with sequenceOrder + difficulty
-  POST /questions/:questionId/responses
-        ↓ Answer saved (scores null at this point)
+        ↓ QuestionBank.pickQuestion() — bank-first selection
+        ↓ Fall back to stub if no bank match
+  POST /questions/:questionId/responses  { answerText, responseTimeMs, thinkingTimeMs }
+        ↓ Answer saved with timing data
   [End Loop]
 
 PUT  /sessions/:id/complete
-        ↓ session.status = COMPLETED, endedAt = now
+        ↓ session.status = COMPLETED
 POST /sessions/:id/evaluation/analyze
-        ↓ AI evaluates each answer → PerformanceSignal per response
-        ↓ Per-response scores persisted to ResponseInstance
-        ↓ Session-level aggregation computed
-        ↓ EvaluationReport created
+        ↓ EvaluationInput includes responseTimeMs + thinkingTimeMs
+        ↓ pressureScore + thinkingDepthScore computed per response
+        ↓ EvaluationReport created with all dimensions
         ↓ session.status = ANALYZED
-        ← SessionEvaluationResponseDto returned
+        ← SessionEvaluationResponseDto (9 dimensions)
 
-GET  /sessions/:id/evaluation
-        ← Same DTO (cached, no re-evaluation)
+GET  /analytics/me
+        ← Cross-session trend + improvement delta + per-topic breakdown
 ```
 
 ---
@@ -541,33 +550,27 @@ GET  /sessions/:id/evaluation
 ## 7. Session Lifecycle State Machine
 
 ```
-                   ┌─────────┐
-                   │ CREATED │
-                   └────┬────┘
-                        │  PUT /start
-                        ▼
-                   ┌────────┐
-                   │ ACTIVE │ ←── Questions generated here
-                   └────┬───┘     Responses submitted here
-                        │  PUT /complete
-                        ▼
-                  ┌───────────┐
-                  │ COMPLETED │ ←── Evaluation triggered here
-                  └─────┬─────┘
-                        │  POST /evaluation/analyze
-                        ▼
-                  ┌──────────┐
-                  │ ANALYZED │ ←── Report available
-                  └──────────┘
+               ┌─────────┐
+               │ CREATED │
+               └────┬────┘
+                    │  PUT /start
+                    ▼
+               ┌────────┐
+               │ ACTIVE │ ←── Questions + Responses here
+               └────┬───┘     (timing data captured here)
+                    │  PUT /complete
+                    ▼
+              ┌───────────┐
+              │ COMPLETED │ ←── Evaluation triggered here
+              └─────┬─────┘
+                    │  POST /evaluation/analyze
+                    ▼
+              ┌──────────┐
+              │ ANALYZED │ ←── Report + Analytics available
+              └──────────┘
 
   CANCELLED  ← future (timeout, user exit)
 ```
-
-**State transition rules** (all enforced at service layer):
-- Cannot start a non-`CREATED` session
-- Cannot complete a non-`ACTIVE` session
-- Cannot analyze a non-`COMPLETED` session
-- Cannot analyze twice (409 Conflict)
 
 ---
 
@@ -580,80 +583,85 @@ Session COMPLETED
 EvaluationService.analyzeSession()
         │
         ├── For each QuestionInstance (ordered by sequenceOrder):
-        │       │
         │       ├── Build EvaluationInput {
         │       │       question, text, audioUrl,
-        │       │       questionType, difficulty
+        │       │       questionType, difficulty,
+        │       │       responseTimeMs,     ← from ResponseInstance
+        │       │       thinkingTimeMs      ← from ResponseInstance
         │       │   }
-        │       │
         │       ├── aiProvider.evaluate(input)
-        │       │   └── Returns PerformanceSignal
-        │       │
-        │       └── UPDATE ResponseInstance SET
-        │               clarityScore, structureScore, depthScore,
-        │               confidenceScore, communicationScore,
-        │               hesitationScore, technicalScore,
-        │               overallScore, evaluationExplanation
+        │       │   └── Returns PerformanceSignal (9 dimensions)
+        │       └── UPDATE ResponseInstance SET scores
         │
         ├── aggregateSignals(all signals)
         │   ├── Average each dimension across all responses
-        │   ├── Build feedbackSummary (score-band based text)
-        │   └── Build improvementSuggestions (keyed by weak dimension)
+        │   ├── Average pressureScore + thinkingDepthScore
+        │   ├── Build feedbackSummary
+        │   └── Build improvementSuggestions
         │
         └── $transaction([
-                CREATE EvaluationReport,
+                CREATE EvaluationReport (with pressureScore, thinkingDepthScore),
                 UPDATE InterviewSession SET status = ANALYZED
             ])
 ```
-
-**Why per-response scoring matters**:
-- Each answer is individually evaluated and scored
-- This enables future analytics: *"Your confidence improved from Q1 to Q5"*
-- The session report is derived from individual records — no information is lost
 
 ---
 
 ## 9. Adaptive Difficulty Engine
 
 ### What It Reads
-`ResponseInstance.overallScore` — the composite AI signal.
+`ResponseInstance.overallScore` — the composite AI signal (now includes 10% behavioral weight).
 
-### Why not `answerLength` or `responseTime`?
-These are **proxy metrics**, not performance metrics. A candidate can write 500 words of confused rambling (long + slow) and score badly — or write 80 words of crisp, structured response and score highly. The old logic wouldn't distinguish these.
-
-`overallScore` is a weighted composite of clarity, structure, depth, confidence, communication, and hesitation — a true performance signal.
-
-### Simulation Results (3 Archetypes)
-
-| Archetype | Avg Score | Final Difficulty | Transitions |
-|---|---|---|---|
-| 🟢 Strong (STAR, no hedges, 150+ words) | 73.8 | ADVANCED | 2 — BEGINNER→INTERMEDIATE→ADVANCED |
-| 🔴 Struggling (short, hedges, fillers) | 53.6 | BEGINNER | 0 — decrease triggered at Q5 |
-| 🟡 Inconsistent (alternates strong/weak) | 63.4 | BEGINNER | 0 — neutral band, no reward for inconsistency |
-
-Run simulation anytime: `npm run simulate:archetypes`
+### Algorithm
+```
+1. Fetch session base difficulty
+2. Fetch last 3 answered questions with responses
+3. If no answered questions → return base difficulty
+4. Use difficulty of most recent question as current baseline
+5. Filter responses where overallScore is not null
+6. If fewer than MIN_SCORED_RESPONSES (2) evaluated → hold
+7. Compute rolling average of overallScore (last 3)
+8. if avg > 72  → increase difficulty
+   if avg < 55  → decrease difficulty
+   else         → hold
+```
 
 ---
 
 ## 10. API Reference
 
-All routes (except auth) require `Authorization: Bearer <JWT>` header.
+All routes (except `/identity/register`, `/identity/login`, `/identity/request-otp`, `/identity/verify-otp`, `/identity/google`) require `Authorization: Bearer <JWT>` header.
 
-### Auth
+### Identity
 
-| Method | Endpoint | Body | Response |
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/auth/register` | `{ email?, phoneNumber?, password? }` | `{ access_token, user }` |
-| POST | `/auth/login` | `{ email?, phoneNumber?, password }` | `{ access_token, user }` |
-| POST | `/auth/otp/request` | `{ identifier }` | `{ message }` |
-| POST | `/auth/otp/verify` | `{ identifier, code }` | `{ access_token, user }` |
-| POST | `/auth/google` | `{ token }` | `{ access_token, user }` |
+| POST | `/identity/register` | — | Register |
+| POST | `/identity/login` | — | Login |
+| POST | `/identity/request-otp` | — | Request OTP |
+| POST | `/identity/verify-otp` | — | Verify OTP |
+| POST | `/identity/google` | — | Google OAuth |
+| GET | `/identity/me` | ✅ | Get profile |
+| PUT | `/identity/me` | ✅ | Update profile |
+| GET | `/identity/skill-tags` | ✅ | List global skill tags |
+| POST | `/identity/me/skills` | ✅ | Add skill preference |
+| DELETE | `/identity/me/skills/:skillTagId` | ✅ | Remove skill preference |
+
+### Topics
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/topics` | Create topic |
+| GET | `/topics` | List global + user-owned |
+| GET | `/topics/:id` | Get topic |
+| DELETE | `/topics/:id` | Soft-delete (owner only) |
 
 ### Sessions
 
 | Method | Endpoint | Description |
 |---|---|---|
 | POST | `/sessions` | Create session |
+| GET | `/sessions` | List user sessions (paginated, filterable) |
 | GET | `/sessions/:id` | Get session |
 | PUT | `/sessions/:id/start` | `CREATED → ACTIVE` |
 | PUT | `/sessions/:id/complete` | `ACTIVE → COMPLETED` |
@@ -662,7 +670,15 @@ All routes (except auth) require `Authorization: Bearer <JWT>` header.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/sessions/:sessionId/questions/next` | Generate next question |
+| POST | `/sessions/:sessionId/questions/next` | Generate next question (bank-first) |
+
+### Question Bank
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/question-bank` | Add a reusable question |
+| GET | `/question-bank?topicId=&difficulty=` | List questions |
+| GET | `/question-bank/:id` | Get question |
 
 ### Responses
 
@@ -674,8 +690,14 @@ All routes (except auth) require `Authorization: Bearer <JWT>` header.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/sessions/:sessionId/evaluation/analyze` | Run evaluation (session must be COMPLETED) |
-| GET | `/sessions/:sessionId/evaluation` | Fetch existing evaluation report |
+| POST | `/sessions/:sessionId/evaluation/analyze` | Run evaluation |
+| GET | `/sessions/:sessionId/evaluation` | Fetch evaluation report |
+
+### Analytics
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/analytics/me` | Cross-session trend, delta, per-topic breakdown |
 
 ---
 
@@ -684,39 +706,41 @@ All routes (except auth) require `Authorization: Bearer <JWT>` header.
 | Component | Status | Notes |
 |---|---|---|
 | Auth (JWT, bcrypt, OTP, Google) | ✅ Real | Fully implemented |
+| User profile (displayName, bio, avatarUrl) | ✅ Real | GET/PUT /identity/me |
+| Skill preferences | ✅ Real | Full CRUD |
+| Topic CRUD API | ✅ Real | Global + user-owned, subtopic hierarchy |
 | Session lifecycle | ✅ Real | State machine enforced |
-| Question sequencing | ✅ Real | Order + adaptive hook implemented |
+| Session LIST + pagination | ✅ Real | Filterable by status |
+| Interview levels | ✅ Real | Optional field on sessions |
+| Question Bank | ✅ Real | Bank-first question selection |
+| Question sequencing + adaptive hook | ✅ Real | Order + bank-first + adaptive |
+| Behavioral tracking (responseTimeMs/thinkingTimeMs) | ✅ Real | Flows into pressureScore + thinkingDepthScore |
 | Response ingestion | ✅ Real | Validation + persistence complete |
 | AI Provider interface | ✅ Real | `AnswerEvaluationProvider` — swap-ready |
-| Evaluation pipeline | ✅ Real | Per-response + aggregated, persisted |
+| Evaluation pipeline | ✅ Real | 9-dimension per-response + aggregated |
 | Adaptive engine | ✅ Real | Signal-driven, tuned thresholds |
+| Cross-session analytics | ✅ Real | Trend, improvement delta, per-topic |
 | OTP delivery (SMS/Email) | 🔶 Stub | Logs to console — needs provider |
-| Question generation content | 🔶 Stub | Template string — needs LLM call |
+| Question generation content | 🔶 Stub | Bank-first, then template string — needs LLM |
 | OpenAI / real LLM evaluation | 🔶 Stub | `StubEvaluationProvider` is active |
-| Audio transcription | 🔶 Not built | `audioUrl` stored, not processed |
+| Audio transcription | 🔶 Not built | `audioUrl` stored, Whisper integration pending |
 
 ---
 
-## 12. What Comes Next
+## 12. What Comes Next (Tier 3)
 
-### Immediate (Production Surface Hardening)
-- [ ] `GET /sessions` — list user's sessions with pagination
-- [ ] `GET /sessions/:id/questions` — list questions in a session
-- [ ] OTP delivery via real SMS/email provider (Twilio, SendGrid)
-- [ ] Global error filter / consistent error response shape
-
-### Intelligence Layer
-- [ ] `OpenAIEvaluationProvider` — implement `AnswerEvaluationProvider` with GPT
+### Real AI Integration
+- [ ] `OpenAIEvaluationProvider` — implement `AnswerEvaluationProvider` with GPT-4o
 - [ ] Real question generation via LLM (replace stub in `QuestionsService`)
 - [ ] Audio transcription via Whisper API → feed transcript into evaluation
 
-### Analytics Layer (enabled by current schema)
-- [ ] `GET /users/me/analytics` — avg scores over time, confidence trend
-- [ ] Per-dimension trend: "Your structure score improved 15 points over 5 sessions"
-- [ ] Topic weakness detection: "Leadership answers score lower than Technical"
-
 ### Platform Expansion
-- [ ] Topic management: `POST /topics`, `GET /topics`
-- [ ] Question bank: user-submitted questions, AI deduplication
-- [ ] Group sessions: multiple users in one session (multi-agent design)
-- [ ] Async evaluation queue (for scale — evaluate in background after COMPLETED)
+- [ ] Group/Panel session modes (multi-user, multi-agent design)
+- [ ] Micro-drills from improvement suggestions
+- [ ] Session recommendations (suggest next topic/level based on analytics)
+- [ ] Fear/stress metric (voice analysis, pause spike detection)
+
+### Infrastructure
+- [ ] Async evaluation queue (evaluate in background after COMPLETED)
+- [ ] OTP delivery via real SMS/email provider (Twilio, SendGrid)
+- [ ] Global error filter / consistent error response shape

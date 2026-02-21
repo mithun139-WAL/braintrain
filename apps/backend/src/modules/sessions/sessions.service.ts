@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { ListSessionsDto } from './dto/list-sessions.dto';
 import { SessionStatus } from '@prisma/client';
 
 @Injectable()
@@ -31,6 +32,7 @@ export class SessionsService {
                 userId,
                 topicId: dto.topicId,
                 mode: dto.mode,
+                interviewLevel: dto.interviewLevel ?? null,
                 difficulty: dto.difficulty,
                 adaptive: dto.adaptive,
                 durationMinutes: dto.durationMinutes,
@@ -89,5 +91,42 @@ export class SessionsService {
                 endedAt: new Date(),
             },
         });
+    }
+
+    async listSessions(userId: string, dto: ListSessionsDto) {
+        const page = dto.page ?? 1;
+        const limit = dto.limit ?? 20;
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            userId,
+            deletedAt: null,
+            ...(dto.status && { status: dto.status as SessionStatus }),
+        };
+
+        const [sessions, total] = await Promise.all([
+            this.prisma.interviewSession.findMany({
+                where,
+                include: {
+                    topic: { select: { id: true, name: true } },
+                    evaluation: { select: { overallScore: true } },
+                    _count: { select: { questions: true } },
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.interviewSession.count({ where }),
+        ]);
+
+        return {
+            data: sessions,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 }

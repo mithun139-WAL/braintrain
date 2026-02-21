@@ -27,20 +27,33 @@ enum InterviewMode {
   HYBRID
 }
 
+enum InterviewLevel {
+  SCREENING
+  TECHNICAL_L1
+  TECHNICAL_L2
+  HR
+  SYSTEM_DESIGN
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String?  @unique
   phoneNumber   String?  @unique
   googleId      String?  @unique
   passwordHash  String?
+  displayName   String?
+  bio           String?
+  avatarUrl     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
 
-  sessions      InterviewSession[]
-  topics        Topic[]
-  contextInputs UserContextInput[]
-  otpCodes      OtpCode[]
+  sessions          InterviewSession[]
+  topics            Topic[]
+  contextInputs     UserContextInput[]
+  otpCodes          OtpCode[]
+  skillPreferences  UserSkillPreference[]
+  questionBankItems QuestionBank[]
 }
 
 model OtpCode {
@@ -58,6 +71,30 @@ model OtpCode {
   @@index([identifier])
 }
 
+model SkillTag {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  isGlobal        Boolean  @default(false)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  userPreferences UserSkillPreference[]
+}
+
+model UserSkillPreference {
+  id         String   @id @default(uuid())
+  userId     String
+  skillTagId String
+  level      String   // BEGINNER | INTERMEDIATE | ADVANCED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillTag   SkillTag @relation(fields: [skillTagId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillTagId])
+}
+
 model Topic {
   id                String   @id @default(uuid())
   name              String
@@ -70,10 +107,30 @@ model Topic {
 
   @@unique([name, isGlobal])
 
-  createdByUser     User?    @relation(fields: [createdByUserId], references: [id])
-  parentTopic       Topic?   @relation("Subtopics", fields: [parentTopicId], references: [id])
-  subtopics         Topic[]  @relation("Subtopics")
+  createdByUser     User?          @relation(fields: [createdByUserId], references: [id])
+  parentTopic       Topic?         @relation("Subtopics", fields: [parentTopicId], references: [id])
+  subtopics         Topic[]        @relation("Subtopics")
   sessions          InterviewSession[]
+  questionBankItems QuestionBank[]
+}
+
+model QuestionBank {
+  id              String          @id @default(uuid())
+  content         String
+  topicId         String
+  difficulty      DifficultyLevel
+  questionType    String          // "behavioral" | "technical"
+  isGlobal        Boolean         @default(false)
+  createdByUserId String?
+  usageCount      Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  topic           Topic           @relation(fields: [topicId], references: [id])
+  createdByUser   User?           @relation(fields: [createdByUserId], references: [id])
+
+  @@index([topicId, difficulty])
 }
 
 model InterviewSession {
@@ -81,6 +138,7 @@ model InterviewSession {
   userId            String
   topicId           String
   mode              InterviewMode
+  interviewLevel    InterviewLevel?  // SCREENING | TECHNICAL_L1 | TECHNICAL_L2 | HR | SYSTEM_DESIGN
   difficulty        DifficultyLevel
   adaptive          Boolean
   durationMinutes   Int
@@ -154,6 +212,10 @@ model EvaluationReport {
   communicationScore         Float
   hesitationScore            Float
   technicalScore             Float?   // null for behavioral sessions
+
+  // ── Behavioral timing signals (from responseTimeMs / thinkingTimeMs) ──
+  pressureScore              Float?   // 0–100: stress indicator from response speed
+  thinkingDepthScore         Float?   // 0–100: deliberate pause quality signal
 
   feedbackSummary            String
   improvementSuggestions     Json

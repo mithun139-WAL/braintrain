@@ -2,12 +2,14 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { SessionStatus } from '@prisma/client';
 import { AdaptiveEngineService } from '../adaptive/adaptive-engine.service';
+import { QuestionBankService } from '../question-bank/question-bank.service';
 
 @Injectable()
 export class QuestionsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly adaptiveEngine: AdaptiveEngineService,
+        private readonly questionBankService: QuestionBankService,
     ) { }
 
     async generateNextQuestion(sessionId: string, userId: string) {
@@ -19,7 +21,7 @@ export class QuestionsService {
                 deletedAt: null,
             },
             include: {
-                topic: true, // We might need topic details for the prompt later
+                topic: true,
             }
         });
 
@@ -50,15 +52,21 @@ export class QuestionsService {
             ? await this.adaptiveEngine.determineNextDifficulty(sessionId)
             : session.difficulty;
 
-        // 4. Call "AI generator" (stubbed for now)
-        const generatedContent = this.stubAiGeneration(session.topic.name, difficulty, sequenceOrder, session.adaptive);
+        // 4. Bank-first question selection: check QuestionBank before generating
+        const bankContent = await this.questionBankService.pickQuestion(
+            session.topicId,
+            difficulty,
+            userId,
+        );
+        const generatedContent = bankContent
+            ?? this.stubAiGeneration(session.topic.name, difficulty, sequenceOrder, session.adaptive);
 
         // 5. Save QuestionInstance
         return this.prisma.questionInstance.create({
             data: {
                 sessionId,
                 content: generatedContent,
-                difficulty, // The dynamically or statically determined difficulty
+                difficulty,
                 sequenceOrder,
             },
         });

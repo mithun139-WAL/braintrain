@@ -27,6 +27,18 @@ export interface PerformanceSignal {
      */
     technicalScore: number | null;
     /**
+     * Pressure signal derived from response speed.
+     * High score = rushed/stressed (fast response), Low = overly slow.
+     * Optimal sweet spot ~ 15–30s response time.
+     */
+    pressureScore: number;
+    /**
+     * Thinking depth signal derived from pre-answer pause (thinkingTimeMs).
+     * Higher = more deliberate, composed thinking before answering.
+     * Peaks at 6–10s pause; drops if < 2s (reactive) or > 20s (stuck).
+     */
+    thinkingDepthScore: number;
+    /**
      * Weighted aggregate across all dimensions.
      * This is the primary signal consumed by the AdaptiveEngine.
      */

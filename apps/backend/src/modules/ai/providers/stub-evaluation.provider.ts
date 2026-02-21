@@ -29,6 +29,10 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
             ? this.scoreTechnical(text)
             : null;
 
+        // --- Behavioral timing signals ---
+        const pressureScore = this.scorePressure(input.responseTimeMs);
+        const thinkingDepthScore = this.scoreThinkingDepth(input.thinkingTimeMs);
+
         const overallScore = this.computeOverall({
             clarityScore,
             structureScore,
@@ -37,6 +41,8 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
             communicationScore,
             hesitationScore,
             technicalScore,
+            pressureScore,
+            thinkingDepthScore,
             questionType: input.questionType,
         });
 
@@ -48,10 +54,13 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
             communicationScore,
             hesitationScore,
             technicalScore,
+            pressureScore,
+            thinkingDepthScore,
             overallScore,
             explanation:
                 `[Stub] Evaluated ${wordCount} words. ` +
-                `Overall: ${overallScore.toFixed(1)}/100.`,
+                `Overall: ${overallScore.toFixed(1)}/100. ` +
+                `Pressure: ${pressureScore.toFixed(0)}, Thinking Depth: ${thinkingDepthScore.toFixed(0)}.`,
         };
     }
 
@@ -69,8 +78,6 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
     private scoreStructure(text: string): number {
         const markers = ['situation', 'task', 'action', 'result', 'because', 'therefore', 'finally'];
         const found = markers.filter(m => text.toLowerCase().includes(m)).length;
-        // Base of 30: zero structural markers = genuinely unstructured answer
-        // Each keyword adds +10, cap at 100
         return Math.min(30 + found * 10, 100);
     }
 
@@ -125,6 +132,42 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
         return Math.min(40 + found * 8, 100);
     }
 
+    /**
+     * Pressure score — derived from total response time.
+     * Optimal range: 15–45 seconds. Very fast = rushed/stressed. Very slow = stuck.
+     * Score is 0–100 where 100 = perfectly calm and composed.
+     * null/0 → neutral 50.
+     */
+    private scorePressure(responseTimeMs?: number): number {
+        if (!responseTimeMs) return 50;
+        const seconds = responseTimeMs / 1000;
+
+        if (seconds < 5) return 20;   // Extremely rushed
+        if (seconds < 10) return 40;  // Rushed
+        if (seconds < 15) return 60;  // Slightly fast
+        if (seconds <= 45) return 85; // Ideal window
+        if (seconds <= 90) return 65; // Slightly slow
+        return 40;                    // Struggling / very slow
+    }
+
+    /**
+     * Thinking depth score — derived from pre-answer thinking pause.
+     * A short deliberate pause (4–12s) = composed, thoughtful.
+     * No pause (<2s) = reactive. Very long (>20s) = stuck.
+     * null/0 → neutral 50.
+     */
+    private scoreThinkingDepth(thinkingTimeMs?: number): number {
+        if (!thinkingTimeMs) return 50;
+        const seconds = thinkingTimeMs / 1000;
+
+        if (seconds < 1) return 30;   // Reactive, no reflection
+        if (seconds < 3) return 50;   // Minimal thinking
+        if (seconds < 6) return 70;   // Good
+        if (seconds <= 12) return 90; // Deliberate and composed (optimal)
+        if (seconds <= 20) return 65; // Slightly long
+        return 35;                    // Stuck / panicking
+    }
+
     // ─── Weighted Aggregation ────────────────────────────────────────────────
 
     private computeOverall(params: {
@@ -135,6 +178,8 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
         communicationScore: number;
         hesitationScore: number;
         technicalScore: number | null;
+        pressureScore: number;
+        thinkingDepthScore: number;
         questionType: 'behavioral' | 'technical';
     }): number {
         const {
@@ -145,34 +190,38 @@ export class StubEvaluationProvider implements AnswerEvaluationProvider {
             communicationScore,
             hesitationScore,
             technicalScore,
+            pressureScore,
+            thinkingDepthScore,
             questionType,
         } = params;
 
-        // Hesitation is an inverse signal — high hesitation lowers confidence
-        const hesitationPenalty = hesitationScore * 0.10;
+        const hesitationPenalty = hesitationScore * 0.08;
+        // Behavioral signals contribute 5% each (10% total)
+        const behavioralBonus = (pressureScore * 0.05) + (thinkingDepthScore * 0.05);
 
         if (questionType === 'technical' && technicalScore !== null) {
-            // Technical weighting
             return Math.max(
-                0.20 * clarityScore +
-                0.15 * structureScore +
-                0.20 * depthScore +
-                0.15 * confidenceScore +
-                0.10 * communicationScore +
-                0.20 * technicalScore -
-                hesitationPenalty,
+                0.18 * clarityScore +
+                0.13 * structureScore +
+                0.18 * depthScore +
+                0.13 * confidenceScore +
+                0.08 * communicationScore +
+                0.18 * technicalScore -
+                hesitationPenalty +
+                behavioralBonus,
                 0
             );
         }
 
         // Behavioral weighting — confidence and structure matter more
         return Math.max(
-            0.20 * clarityScore +
-            0.20 * structureScore +
-            0.20 * depthScore +
-            0.20 * confidenceScore +
-            0.10 * communicationScore +
-            0.10 * (100 - hesitationScore), // treat low-hesitation as positive
+            0.18 * clarityScore +
+            0.18 * structureScore +
+            0.18 * depthScore +
+            0.18 * confidenceScore +
+            0.08 * communicationScore +
+            0.08 * (100 - hesitationScore) +
+            behavioralBonus,
             0
         );
     }

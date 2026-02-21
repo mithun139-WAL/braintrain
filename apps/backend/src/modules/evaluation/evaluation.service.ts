@@ -81,6 +81,8 @@ export class EvaluationService {
                 audioUrl: response.audioUrl ?? undefined,
                 questionType: 'behavioral', // TODO: derive from topic metadata
                 difficulty: q.difficulty,
+                responseTimeMs: response.responseTimeMs,
+                thinkingTimeMs: response.thinkingTimeMs,
             };
 
             const signal = await this.aiProvider.evaluate(input);
@@ -119,6 +121,8 @@ export class EvaluationService {
                     communicationScore: aggregated.communicationScore,
                     hesitationScore: aggregated.hesitationScore,
                     technicalScore: aggregated.technicalScore,
+                    pressureScore: aggregated.pressureScore,
+                    thinkingDepthScore: aggregated.thinkingDepthScore,
                     feedbackSummary: aggregated.feedbackSummary,
                     improvementSuggestions: aggregated.improvementSuggestions,
                 },
@@ -175,6 +179,8 @@ export class EvaluationService {
         communicationScore: number;
         hesitationScore: number;
         technicalScore: number | null;
+        pressureScore: number;
+        thinkingDepthScore: number;
         feedbackSummary: string;
         improvementSuggestions: Record<string, string[]>;
     } {
@@ -196,6 +202,8 @@ export class EvaluationService {
             technicalScore: technicalScores.length
                 ? technicalScores.reduce((a, b) => a + b, 0) / technicalScores.length
                 : null,
+            pressureScore: avg('pressureScore'),
+            thinkingDepthScore: avg('thinkingDepthScore'),
         };
 
         const feedbackSummary = this.buildFeedbackSummary(aggregated);

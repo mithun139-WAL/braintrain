@@ -9,6 +9,9 @@ import { QuestionsModule } from './modules/questions/questions.module';
 import { ResponsesModule } from './modules/responses/responses.module';
 import { EvaluationModule } from './modules/evaluation/evaluation.module';
 import { AdaptiveModule } from './modules/adaptive/adaptive.module';
+import { TopicsModule } from './modules/topics/topics.module';
+import { QuestionBankModule } from './modules/question-bank/question-bank.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { AdaptiveModule } from './modules/adaptive/adaptive.module';
     ResponsesModule,
     EvaluationModule,
     AdaptiveModule,
+    TopicsModule,
+    QuestionBankModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -22,6 +22,10 @@ export class EvaluationDimensionsDto {
     hesitation!: number;
     /** Technical correctness — null for behavioral sessions */
     technical!: number | null;
+    /** Pressure signal — how composed the candidate was under time pressure (higher = calmer) */
+    pressure!: number;
+    /** Thinking depth — quality of deliberate pause before answering (higher = more thoughtful) */
+    thinkingDepth!: number;
 }
 
 /**
