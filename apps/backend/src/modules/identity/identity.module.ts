@@ -6,6 +6,8 @@ import { IdentityController } from './identity.controller';
 import { IdentityService } from './identity.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { EmailService } from './providers/email.service';
+import { SmsService } from './providers/sms.service';
 
 @Module({
     imports: [
@@ -27,7 +29,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
         }),
     ],
     controllers: [IdentityController],
-    providers: [IdentityService, JwtStrategy],
+    providers: [IdentityService, JwtStrategy, EmailService, SmsService],
     exports: [IdentityService],
 })
 export class IdentityModule { }

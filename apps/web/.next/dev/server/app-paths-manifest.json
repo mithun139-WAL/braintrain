@@ -1,0 +1,9 @@
+{
+  "/(auth)/login/email-otp/page": "app/(auth)/login/email-otp/page.js",
+  "/(auth)/login/mobile/page": "app/(auth)/login/mobile/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(auth)/verify-otp/page": "app/(auth)/verify-otp/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/dashboard/sessions/page": "app/(dashboard)/dashboard/sessions/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
+}

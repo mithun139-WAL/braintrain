@@ -40,6 +40,8 @@ export function toEvaluationResponseDto(
         communication: report.communicationScore,
         hesitation: hesitationForDisplay,   // Inverted: higher = better
         technical: report.technicalScore,
+        pressure: report.pressureScore ?? 50,
+        thinkingDepth: report.thinkingDepthScore ?? 50,
     };
 
     // ── Strengths: dimensions scoring ≥ 70 ────────────────────────────────
@@ -73,6 +75,8 @@ const DIMENSION_LABELS: Record<keyof EvaluationDimensionsDto, string> = {
     communication: 'Fluent communication with minimal fillers',
     hesitation: 'Composed delivery with minimal hesitation',
     technical: 'Solid technical knowledge',
+    pressure: 'Calm and composed under time pressure',
+    thinkingDepth: 'Deliberate and thoughtful before answering',
 };
 
 function deriveStrengths(dimensions: EvaluationDimensionsDto): string[] {

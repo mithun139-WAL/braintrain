@@ -11,4 +11,8 @@ export interface EvaluationInput {
     questionType: 'behavioral' | 'technical';
     /** Session difficulty at time of question */
     difficulty: DifficultyLevel;
+    /** Total time from question display to response submission (ms) */
+    responseTimeMs?: number;
+    /** Pause duration before the candidate started answering (ms) */
+    thinkingTimeMs?: number;
 }

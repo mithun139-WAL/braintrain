@@ -1,14 +1,21 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubmitResponseDto } from './dto/submit-response.dto';
-import { SessionStatus } from '@prisma/client';
+import { AudioProcessingStatus, SessionStatus } from '@prisma/client';
 
 @Injectable()
 export class ResponsesService {
     constructor(private readonly prisma: PrismaService) { }
 
     async submitResponse(questionId: string, userId: string, dto: SubmitResponseDto) {
-        // 1 & 2 & 3. Fetch question and firmly validate ownership through nested relations
+        // 1. Guard: at least one of answerText or audioUrl must be provided
+        if (!dto.answerText?.trim() && !dto.audioUrl?.trim()) {
+            throw new BadRequestException(
+                'At least one of answerText or audioUrl must be provided',
+            );
+        }
+
+        // 2 & 3. Fetch question and firmly validate ownership through nested relations
         const question = await this.prisma.questionInstance.findFirst({
             where: {
                 id: questionId,
@@ -45,19 +52,26 @@ export class ResponsesService {
         }
 
         // 6. Compute metrics at submission time (lightweight, no AI cost)
-        const answerLength = dto.answerText?.length || 0;
-        // hesitationScore, overallScore, etc. are evaluated post-session by EvaluationService
+        const answerLength = dto.answerText?.length ?? 0;
 
-        // 7. Save ResponseInstance
+        // 7. Determine audio processing status at submission time
+        //    PENDING = audioUrl present → Whisper transcription will run during EvaluationJob
+        //    SKIPPED = text-only submission → no audio to process
+        const audioProcessingStatus: AudioProcessingStatus = dto.audioUrl
+            ? AudioProcessingStatus.PENDING
+            : AudioProcessingStatus.SKIPPED;
+
+        // 8. Save ResponseInstance
         return this.prisma.responseInstance.create({
             data: {
                 questionId,
-                answerText: dto.answerText,
-                audioUrl: dto.audioUrl || null,
+                answerText: dto.answerText ?? null,
+                audioUrl: dto.audioUrl ?? null,
                 responseTimeMs: dto.responseTimeMs,
                 thinkingTimeMs: dto.thinkingTimeMs,
                 answerLength,
-                // Signal scores are null until EvaluationService runs
+                audioProcessingStatus,
+                // Signal scores + transcribedText are null until EvaluationService runs
             },
         });
     }

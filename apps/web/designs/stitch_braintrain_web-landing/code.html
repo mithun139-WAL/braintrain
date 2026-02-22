@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain Emerald Variant | AI Interview Training</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10b981", // Emerald Green override
+                        "charcoal": "#1a1c1e",
+                        "background-light": "#f9fafb",
+                        "background-dark": "#111827",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .emerald-gradient {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-slate-100 selection:bg-primary/30">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Navigation -->
+<header class="fixed top-0 z-50 w-full border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-background-dark/80">
+<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-12">
+<div class="flex items-center gap-2">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined !text-2xl font-bold">psychology_alt</span>
+</div>
+<span class="text-xl font-extrabold tracking-tight text-charcoal dark:text-white">BrainTrain</span>
+</div>
+<nav class="hidden md:flex items-center gap-10">
+<a class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors dark:text-slate-300" href="#">Product</a>
+<a class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors dark:text-slate-300" href="#">Features</a>
+<a class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors dark:text-slate-300" href="#">Enterprise</a>
+<a class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors dark:text-slate-300" href="#">Pricing</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="hidden lg:block text-sm font-bold text-charcoal dark:text-white hover:opacity-70 transition-opacity">Login</button>
+<button class="flex items-center justify-center rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
+                        Get Started
+                    </button>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-24">
+<!-- Hero Section -->
+<section class="mx-auto max-w-7xl px-6 py-20 text-center lg:px-12 lg:py-32">
+<div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary mb-8">
+<span class="relative flex h-2 w-2">
+<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
+</span>
+                    AI-Powered Training
+                </div>
+<h1 class="mx-auto max-w-4xl text-5xl font-black leading-[1.1] tracking-tight text-charcoal sm:text-7xl dark:text-white">
+                    Train Smarter. <br/>
+<span class="text-primary">Perform Confidently.</span>
+</h1>
+<p class="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-500 dark:text-slate-400">
+                    Master your interview skills with AI-driven feedback and personalized training paths tailored for elite professionals. Practice with the clinical precision required for high-stakes career moves.
+                </p>
+<div class="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+<button class="flex min-w-[200px] items-center justify-center rounded-xl bg-primary px-8 py-4 text-lg font-bold text-white shadow-xl shadow-primary/25 hover:brightness-105 transition-all">
+                        Start Training Free
+                    </button>
+<button class="flex min-w-[200px] items-center justify-center rounded-xl border border-slate-200 bg-white px-8 py-4 text-lg font-bold text-charcoal hover:bg-slate-50 transition-all dark:border-slate-700 dark:bg-transparent dark:text-white">
+                        Book a Demo
+                    </button>
+</div>
+<div class="mt-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+<div class="aspect-video w-full bg-slate-100 dark:bg-slate-800" data-alt="Dashboard interface showing AI interview analysis charts and video playback" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAKrxV5xeUji9MgM2W2DvPPV1JiBRbtFkqd6iR__BS_YGO8cY8Hj2iZifLhVkSUJH-v-y87Q98pzujMR7WaX646_ex4dTEjUlV7FHO_1CL8T1W8ebpmtKlepIPwa0sAjdPgkYGU1mM_W7zBsLpw88jMjbwGOe5kPMAiEmz0FKOVW1ROUkirHs0I4cMzbjvjxaFf6bUcRACTA7JjyH5ZckkxqFuGaYUGiLszXDAoP21jUAIt4vnw2BdsG06pPt6qDnzfO8-kpQm9JTQ");'></div>
+</div>
+</section>
+<!-- Features Grid -->
+<section class="bg-white py-24 dark:bg-background-dark/50">
+<div class="mx-auto max-w-7xl px-6 lg:px-12">
+<div class="mb-16 text-center">
+<h2 class="text-3xl font-black tracking-tight text-charcoal sm:text-4xl dark:text-white">Premium Features for Elite Professionals</h2>
+<p class="mt-4 text-slate-500 dark:text-slate-400">Our platform provides the clinical precision needed to excel in any scenario.</p>
+</div>
+<div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+<!-- Card 1 -->
+<div class="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
+<span class="material-symbols-outlined">mic</span>
+</div>
+<h3 class="text-lg font-bold text-charcoal dark:text-white">AI Mock Interviews</h3>
+<p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Practice with industry-specific AI personas designed by real recruiters.</p>
+</div>
+<!-- Card 2 -->
+<div class="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<h3 class="text-lg font-bold text-charcoal dark:text-white">Real-time Feedback</h3>
+<p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Get instant AI-powered corrections on tone, pacing, and content quality.</p>
+</div>
+<!-- Card 3 -->
+<div class="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
+<span class="material-symbols-outlined">face</span>
+</div>
+<h3 class="text-lg font-bold text-charcoal dark:text-white">Behavioral Analysis</h3>
+<p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Deep dive into non-verbal communication cues and micro-expressions.</p>
+</div>
+<!-- Card 4 -->
+<div class="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<h3 class="text-lg font-bold text-charcoal dark:text-white">Progress Tracking</h3>
+<p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Monitor your improvement with data-driven charts and historical benchmarks.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works -->
+<section class="bg-background-light py-24 dark:bg-background-dark">
+<div class="mx-auto max-w-7xl px-6 lg:px-12">
+<div class="mb-20">
+<h2 class="text-3xl font-black tracking-tight text-charcoal sm:text-4xl dark:text-white">How It Works</h2>
+<p class="mt-4 text-slate-500 dark:text-slate-400">A streamlined three-step process to career excellence.</p>
+</div>
+<div class="relative grid grid-cols-1 gap-12 md:grid-cols-3">
+<!-- Vertical line for mobile, horizontal for desktop -->
+<div class="absolute left-6 top-0 hidden h-full w-px bg-slate-200 md:left-0 md:top-1/2 md:block md:h-px md:w-full dark:bg-slate-800"></div>
+<!-- Step 1 -->
+<div class="relative flex flex-col items-start gap-6 md:items-center md:text-center">
+<div class="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-black text-white shadow-lg ring-8 ring-background-light dark:ring-background-dark">
+                                1
+                            </div>
+<div>
+<h4 class="text-xl font-bold text-charcoal dark:text-white">Select Your Role</h4>
+<p class="mt-2 text-slate-500 dark:text-slate-400">Choose from 500+ professional paths including FAANG-level engineering, finance, and management.</p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative flex flex-col items-start gap-6 md:items-center md:text-center">
+<div class="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-black text-white shadow-lg ring-8 ring-background-light dark:ring-background-dark">
+                                2
+                            </div>
+<div>
+<h4 class="text-xl font-bold text-charcoal dark:text-white">Conduct Interview</h4>
+<p class="mt-2 text-slate-500 dark:text-slate-400">Engage in a pressure-tested environment with our adaptive AI that simulates real interviewer behavior.</p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative flex flex-col items-start gap-6 md:items-center md:text-center">
+<div class="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-black text-white shadow-lg ring-8 ring-background-light dark:ring-background-dark">
+                                3
+                            </div>
+<div>
+<h4 class="text-xl font-bold text-charcoal dark:text-white">Analyze Results</h4>
+<p class="mt-2 text-slate-500 dark:text-slate-400">Review granular feedback on your performance and follow your personalized roadmap to improvement.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="mx-auto max-w-7xl px-6 py-24 lg:px-12">
+<div class="relative overflow-hidden rounded-[2.5rem] bg-charcoal px-8 py-20 text-center dark:bg-slate-900">
+<div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl"></div>
+<div class="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl"></div>
+<div class="relative z-10 mx-auto max-w-3xl">
+<h2 class="text-4xl font-black text-white sm:text-5xl">Ready to land your dream role?</h2>
+<p class="mt-6 text-lg text-slate-400">Join 50,000+ professionals who have used BrainTrain to accelerate their career growth.</p>
+<div class="mt-10">
+<button class="rounded-xl bg-primary px-10 py-5 text-xl font-bold text-white shadow-xl shadow-primary/20 hover:scale-105 transition-transform active:scale-95">
+                                Start Your Training Journey
+                            </button>
+<p class="mt-6 text-sm text-slate-500">No credit card required. Free forever basic plan.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="border-t border-slate-200 bg-white py-12 dark:border-slate-800 dark:bg-background-dark">
+<div class="mx-auto max-w-7xl px-6 lg:px-12">
+<div class="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
+<div class="col-span-2">
+<div class="flex items-center gap-2 mb-6">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined !text-xl font-bold">psychology_alt</span>
+</div>
+<span class="text-lg font-extrabold tracking-tight text-charcoal dark:text-white">BrainTrain</span>
+</div>
+<p class="max-w-xs text-sm text-slate-500 dark:text-slate-400">The world's most advanced AI interview training platform for elite professionals and high-performance teams.</p>
+</div>
+<div>
+<h5 class="mb-4 text-sm font-bold uppercase tracking-widest text-charcoal dark:text-white">Product</h5>
+<ul class="space-y-3 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">Features</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Enterprise</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Pricing</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">API</a></li>
+</ul>
+</div>
+<div>
+<h5 class="mb-4 text-sm font-bold uppercase tracking-widest text-charcoal dark:text-white">Company</h5>
+<ul class="space-y-3 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">About Us</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Careers</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacy</a></li>
+</ul>
+</div>
+<div>
+<h5 class="mb-4 text-sm font-bold uppercase tracking-widest text-charcoal dark:text-white">Resources</h5>
+<ul class="space-y-3 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">Blog</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Whitepapers</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Guides</a></li>
+</ul>
+</div>
+</div>
+<div class="mt-12 border-t border-slate-100 pt-8 dark:border-slate-800">
+<p class="text-xs text-slate-400">© 2024 BrainTrain Technologies Inc. All rights reserved. Designed for high-performance.</p>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

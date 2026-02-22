@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Req, Put } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UseGuards, Req, Put, Query } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { ListSessionsDto } from './dto/list-sessions.dto';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -12,6 +13,11 @@ export class SessionsController {
     createSession(@Body() dto: CreateSessionDto, @Req() req: any) {
         // Ignoring any userId passed in the body, trusting the JWT guard completely
         return this.sessionsService.createSession(dto, req.user.userId);
+    }
+
+    @Get()
+    listSessions(@Req() req: any, @Query() query: ListSessionsDto) {
+        return this.sessionsService.listSessions(req.user.userId, query);
     }
 
     @Get(':id')
@@ -27,5 +33,10 @@ export class SessionsController {
     @Put(':id/complete')
     completeSession(@Param('id') id: string, @Req() req: any) {
         return this.sessionsService.completeSession(id, req.user.userId);
+    }
+
+    @Get(':id/status')
+    getSessionStatus(@Param('id') id: string, @Req() req: any) {
+        return this.sessionsService.getSessionStatus(id, req.user.userId);
     }
 }
