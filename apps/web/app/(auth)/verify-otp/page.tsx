@@ -1,36 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useRef, KeyboardEvent, useState, useEffect } from "react";
+import React, { useRef, KeyboardEvent, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { identityApi } from "@/lib/api/identity.api";
 import { useAuthStore } from "@/lib/store/auth.store";
+import { useVerifyOtpMutation } from "@/hooks/mutations/useVerifyOtpMutation";
+import { useRequestOtpMutation } from "@/hooks/mutations/useRequestOtpMutation";
 
-export default function VerifyOtpPage() {
+function VerifyOtpForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "";
+    const phone = searchParams.get("phone") || "";
+    const identifier = email || phone;
     const setAuth = useAuthStore((state) => state.setAuth);
 
     const inputRefs = useRef<(HTMLInputElement | null)[]>(Array(6).fill(null));
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: FormEvent) => {
+    const verifyOtpMutation = useVerifyOtpMutation();
+    const requestOtpMutation = useRequestOtpMutation();
+
+    const isLoading = verifyOtpMutation.isPending || requestOtpMutation.isPending;
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         setError(null);
 
         const code = inputRefs.current.map(input => input?.value || "").join("");
 
         if (code.length < 6) {
             setError("Please enter the full 6-digit code");
-            setIsLoading(false);
             return;
         }
 
         try {
-            const response = await identityApi.verifyOtp(email, code);
+            const response = await verifyOtpMutation.mutateAsync({ identifier, code });
             if (response.success && response.data) {
                 const { access_token, user } = response.data as any;
                 setAuth(user, access_token || "mock-jwt-token");
@@ -39,11 +44,22 @@ export default function VerifyOtpPage() {
                 setError(response.message || "Invalid or expired OTP");
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || "An error occurred");
-        } finally {
-            setIsLoading(false);
+            setError(typeof err === "string" ? err : err.message || "An error occurred");
         }
     };
+
+    const handleResend = async () => {
+        if (!identifier) return;
+        setError(null);
+        try {
+            const response = await requestOtpMutation.mutateAsync({ identifier });
+            if (!response.success) {
+                setError(response.message || "Failed to resend OTP");
+            }
+        } catch (err: any) {
+            setError(typeof err === "string" ? err : err.message || "An error occurred");
+        }
+    }
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
         if (e.key >= "0" && e.key <= "9") {
@@ -60,7 +76,7 @@ export default function VerifyOtpPage() {
     };
 
     const handleInput = (
-        e: FormEvent<HTMLInputElement>,
+        e: React.FormEvent<HTMLInputElement>,
         index: number
     ) => {
         const input = e.currentTarget;
@@ -72,10 +88,9 @@ export default function VerifyOtpPage() {
 
     return (
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden relative">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
             <div className="p-8 sm:p-10">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 mb-6 text-emerald-600 dark:text-emerald-400">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6 text-primary">
                         <span className="material-symbols-outlined text-[32px]">
                             lock_reset
                         </span>
@@ -86,7 +101,7 @@ export default function VerifyOtpPage() {
                     <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
                         We've sent a 6-digit code to{" "}
                         <span className="font-medium text-slate-700 dark:text-slate-200">
-                            {email || "your email"}
+                            {identifier || "your device"}
                         </span>
                         . Enter it below to confirm your account.
                     </p>
@@ -119,7 +134,7 @@ export default function VerifyOtpPage() {
                     </div>
 
                     <button
-                        className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold h-12 rounded-lg shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:bg-primary/50 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold h-12 rounded-lg shadow-md shadow-primary/20 hover:shadow-primary/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:bg-primary/50 disabled:cursor-not-allowed"
                         type="submit"
                         disabled={isLoading}
                     >
@@ -137,9 +152,9 @@ export default function VerifyOtpPage() {
                         Didn't receive the code?
                     </p>
                     <button
-                        className="group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50"
-                        onClick={() => identityApi.requestOtp(email)}
-                        disabled={isLoading || !email}
+                        className="group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                        onClick={handleResend}
+                        disabled={isLoading || !identifier}
                     >
                         <span className="material-symbols-outlined text-[18px] group-hover:rotate-180 transition-transform duration-500">
                             refresh
@@ -164,5 +179,13 @@ export default function VerifyOtpPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function VerifyOtpPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center">Loading...</div>}>
+            <VerifyOtpForm />
+        </Suspense>
     );
 }

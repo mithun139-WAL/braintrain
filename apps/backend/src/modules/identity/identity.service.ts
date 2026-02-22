@@ -28,7 +28,7 @@ export class IdentityService {
     }
 
     async register(registerDto: RegisterDto) {
-        const { email, phoneNumber, password } = registerDto;
+        const { email, phoneNumber, password, name } = registerDto;
 
         if (!email && !phoneNumber) {
             throw new BadRequestException('Email or phone number is required');
@@ -54,6 +54,7 @@ export class IdentityService {
                 email: email ?? null,
                 phoneNumber: phoneNumber ?? null,
                 passwordHash,
+                displayName: name ?? null,
             },
         });
 

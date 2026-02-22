@@ -1,11 +1,13 @@
 export * from "./dto/identity.dto";
 export * from "./dto/session.dto";
 export * from "./dto/analytics.dto";
+export * from "./dto/skill.dto";
 
 export * from "./types/session.types";
 export * from "./types/evaluation.types";
 export * from "./types/analytics.types";
 export * from "./types/user.types";
+export * from "./types/skill.types";
 
 export * from "./enums/difficulty.enum";
 export * from "./enums/interview-level.enum";

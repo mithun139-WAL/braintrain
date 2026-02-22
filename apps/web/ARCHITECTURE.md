@@ -48,6 +48,13 @@ The web app depends on `@braintrain/shared` for all API DTOs and Enums. This ens
 - **Feature Components**: Larger components that pull in data or manage specific feature logic.
 - **Layouts**: Define the shell for different parts of the application.
 
+## Core Feature Modules
+
+1. **Interactive Interview Interface (`/dashboard/sessions/active`)**: Supports both text and audio response simulations with real-time timers and dynamic layout changes based on the configured AI persona.
+2. **AI Evaluation Dashboard (`/dashboard/sessions/evaluation`)**: Aggregates completion scores from the backend, rendering comparative radial charts across communication, technical depth, and system design alongside specific AI contextual feedback.
+3. **Performance Trends Analytics (`/dashboard/trends`)**: Visualizes historical mock interview progression, plotting adaptive difficulty journey maps and weakness detection graphs utilizing scalable vector SVGs and React hooks.
+4. **Unified Settings Console (`/dashboard/settings`)**: Tab-driven unified interface for resolving profile management, secure subscription/billing history rendering, and overriding granular simulated AI behavior preferences.
+
 ## Communication with Backend
 
 Transitioning from local state to the backend involves:

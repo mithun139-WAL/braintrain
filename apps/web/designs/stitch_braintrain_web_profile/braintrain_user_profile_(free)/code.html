@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain - User Profile (Free Plan)</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6b4c9a", // Deep Amethyst override
+                        "primary-dark": "#5a3f82",
+                        "primary-light": "#f4f1f9",
+                        "background-light": "#f9fafb",
+                        "background-dark": "#15191d",
+                        "neutral-surface": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 min-h-screen flex flex-col">
+<!-- Navbar -->
+<header class="sticky top-0 z-50 w-full bg-neutral-surface border-b border-gray-200">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<!-- Logo -->
+<div class="flex items-center gap-2">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">psychology</span>
+</div>
+<span class="font-bold text-xl tracking-tight text-slate-900">BrainTrain</span>
+</div>
+<!-- Desktop Nav -->
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-slate-600 hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-slate-600 hover:text-primary text-sm font-medium transition-colors" href="#">Practice</a>
+<a class="text-slate-600 hover:text-primary text-sm font-medium transition-colors" href="#">History</a>
+<a class="text-slate-900 text-sm font-bold" href="#">Profile</a>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center justify-center h-9 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-semibold transition-colors shadow-sm">
+                        Upgrade to PRO
+                    </button>
+<div class="h-9 w-9 rounded-full bg-gray-200 bg-cover bg-center border border-gray-200" data-alt="User profile picture thumbnail" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAUno9T3Csk452JN1A5GM9gsDTx_joXnc1YvBKbDbLJqP53qrHYMOvb9yFVvPH5HYY9PsYDzvVkaTlaGNRhy4ssAMr0oLdqHK5Sec6G-5eEKbclwpQvgLByWROspTJMhjyMwbkFWHDLw-EE37kfBj0cpeV6CzxUvI6hHx1pr-xOj8pMPiZupS4wU63n76veyZcUI99qgaydrH54F6QCNL3Ba0GxucB3ZYx1Lsl-jMKIMjFcE3j24KikNFryBCYbzU-01IIOOO5TSJE');"></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Profile & Usage -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Profile Card -->
+<div class="bg-neutral-surface rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
+<div class="relative">
+<div class="h-24 w-24 rounded-full bg-gray-200 bg-cover bg-center border-4 border-white shadow-sm" data-alt="Portrait of Alex Morgan" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDSHJQnrxVlJvVDgz2eizeoRNRNt12JwATF0rc73zyZghtbBJyMZjnHxueoEU3Sq0j80b_CVLtO5-wNOWR7w5KieymIUIltx2LiO8PHtMPj9nibXGVS8VRwWF0RaIZScn0b6OdGS9_O9qPKNlwtK8NpqQYZYJagYNuCbB-S3pdkLD14bqCwlC9HwGeSp5i6udH8dBvO0JBRy1DSOB0ZGCqtderNKGwSWuppKlFHzBoRX9yqY0bYRUnpYyUsymL8jlKqJ9knIe4XjcQ');"></div>
+<div class="absolute bottom-0 right-0 bg-gray-100 border border-white rounded-full p-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+<span class="material-symbols-outlined text-gray-500 text-xs">edit</span>
+</div>
+</div>
+<div class="mt-4">
+<h2 class="text-xl font-bold text-slate-900">Alex Morgan</h2>
+<p class="text-sm text-slate-500 mt-1">alex.morgan@example.com</p>
+</div>
+<div class="mt-4">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                            FREE PLAN
+                        </span>
+</div>
+</div>
+<!-- Usage Stats -->
+<div class="bg-neutral-surface rounded-xl shadow-sm border border-gray-100 p-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-semibold text-slate-900">Monthly Usage</h3>
+<span class="text-xs font-medium text-slate-500">Resets in 14 days</span>
+</div>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-slate-600">Sessions Used</span>
+<span class="font-bold text-slate-900">1 / 3</span>
+</div>
+<div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+<div class="h-full bg-slate-800 rounded-full" style="width: 33%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Upgrade CTA -->
+<div class="relative overflow-hidden bg-primary/5 rounded-xl border border-primary/10 p-6">
+<!-- Decoratve background element -->
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-3 text-primary">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="font-bold text-sm uppercase tracking-wider">Go Pro</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 mb-2">Unlock Unlimited Potential</h3>
+<p class="text-sm text-slate-600 mb-6 leading-relaxed">
+                            Upgrade to PRO to unlock 20 sessions/month, advanced analytics, and priority support.
+                        </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2">
+<span>Upgrade to PRO</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Settings & Details -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Account Information -->
+<div class="bg-neutral-surface rounded-xl shadow-sm border border-gray-100">
+<div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+<h3 class="text-lg font-bold text-slate-900">Account Information</h3>
+<button class="text-sm text-primary font-medium hover:text-primary-dark transition-colors">Edit Details</button>
+</div>
+<div class="p-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Full Name</label>
+<input class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" type="text" value="Alex Morgan"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Email Address</label>
+<input class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" type="email" value="alex.morgan@example.com"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Role</label>
+<input class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" type="text" value="Product Manager"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Target Role</label>
+<input class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" type="text" value="Senior Product Manager"/>
+</div>
+</div>
+<div class="mt-6 flex justify-end">
+<button class="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
+                                Save Changes
+                            </button>
+</div>
+</div>
+</div>
+<!-- Skill Preferences (Empty State) -->
+<div class="bg-neutral-surface rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
+<div class="px-6 py-4 border-b border-gray-100">
+<h3 class="text-lg font-bold text-slate-900">Skill Preferences</h3>
+</div>
+<div class="flex-1 p-8 flex flex-col items-center justify-center text-center">
+<div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-dashed border-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-4xl">layers</span>
+</div>
+<h4 class="text-base font-semibold text-slate-900 mb-2">No skills selected yet</h4>
+<p class="text-sm text-slate-500 max-w-sm mb-6">
+                            Adding skills helps our AI tailor interview questions specifically to your expertise.
+                        </p>
+<button class="px-5 py-2.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-slate-700 text-sm font-medium transition-all shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>Add Skills</span>
+</button>
+</div>
+</div>
+<!-- Notification Settings (Visual placeholder for completeness) -->
+<div class="bg-neutral-surface rounded-xl shadow-sm border border-gray-100">
+<div class="px-6 py-4 border-b border-gray-100">
+<h3 class="text-lg font-bold text-slate-900">Notifications</h3>
+</div>
+<div class="p-6 space-y-4">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-sm font-medium text-slate-900">Session Reminders</p>
+<p class="text-xs text-slate-500">Receive emails about upcoming practice sessions.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<p class="text-sm font-medium text-slate-900">Marketing Updates</p>
+<p class="text-xs text-slate-500">Receive news about new features and promotions.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-white border-t border-gray-200 mt-auto">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-sm text-slate-500">© 2024 BrainTrain Inc. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="text-sm text-slate-500 hover:text-slate-900" href="#">Privacy Policy</a>
+<a class="text-sm text-slate-500 hover:text-slate-900" href="#">Terms of Service</a>
+<a class="text-sm text-slate-500 hover:text-slate-900" href="#">Help Center</a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
