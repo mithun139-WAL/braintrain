@@ -22,16 +22,16 @@ const data = [
 
 export function PerformanceChart() {
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col h-full">
+        <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 flex flex-col h-full">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900">Score Progression</h3>
-                    <p className="text-sm text-gray-500 mt-1">Your performance trajectory over the last 30 days</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Score Progression</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your performance trajectory over the last 30 days</p>
                 </div>
-                <div className="flex bg-gray-50 rounded-lg p-1 border border-gray-100">
-                    <button className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-gray-900 shadow-sm border border-gray-100/50">Week</button>
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 hover:text-gray-900 transition-colors">Month</button>
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 hover:text-gray-900 transition-colors">Year</button>
+                <div className="flex bg-gray-50 dark:bg-gray-900 rounded-lg p-1 border border-gray-100 dark:border-gray-800">
+                    <button className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-100/50 dark:border-gray-700/50">Week</button>
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Month</button>
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Year</button>
                 </div>
             </div>
 

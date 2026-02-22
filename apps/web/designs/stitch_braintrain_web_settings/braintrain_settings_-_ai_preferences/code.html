@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain Settings - AI Preferences</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#4877ad",
+                        "primary-dark": "#365c8a",
+                        "background-light": "#f6f7f7",
+                        "background-dark": "#15191d",
+                        "emerald-accent": "#10b981",
+                        "amethyst-accent": "#9333ea",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        sans: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased selection:bg-primary/20 selection:text-primary">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 lg:px-10 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_319)">
+<path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" fill="currentColor"></path>
+</g>
+<defs>
+<clippath id="clip0_6_319"><rect fill="white" height="48" width="48"></rect></clippath>
+</defs>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">BrainTrain</h2>
+</div>
+<div class="flex items-center gap-4 lg:gap-8">
+<button class="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-primary-dark transition-colors text-white text-sm font-bold leading-normal">
+<span class="truncate">Upgrade Plan</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 ring-2 ring-slate-100 dark:ring-slate-800" data-alt="User profile picture showing a smiling woman" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBOqk396vLMwmpoTX27zsOYsufFcjszUixQMNt_EGuH80jqO73E4lr8vxuobcCOdVa5aKj9L3TzCRMA1SsXDgtTC3zUsIipWRWVDqazXSwraK8MsLodfjqLKC5yh4rAOFPhWKhr2G2EGHMb0gWH6pdo3p1lXCYCaxLktqicXSvcbMvLMZ3K0V3NTvBCdZLWYmTkP_kvts780IdDxKRnOPwrPiQucg3T-J57yD5qkwRKUHe7vWPpXJKg5duz1vvc8HvSpeM--U6iHHw");'></div>
+</div>
+</header>
+<div class="layout-container flex grow flex-col lg:flex-row max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 gap-8">
+<!-- Sidebar Navigation -->
+<aside class="w-full lg:w-64 shrink-0 flex flex-col gap-6">
+<!-- User Profile Mini-Card -->
+<div class="flex items-center gap-3 p-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shadow-sm" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBxGUVd19LN2E6Eq0okGxatRsHfoFwsJ00nw_ZhmWanj8ndlh7FCG75cUoaflWUrgWeEMeGwI-TqVTGUPm-pCVsegfRSqr1XZpN9qT50W52CBHcTtJynXt0fGlLgu7g3LfJJZ1KNG2AwWh0UGXdXc91yYqGYpeovgiH_ZYnGXrIE4SjuE6wRSeLLkAK6_nfJeybiTvk92A09bEBJKBd3UoLi3UrU2TyvB1GKOx1kml5IuK3iLZcUA3puuTx3_mdQuKJeUfWsedluP8");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-semibold">Alex Morgan</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Pro Member</p>
+</div>
+</div>
+<!-- Nav Links -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">person</span>
+<span class="text-sm font-medium">Profile</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">credit_card</span>
+<span class="text-sm font-medium">Billing</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary dark:text-primary-light" href="#">
+<span class="material-symbols-outlined text-primary">psychology</span>
+<span class="text-sm font-medium">AI Preferences</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">notifications</span>
+<span class="text-sm font-medium">Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">lock</span>
+<span class="text-sm font-medium">Security</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 min-w-0">
+<div class="flex flex-col gap-2 mb-8">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">AI Preferences</h1>
+<p class="text-slate-500 dark:text-slate-400 text-lg">Configure how the AI interacts with you during interview simulations.</p>
+</div>
+<!-- Settings Card Container -->
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+<!-- Emerald Accent Top Border -->
+<div class="absolute top-0 left-0 w-full h-1 bg-emerald-accent"></div>
+<!-- Interview Persona Section -->
+<div class="p-6 lg:p-8 border-b border-slate-100 dark:border-slate-800">
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+<div class="max-w-md">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-amethyst-accent">face</span>
+                                    Interview Persona
+                                </h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Choose the personality of your AI interviewer. This affects tone, pressure level, and follow-up question style.
+                                </p>
+</div>
+<!-- Segmented Control -->
+<div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg shrink-0 h-fit">
+<label class="cursor-pointer">
+<input class="peer sr-only" name="persona" type="radio" value="strict"/>
+<span class="block px-4 py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">Strict</span>
+</label>
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="persona" type="radio" value="balanced"/>
+<span class="block px-4 py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">Balanced</span>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="persona" type="radio" value="supportive"/>
+<span class="block px-4 py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">Supportive</span>
+</label>
+</div>
+</div>
+<!-- Dynamic Context Box based on selection (Simulated Static for now) -->
+<div class="mt-6 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl mt-0.5">info</span>
+<p class="text-sm text-slate-600 dark:text-slate-300">
+<strong>Balanced Mode:</strong> The AI will maintain a professional demeanor, challenging you appropriately while offering constructive guidance if you get stuck. Ideal for general practice.
+                            </p>
+</div>
+</div>
+<!-- Interaction Dynamics Section -->
+<div class="p-6 lg:p-8 border-b border-slate-100 dark:border-slate-800">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-amethyst-accent">tune</span>
+                            Interaction Dynamics
+                        </h3>
+<div class="space-y-8">
+<!-- Toggle Item: Real-Time Feedback -->
+<div class="flex items-center justify-between group">
+<div class="flex flex-col gap-1 pr-4">
+<label class="text-base font-semibold text-slate-900 dark:text-white cursor-pointer" for="feedback-toggle">Real-Time Feedback</label>
+<p class="text-sm text-slate-500 dark:text-slate-400">Receive immediate hints and corrections during your answer.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="feedback-toggle" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Toggle Item: Adaptive Difficulty -->
+<div class="flex items-center justify-between group">
+<div class="flex flex-col gap-1 pr-4">
+<label class="text-base font-semibold text-slate-900 dark:text-white cursor-pointer" for="adaptive-toggle">Adaptive Difficulty</label>
+<p class="text-sm text-slate-500 dark:text-slate-400">AI automatically adjusts question complexity based on your performance history.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" id="adaptive-toggle" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Slider Item: Response Timeout -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<label class="text-base font-semibold text-slate-900 dark:text-white">Response Timeout</label>
+<p class="text-sm text-slate-500 dark:text-slate-400">Maximum time allowed before the AI prompts for an answer.</p>
+</div>
+<span class="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded">2 min</span>
+</div>
+<input class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-primary" max="10" min="1" type="range" value="2"/>
+<div class="flex justify-between text-xs text-slate-400 px-1">
+<span>30s</span>
+<span>5m</span>
+<span>10m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Topic Focus Section -->
+<div class="p-6 lg:p-8">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-amethyst-accent">category</span>
+                            Focus Areas
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<div class="flex h-6 items-center">
+<input checked="" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" id="algorithms" name="algorithms" type="checkbox"/>
+</div>
+<div class="ml-3 text-sm leading-6">
+<span class="font-medium text-slate-900 dark:text-white">Algorithms &amp; Data Structures</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Sorting, graphs, trees, and dynamic programming.</p>
+</div>
+</label>
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<div class="flex h-6 items-center">
+<input checked="" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" id="system-design" name="system-design" type="checkbox"/>
+</div>
+<div class="ml-3 text-sm leading-6">
+<span class="font-medium text-slate-900 dark:text-white">System Design</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Scalability, database design, and architecture.</p>
+</div>
+</label>
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<div class="flex h-6 items-center">
+<input class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" id="behavioral" name="behavioral" type="checkbox"/>
+</div>
+<div class="ml-3 text-sm leading-6">
+<span class="font-medium text-slate-900 dark:text-white">Behavioral</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Leadership principles, conflict resolution, and soft skills.</p>
+</div>
+</label>
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<div class="flex h-6 items-center">
+<input class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" id="live-coding" name="live-coding" type="checkbox"/>
+</div>
+<div class="ml-3 text-sm leading-6">
+<span class="font-medium text-slate-900 dark:text-white">Live Coding</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Syntax accuracy and clean code practices.</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+<button class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors">
+                            Reset to Defaults
+                        </button>
+<button class="px-6 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm shadow-primary/30 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                            Save Changes
+                        </button>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

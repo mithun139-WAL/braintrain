@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { RecentSessionsTable } from "@/components/dashboard/RecentSessionsTable";
@@ -28,10 +29,12 @@ export default function DashboardPage() {
                     </p>
                 </div>
 
-                <button className="bg-white hover:bg-gray-100 text-gray-900 font-bold py-3.5 px-8 rounded-xl shadow-lg transition-all whitespace-nowrap flex items-center gap-2 transform active:scale-95 relative z-10">
-                    <PlayCircle size={20} className="text-primary" />
-                    Start New Session
-                </button>
+                <Link href="/dashboard/sessions/start">
+                    <button className="bg-white hover:bg-gray-100 text-gray-900 font-bold py-3.5 px-8 rounded-xl shadow-lg transition-all whitespace-nowrap flex items-center gap-2 transform active:scale-95 relative z-10">
+                        <PlayCircle size={20} className="text-primary" />
+                        Start New Session
+                    </button>
+                </Link>
             </div>
 
             {/* Stats Overview */}
@@ -82,9 +85,9 @@ export default function DashboardPage() {
                 </div>
 
                 {/* AI Coaching Tips */}
-                <div className="lg:col-span-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col">
+                <div className="lg:col-span-1 bg-white dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 flex flex-col">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Lightbulb size={20} className="text-primary" />
                             AI Coaching Tips
                         </h3>
@@ -99,19 +102,19 @@ export default function DashboardPage() {
                             { title: "Great STAR structure", desc: "Your last behavioral answer perfectly followed the Situation-Task-Action-Result format.", color: "bg-primary" },
                             { title: "Expand on \"Why\"", desc: "In system design, explicitly state trade-offs before making a technology choice.", color: "bg-blue-500" },
                         ].map((tip, idx) => (
-                            <div key={idx} className="p-4 bg-gray-50/50 rounded-xl border border-gray-50 hover:border-primary/20 transition-all group cursor-pointer">
+                            <div key={idx} className="p-4 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-gray-50 dark:border-gray-800/50 hover:border-primary/20 dark:hover:border-primary/20 transition-all group cursor-pointer">
                                 <div className="flex items-start gap-4">
                                     <div className={cn("mt-1.5 size-2 rounded-full flex-shrink-0", tip.color)} />
                                     <div>
-                                        <h4 className="text-sm font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">{tip.title}</h4>
-                                        <p className="text-xs text-gray-500 leading-relaxed font-medium">{tip.desc}</p>
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-primary transition-colors">{tip.title}</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed font-medium">{tip.desc}</p>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <button className="w-full mt-6 py-2.5 border border-dashed border-gray-200 rounded-xl text-xs font-bold text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all uppercase tracking-wider">
+                    <button className="w-full mt-6 py-2.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 transition-all uppercase tracking-wider">
                         Generate New Insights
                     </button>
                 </div>

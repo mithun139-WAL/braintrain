@@ -31,6 +31,7 @@ The frontend is a **Next.js** application providing:
 - Candidate dashboard for tracking progression.
 - Real-time interview interface with voice/text response submission.
 - AI-generated performance reports and analytics.
+- Centralized user settings, subscription management, and AI behavior preferences.
 
 ### 3. Shared (`packages/shared`)
 A library containing shared logic and types used by both the backend and frontend to ensure type safety and contract consistency.

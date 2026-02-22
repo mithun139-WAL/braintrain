@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain AI Evaluation Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366f1", // Deep Amethyst/Violet
+                        "primary-light": "#e0e7ff",
+                        "primary-dark": "#4338ca",
+                        "background-light": "#f3f4f6", // Light gray background
+                        "background-dark": "#111827",
+                        "surface-light": "#ffffff",
+                        "text-main": "#1f2937", // Gray 900
+                        "text-secondary": "#4b5563", // Gray 600
+                        "text-tertiary": "#9ca3af", // Gray 400
+                        "success": "#10b981", // Emerald
+                        "warning": "#f59e0b", // Amber
+                        "error": "#ef4444", // Red
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem", // rounded-md
+                        "lg": "0.75rem", // rounded-lg
+                        "xl": "1rem", // rounded-xl
+                        "2xl": "1.5rem",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main antialiased min-h-screen flex flex-col">
+<!-- Navbar -->
+<header class="sticky top-0 z-50 w-full border-b border-gray-200 bg-surface-light/80 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
+<div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+<div class="flex items-center gap-2">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined text-xl leading-none">psychology</span>
+</div>
+<span class="text-lg font-bold tracking-tight text-text-main dark:text-white">BrainTrain</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium text-text-secondary hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-text-main transition-colors" href="#">Evaluations</a>
+<a class="text-sm font-medium text-text-secondary hover:text-primary transition-colors" href="#">Practice</a>
+<a class="text-sm font-medium text-text-secondary hover:text-primary transition-colors" href="#">Community</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="relative rounded-full p-1 text-text-secondary hover:bg-gray-100 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-error ring-2 ring-white"></span>
+</button>
+<div class="h-8 w-8 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-primary transition-all cursor-pointer">
+<img alt="User Profile" class="h-full w-full object-cover" data-alt="User profile avatar showing initials AM on purple background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIQuzplVOI01zbtmUOJVhtc5nhy6PbZ25s8xLD_XTnYXtddVfpJc0u2hlGhjPa6os4HyiMoUcbUnN_DYri2urO8EwYf_JM1h1gTkYmXXNBlGfrEklp3dhuPnoHls3qWXytNGSoZhTdXzMIlnC6WKvfTRrbgWsdXxnQspZvZvxl62I2MizpXOOa_20jpm411BppI3_piLyTLwih3-fMFvUe8Df9n2lErU_W-P4Cyp7rFYKz2O5I3PHlQ0X4oSRBrX5ytXbkIM-xlUs"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow py-8 px-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-6xl space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-gray-200">
+<div class="space-y-1">
+<div class="flex items-center gap-2 text-sm font-medium text-primary">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 24, 2023 • 10:30 AM</span>
+</div>
+<h1 class="text-3xl font-black tracking-tight text-text-main">Session Complete</h1>
+<p class="text-text-secondary">AI Evaluation Report • Senior Product Manager Mock</p>
+</div>
+<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+<div class="flex flex-col items-end">
+<span class="text-sm font-medium text-text-secondary uppercase tracking-wider">Overall Score</span>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-black text-text-main">78</span>
+<span class="text-lg font-medium text-text-tertiary">/100</span>
+</div>
+</div>
+<div class="h-12 w-px bg-gray-200"></div>
+<div class="flex flex-col items-center justify-center">
+<div class="flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-sm font-bold text-success">
+<span class="material-symbols-outlined text-base">trending_up</span>
+<span>+6</span>
+</div>
+<span class="text-xs font-medium text-text-tertiary mt-1">vs. last session</span>
+</div>
+</div>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<!-- Card 1: Clarity -->
+<div class="group relative overflow-hidden rounded-xl bg-white p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<div class="rounded-lg bg-primary/10 p-2 text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<span class="inline-flex items-center rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success ring-1 ring-inset ring-success/20">+12%</span>
+</div>
+<h3 class="text-sm font-medium text-text-secondary">Clarity</h3>
+<div class="mt-1 flex items-baseline gap-1">
+<span class="text-2xl font-bold text-text-main">85</span>
+<span class="text-sm text-text-tertiary">/100</span>
+</div>
+<div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+<div class="h-full rounded-full bg-primary" style="width: 85%"></div>
+</div>
+</div>
+<!-- Card 2: Structure -->
+<div class="group relative overflow-hidden rounded-xl bg-white p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<div class="rounded-lg bg-primary/10 p-2 text-primary">
+<span class="material-symbols-outlined">account_tree</span>
+</div>
+<span class="inline-flex items-center rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success ring-1 ring-inset ring-success/20">+5%</span>
+</div>
+<h3 class="text-sm font-medium text-text-secondary">Structure</h3>
+<div class="mt-1 flex items-baseline gap-1">
+<span class="text-2xl font-bold text-text-main">72</span>
+<span class="text-sm text-text-tertiary">/100</span>
+</div>
+<div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+<div class="h-full rounded-full bg-primary" style="width: 72%"></div>
+</div>
+</div>
+<!-- Card 3: Depth -->
+<div class="group relative overflow-hidden rounded-xl bg-white p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<div class="rounded-lg bg-primary/10 p-2 text-primary">
+<span class="material-symbols-outlined">layers</span>
+</div>
+<span class="inline-flex items-center rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success ring-1 ring-inset ring-success/20">+8%</span>
+</div>
+<h3 class="text-sm font-medium text-text-secondary">Depth</h3>
+<div class="mt-1 flex items-baseline gap-1">
+<span class="text-2xl font-bold text-text-main">90</span>
+<span class="text-sm text-text-tertiary">/100</span>
+</div>
+<div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+<div class="h-full rounded-full bg-primary" style="width: 90%"></div>
+</div>
+</div>
+<!-- Card 4: Tone -->
+<div class="group relative overflow-hidden rounded-xl bg-white p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<div class="rounded-lg bg-primary/10 p-2 text-primary">
+<span class="material-symbols-outlined">record_voice_over</span>
+</div>
+<span class="inline-flex items-center rounded-full bg-error/10 px-2 py-1 text-xs font-medium text-error ring-1 ring-inset ring-error/20">-2%</span>
+</div>
+<h3 class="text-sm font-medium text-text-secondary">Tone</h3>
+<div class="mt-1 flex items-baseline gap-1">
+<span class="text-2xl font-bold text-text-main">65</span>
+<span class="text-sm text-text-tertiary">/100</span>
+</div>
+<div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+<div class="h-full rounded-full bg-warning" style="width: 65%"></div>
+</div>
+</div>
+</div>
+<!-- Content Split: Chart & Summary -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left: Skill Radar Chart -->
+<div class="lg:col-span-1 rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-bold text-text-main">Skill Distribution</h3>
+<button class="text-xs font-medium text-primary hover:text-primary-dark">View History</button>
+</div>
+<div class="relative flex-grow flex items-center justify-center min-h-[300px]">
+<!-- Radar Chart Visualization using pure CSS/SVG -->
+<svg class="w-full h-full max-w-[280px]" viewbox="0 0 100 100">
+<!-- Background Grid Circles -->
+<circle cx="50" cy="50" fill="none" r="10" stroke="#e5e7eb" stroke-width="0.5"></circle>
+<circle cx="50" cy="50" fill="none" r="20" stroke="#e5e7eb" stroke-width="0.5"></circle>
+<circle cx="50" cy="50" fill="none" r="30" stroke="#e5e7eb" stroke-width="0.5"></circle>
+<circle cx="50" cy="50" fill="none" r="40" stroke="#e5e7eb" stroke-width="0.5"></circle>
+<!-- Axis Lines -->
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="50" y1="50" y2="10"></line>
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="90" y1="50" y2="50"></line>
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="50" y1="50" y2="90"></line>
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="10" y1="50" y2="50"></line>
+<!-- Diagonals -->
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="21.7" y1="50" y2="21.7"></line>
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="78.3" y1="50" y2="21.7"></line>
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="78.3" y1="50" y2="78.3"></line>
+<line stroke="#e5e7eb" stroke-width="0.5" x1="50" x2="21.7" y1="50" y2="78.3"></line>
+<!-- Data Polygon (Amethyst) -->
+<polygon fill="#6366f1" fill-opacity="0.2" points="50,15 80,35 75,75 35,80 20,40" stroke="#6366f1" stroke-width="1.5"></polygon>
+<!-- Previous Session (Gray) -->
+<polygon fill="none" points="50,25 70,45 65,65 40,70 30,45" stroke="#9ca3af" stroke-dasharray="2,2" stroke-width="1"></polygon>
+<!-- Labels -->
+<text fill="#6b7280" font-family="Inter" font-size="4" font-weight="500" text-anchor="middle" x="50" y="8">Strategy</text>
+<text fill="#6b7280" font-family="Inter" font-size="4" font-weight="500" text-anchor="start" x="92" y="51">Comms</text>
+<text fill="#6b7280" font-family="Inter" font-size="4" font-weight="500" text-anchor="middle" x="50" y="96">Tech</text>
+<text fill="#6b7280" font-family="Inter" font-size="4" font-weight="500" text-anchor="end" x="8" y="51">Leadership</text>
+</svg>
+</div>
+<div class="mt-4 flex justify-center gap-6 text-xs">
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-primary"></div>
+<span class="font-medium text-text-main">Current</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 rounded-full border border-text-tertiary bg-transparent"></div>
+<span class="text-text-secondary">Previous</span>
+</div>
+</div>
+</div>
+<!-- Right: Executive Summary -->
+<div class="lg:col-span-2 rounded-xl bg-white p-8 shadow-sm border border-gray-100">
+<div class="flex items-center gap-3 mb-6">
+<div class="rounded-lg bg-primary/10 p-2 text-primary">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<h2 class="text-xl font-bold text-text-main">Executive Summary</h2>
+</div>
+<div class="space-y-6">
+<div>
+<h4 class="text-sm font-semibold text-text-main mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-success text-lg">check_circle</span>
+                                Strong Strategic Thinking
+                            </h4>
+<p class="text-text-secondary leading-relaxed">
+                                Your answers demonstrated exceptional strategic foresight, particularly in the system design portion. You effectively linked technical constraints to business outcomes, showing a mature product mindset.
+                            </p>
+</div>
+<div class="h-px bg-gray-100 w-full"></div>
+<div>
+<h4 class="text-sm font-semibold text-text-main mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-warning text-lg">error</span>
+                                Needs More Structure in Behavioral
+                            </h4>
+<p class="text-text-secondary leading-relaxed">
+                                However, your responses regarding conflict resolution lacked specific examples using the STAR method. Consider structuring your behavioral answers more rigidly to ensure the "Result" component is not rushed.
+                            </p>
+</div>
+<div class="rounded-lg bg-gray-50 p-4 border border-gray-100 mt-4">
+<p class="text-sm text-text-secondary italic">
+                                "The candidate shows great promise in macro-level planning but needs to refine storytelling techniques for interpersonal scenarios."
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Actionable Suggestions -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Suggestion 1 -->
+<div class="rounded-xl bg-white p-6 shadow-sm border border-gray-100 border-l-4 border-l-primary">
+<div class="flex items-center gap-3 mb-3">
+<span class="material-symbols-outlined text-primary">data_usage</span>
+<h4 class="font-bold text-text-main">Quantify Results</h4>
+</div>
+<p class="text-sm text-text-secondary">
+                        Use metrics to validate your success stories. Instead of "improved sales," say "increased conversion by 15%."
+                    </p>
+</div>
+<!-- Suggestion 2 -->
+<div class="rounded-xl bg-white p-6 shadow-sm border border-gray-100 border-l-4 border-l-primary">
+<div class="flex items-center gap-3 mb-3">
+<span class="material-symbols-outlined text-primary">speed</span>
+<h4 class="font-bold text-text-main">Control Pacing</h4>
+</div>
+<p class="text-sm text-text-secondary">
+                        Slow down when explaining technical architecture. Allow the interviewer time to digest complex diagrams.
+                    </p>
+</div>
+<!-- Suggestion 3 -->
+<div class="rounded-xl bg-white p-6 shadow-sm border border-gray-100 border-l-4 border-l-primary">
+<div class="flex items-center gap-3 mb-3">
+<span class="material-symbols-outlined text-primary">campaign</span>
+<h4 class="font-bold text-text-main">Use Active Voice</h4>
+</div>
+<p class="text-sm text-text-secondary">
+                        Replace passive phrases like "mistakes were made" with ownership statements like "I identified a gap."
+                    </p>
+</div>
+</div>
+<!-- Detailed Question Review (Accordion Style) -->
+<div class="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+<div class="p-6 border-b border-gray-100 flex justify-between items-center">
+<h3 class="text-lg font-bold text-text-main">Question Review</h3>
+<span class="text-sm text-text-tertiary">5 Questions Analyzed</span>
+</div>
+<div class="divide-y divide-gray-100">
+<!-- Q1 Item -->
+<div class="group">
+<button class="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors text-left focus:outline-none">
+<div class="flex items-start gap-4">
+<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-bold text-primary">1</span>
+<div>
+<p class="font-semibold text-text-main">Tell me about a time you managed a conflict within your team.</p>
+<p class="mt-1 text-sm text-text-tertiary">Behavioral • Leadership</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden sm:inline-block rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">Needs Improvement</span>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">expand_more</span>
+</div>
+</button>
+<!-- Expanded Content (Simulated for Q1) -->
+<div class="bg-gray-50 p-6 pt-0 pl-16 border-t border-dashed border-gray-200">
+<div class="mt-4 space-y-3">
+<div class="p-3 bg-white rounded border border-gray-200">
+<p class="text-sm text-text-secondary"><span class="font-semibold text-text-main">Your Answer:</span> "We had a disagreement about the roadmap. I sat everyone down and we talked about it until we agreed..."</p>
+</div>
+<div class="flex gap-3 text-sm">
+<span class="material-symbols-outlined text-primary shrink-0">smart_toy</span>
+<div class="text-text-secondary">
+<p class="font-medium text-text-main mb-1">AI Critique:</p>
+<p>This response is too vague. You didn't specify the root cause of the conflict or your specific role in the resolution. Use the STAR method: Situation, Task, Action, Result.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Q2 Item -->
+<div class="group">
+<button class="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors text-left focus:outline-none">
+<div class="flex items-start gap-4">
+<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-bold text-primary">2</span>
+<div>
+<p class="font-semibold text-text-main">How would you prioritize features for an MVP?</p>
+<p class="mt-1 text-sm text-text-tertiary">Strategy • Product Sense</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden sm:inline-block rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">Excellent</span>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">expand_more</span>
+</div>
+</button>
+</div>
+<!-- Q3 Item -->
+<div class="group">
+<button class="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors text-left focus:outline-none">
+<div class="flex items-start gap-4">
+<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-bold text-primary">3</span>
+<div>
+<p class="font-semibold text-text-main">Describe a complex technical problem you solved.</p>
+<p class="mt-1 text-sm text-text-tertiary">Technical • Problem Solving</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden sm:inline-block rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">Good</span>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">expand_more</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+<!-- Sticky Bottom Action Bar (or Footer area) -->
+<div class="sticky bottom-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 border-t border-gray-200 bg-white/90 backdrop-blur p-4 sm:px-6 lg:px-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="mx-auto flex max-w-6xl items-center justify-between gap-4">
+<div class="hidden sm:block">
+<p class="text-sm text-text-secondary">Ready to improve your score?</p>
+</div>
+<div class="flex w-full sm:w-auto gap-3">
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-text-main shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all">
+<span class="material-symbols-outlined text-lg">timeline</span>
+                            View Trends
+                        </button>
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all">
+<span class="material-symbols-outlined text-lg">play_arrow</span>
+                            Start New Session
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>
