@@ -7,9 +7,10 @@ import {
     ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SessionStatus } from '@prisma/client';
-import { AI_EVALUATION_PROVIDER } from '../ai/ai.tokens';
+import { AudioProcessingStatus, SessionStatus } from '@prisma/client';
+import { AI_EVALUATION_PROVIDER, AI_TRANSCRIPTION_PROVIDER } from '../ai/ai.tokens';
 import { AnswerEvaluationProvider } from '../ai/interfaces/answer-evaluation-provider.interface';
+import { AudioTranscriptionProvider } from '../ai/interfaces/audio-transcription-provider.interface';
 import { EvaluationInput } from '../ai/interfaces/evaluation-input.interface';
 import { PerformanceSignal } from '../ai/interfaces/performance-signal.interface';
 import { SessionEvaluationResponseDto } from './dto/session-evaluation-response.dto';
@@ -36,6 +37,8 @@ export class EvaluationService {
         private readonly prisma: PrismaService,
         @Inject(AI_EVALUATION_PROVIDER)
         private readonly aiProvider: AnswerEvaluationProvider,
+        @Inject(AI_TRANSCRIPTION_PROVIDER)
+        private readonly transcriptionProvider: AudioTranscriptionProvider,
     ) { }
 
     // ─── Worker-facing — called by EvaluationWorker (no userId guard) ───────
@@ -104,7 +107,7 @@ export class EvaluationService {
             );
         }
 
-        // 4. Run per-response AI evaluation sequentially
+        // 4. Run per-response transcription + AI evaluation sequentially
         const signals: PerformanceSignal[] = [];
         let totalInputTokens = 0;
         let totalOutputTokens = 0;
@@ -115,9 +118,54 @@ export class EvaluationService {
         for (const q of questionsWithResponses) {
             const response = q.responses[0];
 
+            // ── Step 4a: Audio Transcription (Whisper) ───────────────────────
+            // If the candidate submitted an audioUrl, transcribe it before LLM eval.
+            // Transcription is non-blocking in the sense that failures degrade gracefully —
+            // we fall back to the typed answerText without failing the job.
+            let transcribedText: string | null = null;
+            let audioDurationSeconds: number | null = null;
+            let audioProcessingStatus: AudioProcessingStatus = response.audioProcessingStatus;
+
+            if (response.audioUrl) {
+                this.logger.debug(
+                    `Transcribing audio for response ${response.id} | url: ${response.audioUrl}`,
+                );
+
+                // Update status to PROCESSING before the API call
+                await this.prisma.responseInstance.update({
+                    where: { id: response.id },
+                    data: { audioProcessingStatus: AudioProcessingStatus.PROCESSING },
+                });
+
+                const result = await this.transcriptionProvider.transcribe(response.audioUrl);
+
+                transcribedText = result.text || null;
+                audioDurationSeconds = result.durationSeconds;
+                audioProcessingStatus = AudioProcessingStatus.COMPLETED;
+
+                // Whisper cost contributes to total session cost
+                if (result.estimatedCostUsd !== null) {
+                    totalCostUsd += result.estimatedCostUsd;
+                }
+
+                this.logger.log(
+                    `Audio transcribed for response ${response.id} | ` +
+                    `model=${result.modelUsed} | ` +
+                    `words=${result.text.split(/\s+/).filter(Boolean).length} | ` +
+                    `duration=${audioDurationSeconds?.toFixed(1) ?? '?'}s`,
+                );
+            }
+
+            // ── Step 4b: Merge text sources ──────────────────────────────────
+            // Transcribed text takes precedence over typed text (richer signal).
+            // If both are absent, the LLM will evaluate based on metadata alone.
+            const effectiveText = transcribedText?.trim()
+                ? transcribedText
+                : (response.answerText ?? undefined);
+
             const input: EvaluationInput = {
                 question: q.content,
-                text: response.answerText ?? undefined,
+                text: effectiveText,
                 audioUrl: response.audioUrl ?? undefined,
                 questionType: 'behavioral', // TODO: derive from topic metadata
                 difficulty: q.difficulty,
@@ -125,13 +173,14 @@ export class EvaluationService {
                 thinkingTimeMs: response.thinkingTimeMs,
             };
 
+            // ── Step 4c: LLM Evaluation ──────────────────────────────────────
             // Use injected provider (OpenAI or Stub based on credits); null = stub mode
             const signal = provider
                 ? await provider.evaluate(input)
                 : await this.aiProvider.evaluate(input); // aiProvider may itself be stub
             signals.push(signal);
 
-            // Accumulate cost metadata if provider returns it
+            // Accumulate LLM cost metadata if provider returns it
             const meta = (signal as any).__meta;
             if (meta) {
                 totalInputTokens += meta.inputTokens ?? 0;
@@ -139,10 +188,15 @@ export class EvaluationService {
                 totalCostUsd += meta.estimatedCostUsd ?? 0;
             }
 
-            // 4. Persist per-response signal scores immediately
+            // ── Step 4d: Persist all signal data for this response ────────────
             await this.prisma.responseInstance.update({
                 where: { id: response.id },
                 data: {
+                    // Audio signal fields
+                    transcribedText,
+                    audioDurationSeconds,
+                    audioProcessingStatus,
+                    // LLM + server-computed evaluation scores
                     clarityScore: signal.clarityScore,
                     structureScore: signal.structureScore,
                     depthScore: signal.depthScore,

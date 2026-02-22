@@ -19,9 +19,7 @@ BrainTrain is an **AI-powered interview training platform** that:
 
 ---
 
-## 🧒 Explain It Like I'm 10
-
-Think of BrainTrain like a **video game for interviews**:
+## Think of BrainTrain like a **video game for interviews**:
 
 - 🎮 **Session** = One round of the game
 - ❓ **Question** = A challenge thrown at you

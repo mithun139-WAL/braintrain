@@ -1,0 +1,3 @@
+{
+  "/(auth)/login/email-otp/page": "app/(auth)/login/email-otp/page.js"
+}

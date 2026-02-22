@@ -22,6 +22,14 @@ enum EvaluationJobStatus {
   COMPLETED
 }
 
+enum AudioProcessingStatus {
+  PENDING      // audioUrl exists, transcription not yet attempted
+  PROCESSING   // transcription in progress
+  COMPLETED    // Whisper returned transcript (may be empty if silent)
+  FAILED       // Whisper call threw an error
+  SKIPPED      // No audioUrl submitted (text-only response)
+}
+
 enum DifficultyLevel {
   BEGINNER
   INTERMEDIATE
@@ -220,6 +228,11 @@ model ResponseInstance {
   thinkingTimeMs      Int
   answerLength        Int
 
+  // ── Audio Signal Layer (Phase 4 — Whisper transcription) ──
+  transcribedText        String?                // Whisper-1 output; null until audio is processed
+  audioDurationSeconds   Float?                 // Duration in seconds for Whisper cost tracking
+  audioProcessingStatus  AudioProcessingStatus  @default(SKIPPED)
+
   // ── PerformanceSignal scores (populated after AI evaluation) ──
   clarityScore        Float?
   structureScore      Float?
@@ -241,6 +254,8 @@ model ResponseInstance {
   @@unique([questionId])
   // Adaptive engine reads overallScore for last N responses — needs fast lookup
   @@index([questionId, overallScore])
+  // Audio processing worker: find PENDING transcription jobs
+  @@index([audioProcessingStatus, createdAt])
 }
 
 model EvaluationReport {

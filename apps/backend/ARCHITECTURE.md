@@ -53,10 +53,17 @@ BrainTrain's backend is a **behaviour-driven evaluation system** built on four a
 │  clarityScore, structureScore, depthScore,      │
 │  pressureScore, thinkingDepthScore, ...         │
 ├─────────────────────────────────────────────────┤
-│  Layer 2 — Evaluation Layer                     │
+│  Layer 2a — Evaluation Layer                    │
 │  AnswerEvaluationProvider (AI abstraction)      │
 │  OpenAIEvaluationProvider (active, gpt-4o-mini) │
 │  StubEvaluationProvider   (offline fallback)    │
+├─────────────────────────────────────────────────┤
+│  Layer 2b — Audio Signal Layer  (Phase 4)       │
+│  AudioTranscriptionProvider (AI abstraction)    │
+│  OpenAITranscriptionProvider  (Whisper-1)       │
+│  StubTranscriptionProvider    (offline stub)    │
+│  audioUrl → Whisper → transcribedText           │
+│  Merged with answerText before LLM eval         │
 ├─────────────────────────────────────────────────┤
 │  Layer 1 — Session Layer                        │
 │  Text + Audio responses + Behavioral timing     │
@@ -73,6 +80,9 @@ EvaluationJob (PENDING) created atomically
 EvaluationWorker (cron poll, every 10s)
     ↓ exponential backoff (30s → 2min → 10min)
     ↓ zombie recovery (every 5min, resets stuck jobs)
+[Per response with audioUrl]
+    ↓ OpenAITranscriptionProvider (Whisper-1)
+    ↓ transcribedText merged with answerText
 OpenAIEvaluationProvider (gpt-4o-mini)
     ↓
 EvaluationReport persisted
@@ -96,6 +106,7 @@ Every design decision traces back to the core thesis:
 | Auth | JWT + bcrypt + Google OAuth2 + OTP |
 | Config | `@nestjs/config` with env-file per environment |
 | AI Evaluation | `OpenAIEvaluationProvider` (gpt-4o-mini, env-driven swap) |
+| AI Transcription | `OpenAITranscriptionProvider` (Whisper-1, env-driven swap) |
 | AI Question Gen | `OpenAIQuestionGenerationProvider` (gpt-4o-mini, auto-saves to QuestionBank) |
 | Scheduling | `@nestjs/schedule` — evaluation worker + usage reset cron |
 | Rate Limiting | `@nestjs/throttler` — 30 req/60s per IP globally |
@@ -202,6 +213,17 @@ apps/backend/
 
 ---
 
+### `ResponseInstance` — Audio Signal Fields (Phase 4)
+
+| Field | Notes |
+|---|---|
+| `audioUrl` | URL to recorded audio (submitted by client, unchanged) |
+| `transcribedText` | Whisper-1 output — `null` until EvaluationJob runs |
+| `audioDurationSeconds` | Audio length in seconds — for Whisper cost tracking |
+| `audioProcessingStatus` | `PENDING` (queued) → `PROCESSING` → `COMPLETED` \| `FAILED` \| `SKIPPED` (text-only) |
+
+---
+
 ### `EvaluationReport`
 
 | Field | Notes |
@@ -212,7 +234,7 @@ apps/backend/
 | `thinkingDepthScore` | Server-computed from `thinkingTimeMs` timing curve |
 | `promptVersion` | e.g. `v1.0.0` — for score traceability across prompt changes |
 | `modelUsed` | e.g. `gpt-4o-mini`, `stub` |
-| `inputTokens` / `outputTokens` / `estimatedCostUsd` | Billing intelligence |
+| `inputTokens` / `outputTokens` / `estimatedCostUsd` | Billing intelligence — includes Whisper + GPT-4o-mini costs |
 
 ---
 
@@ -314,6 +336,13 @@ LLM-generated questions are auto-saved with `source: GENERATED` and `createdByUs
 |---|---|---|---|
 | POST | `/questions/:questionId/responses` | `{ answerText?, audioUrl?, responseTimeMs, thinkingTimeMs }` | Submit answer |
 
+**Audio-first design:**
+- `answerText` is optional — candidates may respond by voice only
+- `audioUrl` is optional — candidates may type only
+- At least one of the two must be provided (service-layer guard)
+- Both may be submitted simultaneously (typed backup for audio sessions)
+- Submission records `audioProcessingStatus = PENDING` when `audioUrl` present
+
 `responseTimeMs` and `thinkingTimeMs` flow directly into server-computed `pressureScore` and `thinkingDepthScore`.
 
 ---
@@ -326,12 +355,39 @@ LLM-generated questions are auto-saved with `source: GENERATED` and `createdByUs
 
 ```
 OPENAI_API_KEY set       → OpenAIEvaluationProvider + OpenAIQuestionGenerationProvider
+                           + OpenAITranscriptionProvider (Whisper-1)
 OPENAI_API_KEY absent    → StubEvaluationProvider + StubQuestionGenerationProvider
+                           + StubTranscriptionProvider (no-op)
 ```
 
 Zero code changes to swap. Logged at boot:
 ```
-AI Providers: OpenAI (gpt-4o-mini) | Prompt: v1.0.0
+AI Providers: OpenAI (GPT-4o-mini eval + Whisper-1 transcription) | Prompt: v1.0.0
+```
+
+#### Audio Transcription Provider (Phase 4)
+
+**Interface**: `AudioTranscriptionProvider` → `transcribe(audioUrl): Promise<TranscriptionResult>`
+
+**`TranscriptionResult` shape**:
+```typescript
+{
+  text: string;              // Whisper output — empty string if silent/failed
+  durationSeconds: number | null;  // For Whisper cost tracking
+  modelUsed: string;         // 'whisper-1' | 'stub'
+  isStub: boolean;           // true for offline StubTranscriptionProvider
+  estimatedCostUsd: number | null; // ~$0.0001/second of audio
+}
+```
+
+**Cost model**: Whisper-1 = $0.006/minute → ~$0.0001/second. Tracked per response and summed into `EvaluationReport.estimatedCostUsd`.
+
+**Graceful degradation**: If Whisper fails (network error, audio too large >25MB, invalid format), `transcribe()` returns `text: ''` — never throws. Evaluation continues with typed `answerText`.
+
+**Text merge strategy**:
+```
+transcribedText.trim() non-empty  → use transcribedText  (richer signal)
+else                               → use answerText       (typed fallback)
 ```
 
 #### Scoring Architecture
@@ -576,25 +632,44 @@ EvaluationJob(PENDING) created
 claimNextPendingJob() — atomic transaction (prevents double-claim)
         │
         ▼  [Credit check]
-PRO + credits > 0? → OpenAIEvaluationProvider
-            else  → StubEvaluationProvider (degraded mode)
+PRO + credits > 0? → OpenAIEvaluationProvider + OpenAITranscriptionProvider
+            else  → StubEvaluationProvider + StubTranscriptionProvider (degraded mode)
         │
         ├── For each QuestionInstance (ordered by sequenceOrder):
-        │       ├── Build EvaluationInput { question, text, responseTimeMs, thinkingTimeMs }
-        │       ├── LLM → { clarityScore, structureScore, depthScore,
+        │       │
+        │       ├── [Step A — Audio Signal Layer]
+        │       │   if response.audioUrl exists:
+        │       │     SET audioProcessingStatus = PROCESSING
+        │       │     OpenAITranscriptionProvider.transcribe(audioUrl)
+        │       │       → { text, durationSeconds, estimatedCostUsd }
+        │       │     totalCostUsd += whisperCost
+        │       │
+        │       ├── [Step B — Text Merge]
+        │       │   effectiveText = transcribedText (if non-empty) else answerText
+        │       │
+        │       ├── [Step C — LLM Evaluation]
+        │       │   Build EvaluationInput { question, effectiveText, responseTimeMs, thinkingTimeMs }
+        │       │   LLM → { clarityScore, structureScore, depthScore,
         │       │            confidenceScore, communicationScore, technicalScore }
         │       │   (retry once if JSON malformed; fallback to stub after 2 failures)
-        │       ├── Server-compute: pressureScore(responseTimeMs), thinkingDepthScore(thinkingTimeMs)
-        │       ├── Server-compute: overallScore (weighted formula per questionType)
+        │       │
+        │       ├── [Step D — Server-side Scoring]
+        │       │   pressureScore(responseTimeMs), thinkingDepthScore(thinkingTimeMs)
+        │       │   overallScore (weighted formula per questionType)
         │       │     Behavioral: content 45% + confidence 20% + communication 15% + timing 10%
         │       │     Technical:  content 45% + technical 30% + communication 10% + timing 10%
-        │       ├── ADVANCED difficulty: +4 boost to all content scores (fairness)
-        │       └── UPDATE ResponseInstance SET all scores
+        │       │   ADVANCED difficulty: +4 boost to all content scores (fairness)
+        │       │
+        │       └── [Step E — Persist]
+        │           UPDATE ResponseInstance SET
+        │             transcribedText, audioDurationSeconds, audioProcessingStatus=COMPLETED,
+        │             all signal scores
         │
         ├── aggregateSignals(all responses) → session-level averages
         │
         └── $transaction([
-                CREATE EvaluationReport { all scores, promptVersion, modelUsed, costFields },
+                CREATE EvaluationReport { all scores, promptVersion, modelUsed,
+                                          costFields (GPT + Whisper combined) },
                 UPDATE InterviewSession SET status = ANALYZED
             ])
 
@@ -604,6 +679,7 @@ On failure:
   attempt 3 → FAILED permanently
   zombie     → recoverZombieJobs() (every 5min): stuck PROCESSING > 10min → PENDING + 30s delay
   crash-after-save → ConflictException caught → markCompleted() (idempotent recovery)
+  audio failure    → StubTranscriptionProvider returns text=''; evaluation continues with answerText
 ```
 
 ---
@@ -771,10 +847,11 @@ Global rate limit: **30 requests / 60 seconds per IP**.
 | Question Bank | ✅ Real | Bank-first selection + GENERATED tagging |
 | Question sequencing + adaptive hook | ✅ Real | Order + bank-first + adaptive |
 | Behavioral tracking (responseTimeMs/thinkingTimeMs) | ✅ Real | Flows into server-computed timing scores |
-| Response ingestion | ✅ Real | Validation + persistence |
+| Response ingestion | ✅ Real | Audio-first: answerText optional, audioUrl optional, at least one required |
 | AI Provider interface | ✅ Real | `AnswerEvaluationProvider` — env-driven swap |
 | OpenAI Evaluation (gpt-4o-mini) | ✅ Real | Active when `OPENAI_API_KEY` set |
 | OpenAI Question Generation (gpt-4o-mini) | ✅ Real | Active when `OPENAI_API_KEY` set; auto-saves |
+| Audio Transcription (Whisper-1) | ✅ Real | `OpenAITranscriptionProvider` — active when `OPENAI_API_KEY` set. Graceful degradation on failure. Cost tracked. |
 | Async evaluation (EvaluationJob + Worker) | ✅ Real | Non-blocking, retry, zombie recovery |
 | SaaS usage limits (FREE/PRO) | ✅ Real | Session caps + monthly reset |
 | Global rate limiting | ✅ Real | 30 req/60s per IP |
@@ -782,7 +859,6 @@ Global rate limit: **30 requests / 60 seconds per IP**.
 | Cross-session analytics | ✅ Real | Trend, improvement delta, per-topic |
 | Progression endpoint | ✅ Real | Delta between last 2 sessions |
 | OTP delivery (SMS/Email) | ✅ Real | Twilio (SMS) + Nodemailer (SMTP) |
-| Audio transcription | 🔶 Not built | `audioUrl` stored, Whisper integration pending |
 
 ---
 
@@ -834,10 +910,58 @@ Idempotency protection:
 DATABASE_URL=postgresql://...
 JWT_SECRET=...
 
-# AI (leave unset for stub mode)
+# AI (leave unset for stub mode — stub providers used for ALL AI operations)
 OPENAI_API_KEY=sk-...
 
 # Optional
 FRONTEND_URL=http://localhost:5173    # CORS allow-origin
 PORT=3000
 ```
+
+---
+
+## 14. Phase 4 — Audio Signal Processing
+
+### What Phase 4 Added
+
+| Track | Shipped |
+|---|---|
+| **Audio Transcription** | `OpenAITranscriptionProvider` (Whisper-1). Downloads audio from `audioUrl`, transcribes via Whisper API. Cost ~$0.006/min. Graceful degradation on failure. |
+| **Audio-first Responses** | `answerText` is now optional in `SubmitResponseDto`. Audio-only submissions supported. |
+| **Text Merge Strategy** | `transcribedText` takes precedence over `answerText` when non-empty. LLM sees the richer source. |
+| **AudioProcessingStatus** | `PENDING → PROCESSING → COMPLETED \| FAILED \| SKIPPED` — persisted on `ResponseInstance` for observability |
+| **Cost Integration** | Whisper costs accumulate into `EvaluationReport.estimatedCostUsd` alongside GPT-4o-mini costs |
+| **Audio Index** | `@@index([audioProcessingStatus, createdAt])` — future audio worker query optimization |
+
+### Migration Applied (Phase 4)
+
+| Migration | Changes |
+|---|---|
+| `phase4_audio_transcription_whisper` | `AudioProcessingStatus` enum + `transcribedText`, `audioDurationSeconds`, `audioProcessingStatus` on `ResponseInstance`. Audio processing index. |
+
+### Audio Processing State Machine (ResponseInstance)
+
+```
+[Submission]
+  audioUrl present  → audioProcessingStatus = PENDING
+  text-only         → audioProcessingStatus = SKIPPED
+
+[EvaluationWorker — inside runAnalysis()]
+  response.audioUrl exists:
+    SET audioProcessingStatus = PROCESSING
+    Whisper.transcribe(audioUrl)
+      ↓ success → SET transcribedText, audioDurationSeconds, status = COMPLETED
+      ↓ failure → transcribedText = null, status = FAILED → evaluate using answerText
+  response.audioUrl absent:
+    no change (remains SKIPPED)
+```
+
+### Whisper Constraints
+
+| Constraint | Value |
+|---|---|
+| Max file size | 25 MB (rejected before API call) |
+| Supported formats | mp3, mp4, m4a, wav, webm, ogg, flac, mpeg |
+| Language detection | Auto (no language specified by default) |
+| Cost model | ~$0.006/minute = $0.0001/second |
+| Response format | `verbose_json` (includes `duration` for cost tracking) |

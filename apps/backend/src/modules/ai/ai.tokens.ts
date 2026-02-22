@@ -20,3 +20,13 @@ export const AI_EVALUATION_PROVIDER = 'AI_EVALUATION_PROVIDER';
  */
 export const AI_QUESTION_GENERATION_PROVIDER = 'AI_QUESTION_GENERATION_PROVIDER';
 
+/**
+ * DI injection token for the AudioTranscriptionProvider.
+ *
+ * Usage in providers array:
+ *   { provide: AI_TRANSCRIPTION_PROVIDER, useClass: OpenAITranscriptionProvider }
+ *
+ * Usage in constructor:
+ *   @Inject(AI_TRANSCRIPTION_PROVIDER) private readonly transcription: AudioTranscriptionProvider
+ */
+export const AI_TRANSCRIPTION_PROVIDER = 'AI_TRANSCRIPTION_PROVIDER';
