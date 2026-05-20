@@ -3,7 +3,7 @@ import { LoginDto, RegisterDto, ApiResponse, User, RequestOtpDto, VerifyOtpDto, 
 
 export const identityApi = {
     login: async (data: LoginDto) => {
-        const response = await apiClient.post<ApiResponse<User>>("/identity/login", data);
+        const response = await apiClient.post<ApiResponse<{ accessToken: string; user: User }>>("/identity/login", data);
         return response.data;
     },
 

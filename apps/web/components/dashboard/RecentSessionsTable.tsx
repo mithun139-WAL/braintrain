@@ -1,144 +1,245 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
 import {
-    Server,
-    Users,
-    Terminal,
-    Mic,
     ArrowRight,
     Filter,
-    Download,
-    ChevronDown
+    ChevronDown,
+    Loader2,
+    Brain,
+    CheckCircle2,
 } from "lucide-react";
+import { Difficulty, InterviewType, SessionStatus } from "@braintrain/shared";
+import { sessionsApi, type SessionListItem } from "@/lib/api/sessions.api";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { buttonStyles } from "@/core/components/ui/button";
+import { Surface } from "@/core/components/ui/Surface";
 
-const sessions = [
-    {
-        date: "Oct 26, 2023",
-        type: "System Design",
-        icon: Server,
-        difficulty: "Hard",
-        difficultyColor: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20",
-        score: 92,
-        duration: "45m",
-    },
-    {
-        date: "Oct 25, 2023",
-        type: "Behavioral",
-        icon: Users,
-        difficulty: "Medium",
-        difficultyColor: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20",
-        score: 85,
-        duration: "30m",
-    },
-    {
-        date: "Oct 24, 2023",
-        type: "Algorithms",
-        icon: Terminal,
-        difficulty: "Hard",
-        difficultyColor: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20",
-        score: 76,
-        duration: "60m",
-    },
-    {
-        date: "Oct 22, 2023",
-        type: "Mock Interview",
-        icon: Mic,
-        difficulty: "Easy",
-        difficultyColor: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20",
-        score: 89,
-        duration: "25m",
-    },
+type SessionFilter = "ALL" | SessionStatus;
+
+const FILTER_OPTIONS: Array<{ label: string; value: SessionFilter }> = [
+    { label: "All sessions", value: "ALL" },
+    { label: "Active", value: SessionStatus.ACTIVE },
+    { label: "Completed", value: SessionStatus.COMPLETED },
+    { label: "Analyzed", value: SessionStatus.ANALYZED },
 ];
 
-export function RecentSessionsTable() {
+const difficultyClasses: Record<string, string> = {
+    [Difficulty.EASY]: "border-emerald/20 bg-emerald/10 text-emerald",
+    [Difficulty.MEDIUM]: "border-gold/20 bg-gold/10 text-gold",
+    [Difficulty.HARD]: "border-ruby/20 bg-ruby/10 text-ruby",
+};
+
+const statusClasses: Record<string, string> = {
+    [SessionStatus.CREATED]: "border-border bg-muted text-muted-foreground",
+    [SessionStatus.ACTIVE]: "border-primary/20 bg-primary/10 text-primary",
+    [SessionStatus.COMPLETED]: "border-gold/20 bg-gold/10 text-gold",
+    [SessionStatus.ANALYZED]: "border-emerald/20 bg-emerald/10 text-emerald",
+    [SessionStatus.CANCELLED]: "border-ruby/20 bg-ruby/10 text-ruby",
+};
+
+function formatInterviewType(type?: string | null) {
+    switch (type) {
+        case InterviewType.TECHNICAL:
+            return "Technical";
+        case InterviewType.BEHAVIORAL:
+            return "Behavioral";
+        case InterviewType.MIXED:
+            return "Mixed";
+        case InterviewType.GROUP_DISCUSSION:
+            return "Group Discussion";
+        case InterviewType.RAPID_FIRE:
+            return "Rapid Fire";
+        default:
+            return "Practice";
+    }
+}
+
+function formatDifficulty(difficulty: string) {
+    return difficulty.charAt(0) + difficulty.slice(1).toLowerCase();
+}
+
+function formatDate(value?: string | null) {
+    if (!value) return "Not started";
+    return new Date(value).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function reportHref(session: SessionListItem) {
+    return `/dashboard/sessions/${session.id}`;
+}
+
+export function RecentSessionsTable({
+    title = "Recent Practice Sessions",
+    description = "Review your latest sessions, current status, and available reports.",
+    limit = 8,
+}: {
+    title?: string;
+    description?: string;
+    limit?: number;
+}) {
+    const [statusFilter, setStatusFilter] = useState<SessionFilter>("ALL");
+
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ["sessions", "list", statusFilter, limit],
+        queryFn: () =>
+            sessionsApi.getSessions({
+                status: statusFilter === "ALL" ? undefined : statusFilter,
+                limit,
+            }),
+        staleTime: 60 * 1000,
+    });
+
+    const sessions = data?.data ?? [];
+
     return (
-        <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col">
-            <div className="p-6 border-b border-gray-50 dark:border-gray-800/50 flex items-center justify-between">
+        <Surface padding="none" className="overflow-hidden">
+            <div className="flex flex-col gap-4 border-b border-border/80 px-6 py-6 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Practice Sessions</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Review your past interviews and detailed feedback reports.</p>
+                    <h3 className="font-display text-title-md text-foreground">{title}</h3>
+                    <p className="mt-1 text-body-sm text-muted-foreground">{description}</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-2">
                     <div className="relative">
-                        <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                        <select className="pl-9 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-300 focus:ring-primary focus:border-primary appearance-none outline-none">
-                            <option>All Types</option>
-                            <option>System Design</option>
-                            <option>Behavioral</option>
-                            <option>Coding</option>
+                        <Filter size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <select
+                            value={statusFilter}
+                            onChange={(event) => setStatusFilter(event.target.value as SessionFilter)}
+                            className="h-10 appearance-none rounded-2xl border border-border bg-card pl-9 pr-10 text-sm font-medium text-foreground outline-none transition-colors hover:border-border focus:border-primary"
+                            aria-label="Filter sessions by status"
+                        >
+                            {FILTER_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
                         </select>
-                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                        <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     </div>
-                    <button className="p-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                        <Download size={18} />
-                    </button>
+                    <Link href="/dashboard/sessions" className={buttonStyles({ variant: "secondary", size: "sm" })}>
+                        View All
+                    </Link>
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50/50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-[10px] uppercase tracking-wider font-bold border-b border-gray-50 dark:border-gray-800/50">
-                            <th className="px-6 py-4">Date</th>
-                            <th className="px-6 py-4">Type</th>
-                            <th className="px-6 py-4">Difficulty</th>
-                            <th className="px-6 py-4">Score</th>
-                            <th className="px-6 py-4">Duration</th>
-                            <th className="px-6 py-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="text-sm text-gray-600 dark:text-gray-300 divide-y divide-gray-50 dark:divide-gray-800/50">
-                        {sessions.map((session, idx) => (
-                            <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors group">
-                                <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-semibold">{session.date}</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <session.icon size={16} className="text-gray-400 dark:text-gray-500" />
-                                        {session.type}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={cn(
-                                        "px-2.5 py-1 rounded-lg text-[10px] font-bold border whitespace-nowrap",
-                                        session.difficultyColor
-                                    )}>
-                                        {session.difficulty}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                            <div
+            {isLoading ? (
+                <div className="flex min-h-[260px] items-center justify-center">
+                    <div className="flex items-center gap-3 text-body-sm text-muted-foreground">
+                        <Loader2 size={18} className="animate-spin text-primary" />
+                        Loading sessions...
+                    </div>
+                </div>
+            ) : isError ? (
+                <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 px-6 text-center">
+                    <Brain size={28} className="text-muted-foreground" />
+                    <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Unable to load sessions</p>
+                        <p className="text-body-sm text-muted-foreground">
+                            Try again in a moment or start a new session to refresh the workspace.
+                        </p>
+                    </div>
+                </div>
+            ) : sessions.length === 0 ? (
+                <div className="flex min-h-[260px] flex-col items-center justify-center gap-4 px-6 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <CheckCircle2 size={20} />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">No sessions in this view yet</p>
+                        <p className="max-w-reading text-body-sm text-muted-foreground">
+                            Start a session to create a fresh signal, then return here to review progress and reports.
+                        </p>
+                    </div>
+                    <Link href="/dashboard/sessions/start" className={buttonStyles({ size: "sm" })}>
+                        Start Session
+                    </Link>
+                </div>
+            ) : (
+                <>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[720px] text-left">
+                            <thead>
+                                <tr className="border-b border-border/80 bg-muted/40 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                    <th className="px-6 py-4">Session</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Difficulty</th>
+                                    <th className="px-6 py-4">Questions</th>
+                                    <th className="px-6 py-4">Score</th>
+                                    <th className="px-6 py-4">Updated</th>
+                                    <th className="px-6 py-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/70 text-sm">
+                                {sessions.map((session) => (
+                                    <tr key={session.id} className="group transition-colors hover:bg-muted/20">
+                                        <td className="px-6 py-4 align-top">
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-foreground">
+                                                    {session.topic?.name ?? formatInterviewType(session.interviewType)}
+                                                </p>
+                                                <p className="text-body-sm text-muted-foreground">
+                                                    {formatInterviewType(session.interviewType)} · {session.durationMinutes} min
+                                                </p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 align-top">
+                                            <span
                                                 className={cn(
-                                                    "h-full rounded-full transition-all",
-                                                    session.score >= 80 ? "bg-primary" : "bg-gray-400 dark:bg-gray-600"
+                                                    "inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]",
+                                                    statusClasses[session.status] ?? "border-border bg-muted text-muted-foreground"
                                                 )}
-                                                style={{ width: `${session.score}%` }}
-                                            />
-                                        </div>
-                                        <span className="font-bold text-gray-900 dark:text-gray-100">{session.score}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">{session.duration}</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-primary hover:text-primary-dark font-bold text-xs inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-1">
-                                        View Report
-                                        <ArrowRight size={14} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="p-4 border-t border-gray-50 dark:border-gray-800/50 flex justify-center bg-gray-50/30 dark:bg-gray-900/30">
-                <button className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-primary transition-colors flex items-center gap-1 uppercase tracking-wider">
-                    View all history
-                    <ChevronDown size={14} />
-                </button>
-            </div>
-        </div>
+                                            >
+                                                {session.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-top">
+                                            <span
+                                                className={cn(
+                                                    "inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                                                    difficultyClasses[session.difficulty] ?? "border-border bg-muted text-muted-foreground"
+                                                )}
+                                            >
+                                                {formatDifficulty(session.difficulty)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-top font-medium text-foreground">
+                                            {session.questionCount}
+                                        </td>
+                                        <td className="px-6 py-4 align-top">
+                                            <span className="font-semibold text-foreground">
+                                                {session.evaluation?.overallScore != null
+                                                    ? `${Math.round(session.evaluation.overallScore)}/100`
+                                                    : "Pending"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-top text-body-sm text-muted-foreground">
+                                            {formatDate(session.endedAt ?? session.updatedAt)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right align-top">
+                                            <Link
+                                                href={reportHref(session)}
+                                                className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary-dark"
+                                            >
+                                                {session.status === SessionStatus.ANALYZED ? "Open report" : "Open session"}
+                                                <ArrowRight size={14} />
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="border-t border-border/80 bg-muted/20 px-6 py-4 text-xs text-muted-foreground">
+                        Showing {sessions.length} session{sessions.length === 1 ? "" : "s"}
+                        {data?.meta?.total ? ` of ${data.meta.total}` : ""}.
+                    </div>
+                </>
+            )}
+        </Surface>
     );
 }

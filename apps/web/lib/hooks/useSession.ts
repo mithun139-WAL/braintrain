@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sessionsApi } from "../api/sessions.api";
+import { questionsApi } from "../api/questions.api";
 import { SubmitAnswerDto } from "@braintrain/shared";
 
 // Polls the status of the session. Automatically stops polling if completed.
@@ -27,7 +28,8 @@ export const useSession = (sessionId: string) => {
 
     // Mutate for submitting an answer
     const submitAnswerMutation = useMutation({
-        mutationFn: (payload: SubmitAnswerDto) => sessionsApi.submitAnswer(sessionId, payload),
+        mutationFn: (payload: SubmitAnswerDto) =>
+            questionsApi.submitResponse(payload.questionId, payload.answerText ?? ""),
         onSuccess: () => {
             // Re-fetch session context to get the next step in the interview
             queryClient.invalidateQueries({ queryKey: ["session", sessionId] });

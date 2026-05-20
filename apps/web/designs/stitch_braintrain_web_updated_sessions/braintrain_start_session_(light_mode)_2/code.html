@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain - Live Panel Interview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8b5cf6", // Deep Amethyst (Purple-500/600 range)
+                        "primary-hover": "#7c3aed",
+                        "accent-emerald": "#10b981", // Emerald green for top borders
+                        "background-light": "#1e293b", // Slate-800 (simulating dark theme base for this specific request context)
+                        "background-dark": "#0f172a", // Slate-900
+                        "surface": "#1e293b", // Slate-800
+                        "surface-lighter": "#334155", // Slate-700
+                        "text-main": "#f8fafc", // Slate-50
+                        "text-muted": "#94a3b8", // Slate-400
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0f172a;color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        .emerald-top-border {
+            border-top: 3px solid #10b981;
+        }textarea::-webkit-scrollbar {
+            width: 6px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="font-display antialiased selection:bg-primary/30 selection:text-primary-lighter min-h-screen flex flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-700 bg-surface px-6 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center size-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="h-6 w-px bg-slate-700 mx-1"></div>
+<div class="flex items-center gap-3 text-white">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">psychology</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">BrainTrain</h2>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-primary text-xs font-semibold uppercase tracking-wider">
+<span class="size-2 rounded-full bg-red-500 animate-pulse"></span>
+                Live Session
+            </div>
+<div class="flex items-center gap-3">
+<span class="text-sm font-medium text-slate-300 hidden md:block">Candidate</span>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-slate-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB0x33at4RIR9Z6zUd6fhAmV-lh5rpQdnFgzoPBkj4ISqiKjE3ORnmhF8TkxssUalHttrLRmqWMt258q5N5vS3ZrCB8UjK_mKxGfUyg0E-dVHRmciG2D-WYqF4t0YhKVILJXQN1ZAQDDDW_OrIgzPQkgWF37GtMTrBISPRlmWqAHbq0DfGgF3JZ4fclZN486-9QkiHhPc-agqD7TPz9qTNrI-vKNROTALZztyWrzHum3WW46Q3zHlN5142tTcL696RKvsFnutgd99E");'></div>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 h-[calc(100vh-80px)] overflow-hidden">
+<div class="flex-1 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-4">
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="relative bg-surface rounded-xl p-5 border border-slate-700 shadow-lg flex flex-col items-center gap-3 emerald-top-border opacity-70 hover:opacity-100 transition-opacity">
+<div class="relative">
+<div class="size-20 rounded-full bg-slate-700 bg-cover bg-center border-2 border-slate-600" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk');"></div>
+<div class="absolute bottom-0 right-0 size-5 bg-slate-800 rounded-full flex items-center justify-center border border-slate-600">
+<span class="material-symbols-outlined text-xs text-slate-400">mic_off</span>
+</div>
+</div>
+<div class="text-center">
+<h3 class="text-white font-semibold">Sarah Chen</h3>
+<p class="text-xs text-slate-400">Frontend Lead</p>
+</div>
+</div>
+<div class="relative bg-surface-lighter rounded-xl p-6 border-2 border-primary shadow-xl shadow-primary/10 flex flex-col items-center gap-4 emerald-top-border transform scale-105 z-10">
+<div class="absolute top-3 right-3 flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary uppercase tracking-wider">
+<span class="material-symbols-outlined text-xs animate-pulse">graphic_eq</span>
+                        Speaking
+                    </div>
+<div class="relative">
+<div class="size-24 rounded-full bg-slate-700 bg-cover bg-center border-2 border-primary" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc');"></div>
+<div class="absolute -bottom-1 -right-1 size-7 bg-primary rounded-full flex items-center justify-center border-2 border-surface-lighter">
+<span class="material-symbols-outlined text-sm text-white">mic</span>
+</div>
+</div>
+<div class="text-center">
+<h3 class="text-white font-bold text-lg">Marcus Johnson</h3>
+<p class="text-xs text-slate-300">Engineering Manager</p>
+</div>
+</div>
+<div class="relative bg-surface rounded-xl p-5 border border-slate-700 shadow-lg flex flex-col items-center gap-3 emerald-top-border opacity-70 hover:opacity-100 transition-opacity">
+<div class="relative">
+<div class="size-20 rounded-full bg-slate-700 bg-cover bg-center border-2 border-slate-600" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI');"></div>
+<div class="absolute bottom-0 right-0 size-5 bg-slate-800 rounded-full flex items-center justify-center border border-slate-600">
+<span class="material-symbols-outlined text-xs text-slate-400">mic_off</span>
+</div>
+</div>
+<div class="text-center">
+<h3 class="text-white font-semibold">David Wright</h3>
+<p class="text-xs text-slate-400">System Architect</p>
+</div>
+</div>
+</section>
+<section class="flex-1 min-h-[200px] flex flex-col">
+<div class="bg-surface rounded-xl border border-slate-700 p-8 shadow-lg emerald-top-border flex flex-col gap-4 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold tracking-wider text-primary uppercase">Current Question</span>
+<div class="flex items-center gap-2 text-slate-400 text-xs">
+<span class="material-symbols-outlined text-sm">timer</span>
+                             02:45
+                        </div>
+</div>
+<h2 class="text-2xl md:text-3xl font-medium text-white leading-relaxed">
+                        "Thinking about a recent project where you had to scale a system, what were the key bottlenecks you identified, and how did you approach resolving them?"
+                    </h2>
+<div class="mt-4 flex gap-2">
+<span class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 text-xs border border-slate-700">System Design</span>
+<span class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 text-xs border border-slate-700">Scalability</span>
+<span class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 text-xs border border-slate-700">Problem Solving</span>
+</div>
+</div>
+</section>
+<section class="bg-surface rounded-xl border border-slate-700 p-1 flex flex-col shadow-lg">
+<div class="relative w-full">
+<textarea class="w-full bg-slate-800/50 text-slate-200 placeholder-slate-500 rounded-lg border-0 p-4 focus:ring-1 focus:ring-primary focus:bg-slate-800 resize-none h-32 md:h-40 leading-relaxed" placeholder="Type your answer here or speak to answer..."></textarea>
+<div class="absolute bottom-3 right-3 flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-slate-700 text-slate-400 transition-colors" title="Use Microphone">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between px-4 py-3 bg-surface rounded-b-lg">
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">attachment</span>
+                            Attach Diagram
+                         </button>
+<button class="text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">code</span>
+                            Code Snippet
+                         </button>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs text-slate-500">Press Cmd+Enter to submit</span>
+<button class="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+                            Submit Answer
+                            <span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+<aside class="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+<div class="bg-surface rounded-xl border border-slate-700 p-5 shadow-lg flex flex-col gap-4 emerald-top-border">
+<div class="flex items-center justify-between border-b border-slate-700 pb-3">
+<h3 class="font-semibold text-white">Interview Progress</h3>
+<span class="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded">Q3 / 8</span>
+</div>
+<div class="space-y-4">
+<div class="flex gap-3 relative">
+<div class="flex flex-col items-center">
+<div class="size-6 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/50">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="w-px h-full bg-slate-700 my-1"></div>
+</div>
+<div class="pb-4">
+<p class="text-xs font-medium text-slate-400">Introduction</p>
+<p class="text-xs text-slate-500 mt-0.5">Completed • 4:20</p>
+</div>
+</div>
+<div class="flex gap-3 relative">
+<div class="flex flex-col items-center">
+<div class="size-6 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/50">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="w-px h-full bg-slate-700 my-1"></div>
+</div>
+<div class="pb-4">
+<p class="text-xs font-medium text-slate-400">Past Experience</p>
+<p class="text-xs text-slate-500 mt-0.5">Completed • 8:15</p>
+</div>
+</div>
+<div class="flex gap-3 relative">
+<div class="flex flex-col items-center">
+<div class="size-6 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 ring-2 ring-primary/20">
+<span class="text-[10px] font-bold">3</span>
+</div>
+<div class="w-px h-full bg-slate-700 my-1 border-l border-dashed border-slate-600 bg-transparent"></div>
+</div>
+<div class="pb-4">
+<p class="text-sm font-semibold text-white">System Scaling</p>
+<p class="text-xs text-primary mt-0.5">In Progress...</p>
+</div>
+</div>
+<div class="flex gap-3 relative opacity-50">
+<div class="flex flex-col items-center">
+<div class="size-6 rounded-full bg-slate-800 border border-slate-600 text-slate-500 flex items-center justify-center">
+<span class="text-[10px] font-bold">4</span>
+</div>
+</div>
+<div>
+<p class="text-xs font-medium text-slate-400">Database Sharding</p>
+<p class="text-xs text-slate-600 mt-0.5">Upcoming</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface rounded-xl border border-slate-700 p-5 shadow-lg flex-1 emerald-top-border">
+<div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+<h3 class="font-semibold text-white">Panel Status</h3>
+<span class="material-symbols-outlined text-slate-500 text-sm">group</span>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/30">
+<div class="relative">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCJNheRXfD4wf5kLu1EhCq5paTpy87Jx4SuMdDVr6Z6e3lx_UUvATH9jl-C8I9-P7llbICa_l4cvjmlfEBNjS-kyVUkKhiOKUEf-i27g_S-KK8w0p9EMLW53ljsUMfEjG15CKatKfyF81XouLlsRrgepCn2_CZa5AgX_4kPLoKVA2EuanrU5T4SQKsfNP0RDo6nBjmFW1_4P1t16pEU5gqmi9WeZN-_e3_0Jykcee4j2hHbVqXNaZdNBzOotCdBFkeCz_LungrfnNI');"></div>
+<span class="absolute bottom-0 right-0 size-2.5 bg-green-500 border border-surface rounded-full"></span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-white">Marcus</span>
+<span class="text-[10px] text-primary uppercase font-bold tracking-wider">Active</span>
+</div>
+<div class="w-full bg-slate-700 h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full animate-[pulse_1.5s_infinite]" style="width: 75%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-700">
+<div class="relative">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCUN1T7ilHgQgSrzqQuP9RF_JHvyfbULZRpp1s8yZsH2T4Up_KeLiig0hUYBe6y-U3yNyEiSRgp4QQmHBLwB6lE1z9jBExxtCn-61d2645Yfrbc6-tcTyc7xOitpqbPoP1JyUzgRIm8_mp7-5ahP2apS7kQqoSij8YvTxL6uoSPDsQKHQwipqmCDvNDXc8di0Vd02__uopbnu1Fs8tkHxOcITL5wAMkrgikyvhNPl_Myfe_uivYHFyQPI9Ff7PnfjRj0P25xdMRxKY');"></div>
+<span class="absolute bottom-0 right-0 size-2.5 bg-green-500 border border-surface rounded-full"></span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-slate-300">Sarah</span>
+<span class="text-[10px] text-slate-500">Listening</span>
+</div>
+<div class="w-full bg-slate-700 h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-slate-500 h-full rounded-full" style="width: 10%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-700">
+<div class="relative">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAmZVl5HRIT18969m1FlpV9jgdOj_njBjyG-Feq5Dmtl6QqPqhcGZfYf-gO58AqyPnb69-r6saaF82w3maY8a73A9xBRHd8Pkt2LjkRmRjwD4Zmbd8jBbLjy21Y9fTThOSF0Zckpmc0lcSwosgDY5Wwmm_Ys_Ed7lAzzbf37a3gmGFPcAONicolFckMu06tfbunbtXBBxDoQfjpeSZxg0wGy0aV7TW1vs2XpUi5TfEM9MmDY5qzK-ySTsi1z8QWGAiz2S7T9DIIkOc');"></div>
+<span class="absolute bottom-0 right-0 size-2.5 bg-green-500 border border-surface rounded-full"></span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-slate-300">David</span>
+<span class="text-[10px] text-slate-500">Listening</span>
+</div>
+<div class="w-full bg-slate-700 h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-slate-500 h-full rounded-full" style="width: 5%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-slate-700">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-yellow-500 text-sm">lightbulb</span>
+<span class="text-xs font-bold text-slate-300 uppercase">Real-time Hint</span>
+</div>
+<p class="text-xs text-slate-400 italic bg-slate-800/50 p-3 rounded border border-slate-700/50">
+                        "Consider mentioning the CAP theorem trade-offs when discussing consistency vs availability."
+                    </p>
+</div>
+</div>
+</aside>
+</main>
+
+</body></html>

@@ -1,0 +1,273 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  RENDER_API_BASE_URL: https://api.render.com/v1
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  validate-web:
+    name: Validate Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @braintrain/shared build
+
+      - name: Build web app
+        run: pnpm --filter web build
+
+  validate-api:
+    name: Validate API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install API dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Compile API source
+        run: uv run python -m compileall app
+
+      - name: Smoke import FastAPI app
+        env:
+          APP_ENV: production
+          DATABASE_URL: postgresql+asyncpg://postgres:password@127.0.0.1:5432/braintrain_api_ci
+          JWT_SECRET: ci-secret
+          FRONTEND_URL: http://localhost:3000
+        run: uv run python -c "from app.main import app"
+
+  deploy-api:
+    name: Deploy API to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    needs:
+      - validate-web
+      - validate-api
+
+    steps:
+      - name: Trigger Render deploy for current commit
+        id: render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${RENDER_API_KEY:?Missing RENDER_API_KEY}"
+          : "${RENDER_SERVICE_ID:?Missing RENDER_SERVICE_ID}"
+
+          response="$(
+            curl --silent --show-error --fail \
+              --request POST \
+              --url "${RENDER_API_BASE_URL}/services/${RENDER_SERVICE_ID}/deploys" \
+              --header "Accept: application/json" \
+              --header "Authorization: Bearer ${RENDER_API_KEY}" \
+              --header "Content-Type: application/json" \
+              --data "{\"commitId\":\"${GITHUB_SHA}\"}"
+          )"
+
+          deploy_id="$(jq -r '.id' <<<"${response}")"
+          status="$(jq -r '.status' <<<"${response}")"
+
+          if [ -z "${deploy_id}" ] || [ "${deploy_id}" = "null" ]; then
+            echo "Render did not return a deploy id"
+            echo "${response}"
+            exit 1
+          fi
+
+          echo "Render deploy ${deploy_id} started with status ${status}"
+          echo "deploy_id=${deploy_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Wait for Render deploy to finish
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${RENDER_API_KEY:?Missing RENDER_API_KEY}"
+          : "${RENDER_SERVICE_ID:?Missing RENDER_SERVICE_ID}"
+
+          deploy_id="${{ steps.render.outputs.deploy_id }}"
+
+          for attempt in $(seq 1 60); do
+            response="$(
+              curl --silent --show-error --fail \
+                --request GET \
+                --url "${RENDER_API_BASE_URL}/services/${RENDER_SERVICE_ID}/deploys/${deploy_id}" \
+                --header "Accept: application/json" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}"
+            )"
+
+            status="$(jq -r '.status' <<<"${response}")"
+            echo "Render deploy status: ${status}"
+
+            case "${status}" in
+              live|deactivated)
+                exit 0
+                ;;
+              build_failed|update_failed|canceled|pre_deploy_failed)
+                echo "Render deploy failed"
+                echo "${response}"
+                exit 1
+                ;;
+            esac
+
+            sleep 15
+          done
+
+          echo "Timed out waiting for Render deploy ${deploy_id}"
+          exit 1
+
+  deploy-web:
+    name: Deploy Web to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    needs:
+      - deploy-api
+    outputs:
+      deployment_url: ${{ steps.vercel.outputs.deployment_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @braintrain/shared build
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel production settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
+
+      - name: Build Vercel artifacts
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          vercel build --prod --token="${VERCEL_TOKEN}"
+
+      - name: Deploy to Vercel
+        id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+
+          deployment_url="$(vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}" | tr -d '\r\n')"
+
+          case "${deployment_url}" in
+            http://*|https://*) ;;
+            *) deployment_url="https://${deployment_url}" ;;
+          esac
+
+          echo "deployment_url=${deployment_url}" >> "${GITHUB_OUTPUT}"
+          echo "Production deployment: ${deployment_url}"
+
+  smoke-test:
+    name: Smoke Test Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    needs:
+      - deploy-api
+      - deploy-web
+
+    steps:
+      - name: Check API health
+        env:
+          API_HEALTHCHECK_URL: ${{ vars.API_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+
+          : "${API_HEALTHCHECK_URL:?Set production variable API_HEALTHCHECK_URL}"
+
+          response="$(curl --silent --show-error --fail --location "${API_HEALTHCHECK_URL}")"
+          status="$(jq -r '.data.status // .status' <<<"${response}")"
+
+          if [ "${status}" != "ok" ]; then
+            echo "Unexpected API health response"
+            echo "${response}"
+            exit 1
+          fi
+
+      - name: Check Vercel deployment URL
+        env:
+          WEB_URL: ${{ needs.deploy-web.outputs.deployment_url }}
+        run: |
+          set -euo pipefail
+
+          : "${WEB_URL:?Missing Vercel deployment URL}"
+          curl --silent --show-error --fail --location "${WEB_URL}" > /dev/null

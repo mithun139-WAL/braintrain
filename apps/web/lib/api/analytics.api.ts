@@ -1,14 +1,32 @@
 import { apiClient } from "./client";
-import { ApiResponse, AnalyticsSummaryDto, TrendPoint } from "@braintrain/shared";
+import {
+    ApiResponse,
+    AnalyticsResponse,
+    ProgressionResponse,
+    TopicAnalyticsResponse,
+} from "@braintrain/shared";
 
 export const analyticsApi = {
-    getOverview: async () => {
-        const response = await apiClient.get<ApiResponse<AnalyticsSummaryDto>>("/analytics/overview");
+    /**
+     * GET /analytics/me
+     * Full user performance analytics: trend, improvement delta, per-topic breakdown.
+     */
+    getAnalytics: async (): Promise<ApiResponse<AnalyticsResponse>> => {
+        const response = await apiClient.get<ApiResponse<AnalyticsResponse>>("/analytics/me");
         return response.data;
     },
 
-    getTrend: async () => {
-        const response = await apiClient.get<ApiResponse<TrendPoint[]>>("/analytics/trend");
+    /**
+     * GET /analytics/progression
+     * Last-vs-previous session score delta (dopamine-loop banner data).
+     */
+    getProgression: async (): Promise<ApiResponse<ProgressionResponse>> => {
+        const response = await apiClient.get<ApiResponse<ProgressionResponse>>("/analytics/progression");
+        return response.data;
+    },
+
+    getTopicAnalytics: async (topicId: string): Promise<ApiResponse<TopicAnalyticsResponse>> => {
+        const response = await apiClient.get<ApiResponse<TopicAnalyticsResponse>>(`/analytics/topics/${topicId}`);
         return response.data;
     },
 };

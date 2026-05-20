@@ -40,8 +40,8 @@ export default function LoginPage() {
         try {
             const response = await loginMutation.mutateAsync({ email, password });
             if (response.success && response.data) {
-                const { access_token, user } = response.data as any;
-                setAuth(user, access_token || "mock-jwt-token");
+                const { accessToken, user } = response.data as any;
+                setAuth(user, accessToken);
                 router.push("/dashboard");
             } else {
                 setError(response.message || "Login failed");

@@ -1,12 +1,14 @@
 import { Difficulty } from "../enums/difficulty.enum";
-import { InterviewLevel } from "../enums/interview-level.enum";
+import { InterviewType } from "../enums/interview-type.enum";
+import { InterviewMode } from "../enums/interview-mode.enum";
 
 export interface CreateSessionDto {
-    topicId?: string;
-    title?: string;
-    difficulty?: Difficulty;
-    adaptive?: boolean;
-    interviewLevel?: InterviewLevel;
+    topicId: string;
+    interviewType: InterviewType;
+    interviewMode: InterviewMode;
+    difficulty: Difficulty;
+    adaptive: boolean;
+    durationMinutes: number;
 }
 
 export interface SubmitAnswerDto {

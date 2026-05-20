@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-web:
+    name: Validate Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @braintrain/shared build
+
+      - name: Build web app
+        run: pnpm --filter web build
+
+  validate-api:
+    name: Validate API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install API dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Compile API source
+        run: uv run python -m compileall app
+
+      - name: Smoke import FastAPI app
+        env:
+          APP_ENV: production
+          DATABASE_URL: postgresql+asyncpg://postgres:password@127.0.0.1:5432/braintrain_api_ci
+          JWT_SECRET: ci-secret
+          FRONTEND_URL: http://localhost:3000
+        run: uv run python -c "from app.main import app"

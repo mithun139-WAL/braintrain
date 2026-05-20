@@ -7,6 +7,6 @@ import { analyticsApi } from "../api/analytics.api";
 export function useAnalyticsTrends() {
     return useQuery({
         queryKey: ["analytics", "trends"],
-        queryFn: () => analyticsApi.getTrend(),
+        queryFn: () => analyticsApi.getAnalytics(),
     });
 }

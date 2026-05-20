@@ -10,27 +10,44 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { TrendPoint } from "@braintrain/shared";
+import { TrendItem, TrendPoint } from "@braintrain/shared";
 
 interface TrendChartProps {
-    data?: TrendPoint[];
+    data?: TrendPoint[] | TrendItem[];
 }
 
 export default function TrendChart({ data = [] }: TrendChartProps) {
     const chartData = useMemo(() => {
         if (data.length === 0) {
-            return [
-                { date: "Mon", averageScore: 65 },
-                { date: "Tue", averageScore: 72 },
-                { date: "Wed", averageScore: 68 },
-                { date: "Thu", averageScore: 85 },
-                { date: "Fri", averageScore: 82 },
-                { date: "Sat", averageScore: 90 },
-                { date: "Sun", averageScore: 95 },
-            ]
+            return [];
         }
-        return data;
-    }, [data])
+
+        const first = data[0] as TrendPoint | TrendItem;
+        if ("averageScore" in first) {
+            return data as TrendPoint[];
+        }
+
+        return (data as TrendItem[]).map((item) => ({
+            date: new Date(item.analyzedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+            }),
+            averageScore: Math.round(item.overallScore),
+        }));
+    }, [data]);
+
+    if (chartData.length === 0) {
+        return (
+            <div className="flex h-[350px] w-full items-center justify-center rounded-3xl border border-dashed border-border bg-muted/20 px-6 text-center">
+                <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">No trend data yet</p>
+                    <p className="text-body-sm text-muted-foreground">
+                        Complete and analyze a session to see score movement over time.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-[350px] w-full">
@@ -58,7 +75,13 @@ export default function TrendChart({ data = [] }: TrendChartProps) {
                         tickFormatter={(value) => `${value}`}
                     />
                     <Tooltip
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{
+                            borderRadius: "12px",
+                            border: "1px solid hsl(var(--border))",
+                            background: "hsl(var(--card))",
+                            color: "hsl(var(--foreground))",
+                            boxShadow: "0 12px 32px -20px rgb(0 0 0 / 0.35)",
+                        }}
                     />
                     <Line
                         type="monotone"

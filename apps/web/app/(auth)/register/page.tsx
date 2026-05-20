@@ -29,8 +29,8 @@ export default function RegisterPage() {
         try {
             const response = await registerMutation.mutateAsync({ name, email, password });
             if (response.success && response.data) {
-                const { access_token, user } = response.data as any;
-                setAuth(user, access_token || "mock-jwt-token");
+                const { accessToken, user } = response.data as any;
+                setAuth(user, accessToken);
                 router.push("/dashboard");
             } else {
                 setError(response.message || "Registration failed");
@@ -47,8 +47,8 @@ export default function RegisterPage() {
             const response = await googleLoginMutation.mutateAsync({ token: mockToken });
 
             if (response.success && response.data) {
-                const { access_token, user } = response.data as any;
-                setAuth(user, access_token);
+                const { accessToken, user } = response.data as any;
+                setAuth(user, accessToken);
                 router.push("/dashboard");
             } else {
                 setError(response.message || "Google registration failed");

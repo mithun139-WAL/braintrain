@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { QueryProvider } from "@/providers/QueryProvider";
-import { Inter } from "next/font/google";
+import { ThemeProvider } from "@/core/components/providers/ThemeProvider";
+import { QueryProvider } from "@/core/components/providers/QueryProvider";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "@/styles/globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
 
 export const metadata: Metadata = {
-    title: "BrainTrain Emerald Variant | AI Interview Training",
-    description: "BrainTrain Application",
+    title: "BrainTrain | AI Interview Training",
+    description: "Master your interview skills with AI-driven coaching and personalised training paths.",
 };
 
 export default function RootLayout({
@@ -18,14 +19,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <head>
-                <link
-                    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-                    rel="stylesheet"
-                />
-            </head>
+
             <body
-                className={`${inter.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
+                className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
             >
                 <ThemeProvider
                     attribute="class"

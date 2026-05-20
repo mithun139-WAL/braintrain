@@ -1,81 +1,129 @@
 "use client";
 
+import { useState } from "react";
+import { TrendItem } from "@braintrain/shared";
 import {
-    LineChart,
-    Line,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Area,
-    AreaChart
 } from "recharts";
 
-const data = [
-    { name: "Oct 01", score: 40 },
-    { name: "Oct 08", score: 55 },
-    { name: "Oct 15", score: 68 },
-    { name: "Oct 22", score: 82 },
-    { name: "Oct 29", score: 88 },
-];
+const PERIODS = ["Week", "Month", "Year"] as const;
 
-export function PerformanceChart() {
-    return (
-        <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-8">
+function formatTrendDate(iso: string) {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export function PerformanceChart({ trend }: { trend?: TrendItem[] }) {
+    const [activePeriod, setActivePeriod] = useState<typeof PERIODS[number]>("Month");
+    const chartData =
+        trend && trend.length > 0
+            ? trend.map((item) => ({
+                  name: formatTrendDate(item.analyzedAt),
+                  score: Math.round(item.overallScore),
+              }))
+            : [];
+
+    if (chartData.length === 0) {
+        return (
+            <div className="flex h-full min-h-[320px] flex-col rounded-2xl border border-border bg-card p-6 shadow-card">
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Score Progression</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your performance trajectory over the last 30 days</p>
+                    <h3 className="text-base font-bold text-foreground">Score Progression</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Performance trajectory appears after your first analyzed session.</p>
                 </div>
-                <div className="flex bg-gray-50 dark:bg-gray-900 rounded-lg p-1 border border-gray-100 dark:border-gray-800">
-                    <button className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-100/50 dark:border-gray-700/50">Week</button>
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Month</button>
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Year</button>
+                <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-border bg-muted/20 px-6 text-center">
+                    <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">No score progression yet</p>
+                        <p className="text-body-sm text-muted-foreground">
+                            Complete a session to replace this empty state with real performance movement.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-card rounded-2xl border border-border shadow-card flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-start justify-between px-6 pt-6 pb-4">
+                <div>
+                    <h3 className="text-base font-bold text-foreground">Score Progression</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        Performance trajectory · last 30 days
+                    </p>
+                </div>
+                <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
+                    {PERIODS.map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setActivePeriod(p)}
+                            className={
+                                p === activePeriod
+                                    ? "px-3 py-1.5 text-xs font-semibold rounded-md bg-card text-foreground shadow-card"
+                                    : "px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md"
+                            }
+                        >
+                            {p}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="flex-1 w-full min-h-[300px]">
+            {/* Chart */}
+            <div className="flex-1 w-full min-h-[280px] px-2 pb-5">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                         <defs>
-                            <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="100%">
-                                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1} />
-                                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                            <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.15} />
+                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}    />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            stroke="hsl(var(--border))"
+                            strokeOpacity={0.6}
+                        />
                         <XAxis
                             dataKey="name"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}
-                            dy={10}
+                            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
+                            dy={8}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}
+                            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
                             domain={[0, 100]}
                         />
                         <Tooltip
                             contentStyle={{
-                                borderRadius: '12px',
-                                border: 'none',
-                                boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-                                fontSize: '12px',
-                                fontWeight: 'bold'
+                                borderRadius:    "10px",
+                                border:          "1px solid hsl(var(--border))",
+                                background:      "hsl(var(--card))",
+                                color:           "hsl(var(--foreground))",
+                                boxShadow:       "0 8px 24px rgba(0,0,0,0.12)",
+                                fontSize:        "12px",
+                                fontWeight:      "600",
                             }}
+                            cursor={{ stroke: "#6366f1", strokeWidth: 1, strokeDasharray: "4 2" }}
                         />
                         <Area
                             type="monotone"
                             dataKey="score"
-                            stroke="#4f46e5"
-                            strokeWidth={3}
+                            stroke="#6366f1"
+                            strokeWidth={2.5}
                             fillOpacity={1}
                             fill="url(#scoreGradient)"
-                            dot={{ fill: '#fff', stroke: '#4f46e5', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 0, fill: '#4f46e5' }}
+                            dot={{ fill: "hsl(var(--card))", stroke: "#6366f1", strokeWidth: 2.5, r: 4 }}
+                            activeDot={{ r: 6, fill: "#6366f1", strokeWidth: 0 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
