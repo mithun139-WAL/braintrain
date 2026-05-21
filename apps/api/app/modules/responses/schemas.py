@@ -47,3 +47,30 @@ class ResponseInstanceResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ── Follow-up analysis schemas ─────────────────────────────────────────────────
+
+class FollowupExchangeSchema(BaseModel):
+    """One round of follow-up Q&A sent from the frontend."""
+    followup_question: str
+    followup_answer: str
+
+
+class FollowupRequest(BaseModel):
+    """
+    Request body for POST /questions/{question_id}/responses/{response_id}/followup.
+
+    prior_exchanges carries the conversation history so far.
+    Empty list = first check (right after the initial answer is submitted).
+    """
+    prior_exchanges: list[FollowupExchangeSchema] = []
+
+
+class FollowupResponse(BaseModel):
+    """Response returned by the follow-up analysis endpoint."""
+    needs_followup: bool
+    followup_question: Optional[str] = None   # present when needs_followup=True
+    acknowledgement: str                       # brief inline feedback for the user
+    gap_identified: Optional[str] = None      # present when needs_followup=True
+    exchange_number: int                       # how many rounds have occurred (0-based)

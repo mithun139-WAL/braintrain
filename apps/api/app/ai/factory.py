@@ -109,3 +109,23 @@ def get_coach_provider():
 
     from app.ai.providers.stub_coach import StubCoachProvider
     return StubCoachProvider()
+
+
+@lru_cache(maxsize=1)
+def get_followup_provider():
+    """Return the real-time follow-up analysis provider (NIM > OpenAI > Stub)."""
+    settings = get_settings()
+
+    # NIM shares the same OpenAI-compatible interface; use OpenAI provider with NIM base_url
+    if settings.nim_enabled:
+        from app.ai.providers.openai_followup import OpenAIFollowupProvider
+        import openai as _openai
+        # Reuse OpenAIFollowupProvider — it only needs an api_key; NIM uses same API shape
+        return OpenAIFollowupProvider(api_key=settings.nvidia_api_key)
+
+    if settings.openai_enabled:
+        from app.ai.providers.openai_followup import OpenAIFollowupProvider
+        return OpenAIFollowupProvider(api_key=settings.openai_api_key)
+
+    from app.ai.providers.stub_followup import StubFollowupProvider
+    return StubFollowupProvider()

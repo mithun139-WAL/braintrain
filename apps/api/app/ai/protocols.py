@@ -100,3 +100,34 @@ class TranscriptionResult:
 class AudioTranscriptionProvider(Protocol):
     async def transcribe(self, audio_url: str) -> TranscriptionResult:
         ...
+
+
+# ── Real-time Follow-up Analysis ───────────────────────────────────────────────
+
+@dataclass
+class FollowupExchange:
+    followup_question: str
+    followup_answer: str
+
+
+@dataclass
+class FollowupInput:
+    question_text: str
+    answer_text: str
+    interview_type: str       # "TECHNICAL" | "BEHAVIORAL"
+    difficulty: str           # "EASY" | "MEDIUM" | "HARD"
+    prior_exchanges: list[FollowupExchange]  # previous follow-up rounds in this Q&A
+
+
+@dataclass
+class FollowupSignal:
+    needs_followup: bool
+    followup_question: Optional[str]   # None when needs_followup is False
+    acknowledgement: str               # brief feedback shown inline in chat
+    gap_identified: Optional[str]      # what was missing (None when complete)
+
+
+@runtime_checkable
+class FollowupProvider(Protocol):
+    async def analyze(self, input: FollowupInput) -> FollowupSignal:
+        ...

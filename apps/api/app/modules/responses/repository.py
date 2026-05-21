@@ -80,3 +80,16 @@ async def create_response(
     db.add(response)
     await db.flush()
     return response
+
+
+async def get_response_by_id(
+    db: AsyncSession, response_id: uuid.UUID
+) -> Optional[ResponseInstance]:
+    """Load a response by its primary key (no ownership check — caller must validate)."""
+    result = await db.execute(
+        select(ResponseInstance).where(
+            ResponseInstance.id == response_id,
+            ResponseInstance.deleted_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
