@@ -46,6 +46,8 @@ jobs:
         run: pnpm --filter @braintrain/shared build
 
       - name: Build web app
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
         run: pnpm --filter web build
 
   validate-api:
