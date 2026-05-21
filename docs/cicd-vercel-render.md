@@ -49,8 +49,8 @@ Create a Render Web Service for `apps/api` with these settings:
 - Root Directory: `apps/api`
 - Runtime: `Python`
 - Build Command: `uv sync --frozen`
-- Pre-Deploy Command: `uv run alembic upgrade head`
-- Start Command: `uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Pre-Deploy Command: *(Leave blank - this is a paid feature)*
+- Start Command: `uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 Recommended:
 
