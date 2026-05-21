@@ -20,17 +20,22 @@ export function SkillPreferencesCard({ profile, isLoading }: SkillPreferencesCar
     const pickerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (!showTagPicker) return;
+
+        // Defer so the click that opened the picker isn't caught immediately
+        let timer: ReturnType<typeof setTimeout>;
         function handleClickOutside(event: MouseEvent) {
             if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
                 setShowTagPicker(false);
             }
         }
 
-        if (showTagPicker) {
+        timer = setTimeout(() => {
             document.addEventListener("mousedown", handleClickOutside);
-        }
+        }, 0);
 
         return () => {
+            clearTimeout(timer);
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [showTagPicker]);

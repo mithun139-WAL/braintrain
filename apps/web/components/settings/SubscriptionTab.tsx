@@ -31,7 +31,11 @@ export function SubscriptionTab({ profile, isLoading }: SubscriptionTabProps) {
     }
 
     const billingStatus = billingStatusResponse?.data;
-    const isPro = (profile?.planType || "FREE").toUpperCase() === "PRO";
+    // billingStatus.planType is authoritative: it reflects a live Stripe reconciliation
+    // that runs on every /billing/status call and writes plan_type back to the DB.
+    // profile.planType is a plain DB read that may lag until the profile is re-fetched.
+    const effectivePlanType = billingStatus?.planType ?? profile?.planType;
+    const isPro = (effectivePlanType || "FREE").toUpperCase() === "PRO";
     const isBillingConfigured = billingStatus?.configured ?? false;
     const hasActiveSubscription = billingStatus?.hasActiveSubscription ?? false;
     const sessionsUsed = profile?.monthlySessionCount || 0;
@@ -64,9 +68,12 @@ export function SubscriptionTab({ profile, isLoading }: SubscriptionTabProps) {
                     ) : null}
                 </div>
 
-                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground shadow-card">
-                    <Sparkles size={14} className="text-primary" />
-                    {(profile?.planType || "FREE").toUpperCase()} plan
+                <div className={isPro
+                    ? "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary/70 px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-[0_0_14px_rgba(var(--primary-rgb,99,102,241),0.4)]"
+                    : "inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-1.5 text-sm font-semibold text-foreground"
+                }>
+                    <Sparkles size={14} />
+                    {(effectivePlanType || "FREE").toUpperCase()} plan
                 </div>
             </div>
 

@@ -7,6 +7,7 @@ import { CheckCircle2, Info } from "lucide-react";
 import { PageHeader } from "@/core/components/ui/PageHeader";
 import { Surface } from "@/core/components/ui/Surface";
 import { useGetProfile } from "@/hooks/queries/useGetProfile";
+import { useBillingStatus } from "@/hooks/queries/useBillingStatus";
 import { ProfileTab } from "@/components/settings/ProfileTab";
 import { SubscriptionTab } from "@/components/settings/SubscriptionTab";
 import { SkillPreferencesCard } from "@/components/settings/SkillPreferencesCard";
@@ -17,8 +18,13 @@ export default function SettingsPage() {
     const searchParams = useSearchParams();
     const queryClient = useQueryClient();
     const { data: profileResponse, isLoading } = useGetProfile();
+    const { data: billingStatusResponse } = useBillingStatus();
     const profile = profileResponse?.data;
-    const isPro = (profile?.planType || "FREE").toUpperCase() === "PRO";
+    // billingStatus.planType is reconciled against Stripe on every call and is the
+    // authoritative source. profile.planType is a plain DB read that may be stale
+    // until useBillingStatus invalidates the profile cache (see useBillingStatus.ts).
+    const effectivePlanType = billingStatusResponse?.data?.planType ?? profile?.planType;
+    const isPro = (effectivePlanType || "FREE").toUpperCase() === "PRO";
     const billingState = searchParams.get("billing");
 
     useEffect(() => {

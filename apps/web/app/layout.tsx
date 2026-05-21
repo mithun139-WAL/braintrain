@@ -10,6 +10,14 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space
 export const metadata: Metadata = {
     title: "BrainTrain | AI Interview Training",
     description: "Master your interview skills with AI-driven coaching and personalised training paths.",
+    icons: {
+        icon: [
+            { url: "/favicon.ico" },
+            { url: "/icon.png", type: "image/png" }
+        ],
+        shortcut: "/favicon.ico",
+        apple: "/icon.png",
+    },
 };
 
 export default function RootLayout({
