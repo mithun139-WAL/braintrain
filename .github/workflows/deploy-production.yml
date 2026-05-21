@@ -208,32 +208,44 @@ jobs:
       - name: Build shared package
         run: pnpm --filter @braintrain/shared build
 
+      - name: Verify web env
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+        run: |
+          test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Pull Vercel production settings
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
           vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel artifacts
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
           vercel build --prod --token="${VERCEL_TOKEN}"
 
       - name: Deploy to Vercel
         id: vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
 
           deployment_url="$(vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}" | tr -d '\r\n')"
 
