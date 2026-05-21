@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
     Bot,
     Eye,
     Mic,
+    MicOff,
     Send,
     ThumbsUp,
     ThumbsDown,
     ChevronLeft,
-    Loader2
+    Loader2,
 } from "lucide-react";
 import { Code } from "lucide-react";
 import {
@@ -17,6 +18,8 @@ import {
     SessionTimerPill,
     useLiveSessionComposer,
 } from "@/components/session/LiveSessionShared";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 export const HybridSession: React.FC<LiveSessionProps> = ({
     session,
@@ -25,6 +28,8 @@ export const HybridSession: React.FC<LiveSessionProps> = ({
     isEnding,
     onEndSession
 }) => {
+    const prevQuestionCountRef = useRef(0);
+
     const {
         answerText,
         canSubmit,
@@ -36,6 +41,40 @@ export const HybridSession: React.FC<LiveSessionProps> = ({
         setAnswerText,
         submitResponse,
     } = useLiveSessionComposer({ session, isEnding });
+
+    // ── Text-to-Speech ────────────────────────────────────────────────────────
+    const { speak, stop: stopSpeaking, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
+
+    // ── Speech-to-Text ────────────────────────────────────────────────────────
+    const { startListening, stopListening, isListening, isSupported: isSTTSupported } = useSpeechRecognition({
+        onTranscriptChange: (fullText) => setAnswerText(fullText),
+    });
+
+    // Auto-speak each new AI question
+    useEffect(() => {
+        if (!isTTSSupported) return;
+        if (questions.length > prevQuestionCountRef.current) {
+            prevQuestionCountRef.current = questions.length;
+            const latest = questions[questions.length - 1];
+            if (latest?.content) {
+                setTimeout(() => speak(latest.content), 500);
+            }
+        }
+    }, [questions.length, speak, isTTSSupported]);
+
+    // Stop speech when session ends
+    useEffect(() => {
+        if (isEnding) stopSpeaking();
+    }, [isEnding, stopSpeaking]);
+
+    const handleMicToggle = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            if (isSpeaking) stopSpeaking();
+            startListening(answerText);
+        }
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-background text-foreground font-display selection:bg-primary/30 selection:text-white">
@@ -176,14 +215,40 @@ export const HybridSession: React.FC<LiveSessionProps> = ({
                         </div>
                         <div className="flex items-center justify-between mt-2">
                             <div className="flex gap-2">
-                                <button className="p-1.5 hover:bg-muted rounded text-muted-foreground transition-colors">
-                                    <Mic size={14} />
-                                </button>
+                                {isSTTSupported ? (
+                                    <button
+                                        onClick={handleMicToggle}
+                                        disabled={isPendingNext || isAnswered || submitResponse.isPending}
+                                        title={isListening ? "Stop recording" : "Speak your answer"}
+                                        className={`p-1.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                            isListening
+                                                ? "text-red-500 bg-red-500/10 animate-pulse"
+                                                : "hover:bg-muted text-muted-foreground"
+                                        }`}
+                                    >
+                                        {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                                    </button>
+                                ) : (
+                                    <button
+                                        disabled
+                                        title="Speech input not supported in this browser (use Chrome or Edge)"
+                                        className="p-1.5 hover:bg-muted rounded text-muted-foreground transition-colors opacity-40 cursor-not-allowed"
+                                    >
+                                        <Mic size={14} />
+                                    </button>
+                                )}
                                 <button className="p-1.5 hover:bg-muted rounded text-muted-foreground transition-colors">
                                     <Code size={14} />
                                 </button>
                             </div>
-                            <span className="text-[10px] text-muted-foreground">Press Cmd+Enter to send</span>
+                            <div className="flex items-center gap-2">
+                                {isListening && (
+                                    <span className="text-[10px] text-red-400 font-medium animate-pulse">
+                                        Listening…
+                                    </span>
+                                )}
+                                <span className="text-[10px] text-muted-foreground">Press Cmd+Enter to send</span>
+                            </div>
                         </div>
                     </div>
                 </section>

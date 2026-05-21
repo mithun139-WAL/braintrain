@@ -1,6 +1,6 @@
 export function HowItWorks() {
     return (
-        <section className="bg-background-light py-24 dark:bg-background-dark">
+        <section id="how-it-works" className="bg-background-light py-24 dark:bg-background-dark">
             <div className="mx-auto max-w-7xl px-6 lg:px-12">
                 <div className="mb-20">
                     <h2 className="text-3xl font-black tracking-tight text-charcoal sm:text-4xl dark:text-white">

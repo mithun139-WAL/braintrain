@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Zap, Star } from "lucide-react";
+import { useUiStore } from "@/lib/store/ui.store";
 
 const SOCIAL_PROOF = [
     { initials: "JS", color: "bg-violet-600" },
@@ -9,6 +12,7 @@ const SOCIAL_PROOF = [
 ];
 
 export function Hero() {
+    const { openModal } = useUiStore();
     return (
         <section className="relative mx-auto max-w-7xl px-6 py-24 text-center lg:px-12 lg:py-36 overflow-hidden">
 
@@ -58,7 +62,10 @@ export function Hero() {
                     Start Training Free
                     <ArrowRight size={15} className="text-white/60 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
-                <button className="flex min-w-[210px] items-center justify-center rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-gray-900 hover:bg-slate-50 transition-all dark:border-slate-700 dark:bg-transparent dark:text-white">
+                <button
+                    onClick={() => openModal("demo")}
+                    className="flex min-w-[210px] items-center justify-center rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-gray-900 hover:bg-slate-50 transition-all dark:border-slate-700 dark:bg-transparent dark:text-white"
+                >
                     Watch a Demo
                 </button>
             </div>

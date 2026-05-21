@@ -33,6 +33,7 @@ import {
     Crown,
     AlertTriangle,
 } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 import { useSessionBuilderStore } from "@/lib/store/sessionBuilder.store";
 import { InterviewType, InterviewMode, Difficulty } from "@braintrain/shared";
@@ -135,12 +136,7 @@ export default function StartSessionPage() {
                             </button>
                         </Link>
                         <div className="h-5 w-px bg-border"></div>
-                        <div className="flex items-center gap-2.5">
-                            <div className="size-7 bg-foreground rounded-lg flex items-center justify-center text-background">
-                                <Brain size={20} className="text-primary" />
-                            </div>
-                            <span className="text-lg font-bold tracking-tight">BrainTrain</span>
-                        </div>
+                        <Logo iconWrapperClassName="size-7 rounded-lg" iconSize={14} textClassName="text-lg font-bold tracking-tight" />
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-bold uppercase tracking-wider">

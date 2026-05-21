@@ -1,8 +1,9 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
     Bot,
     Lightbulb,
     Mic,
+    MicOff,
     Code,
     Send,
     TrendingUp,
@@ -10,7 +11,11 @@ import {
     Loader2,
     ChevronRight,
     AlertCircle,
+    Volume2,
+    VolumeX,
 } from "lucide-react";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import {
     LIVE_SESSION_MAX_QUESTIONS,
     type LiveSessionProps,
@@ -28,6 +33,9 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
     onEndSession
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const prevQuestionCountRef = useRef(0);
+    const prevFollowupQuestionRef = useRef<string | null>(null);
+
     const {
         answerText,
         setAnswerText,
@@ -53,6 +61,61 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
             }, 100);
         },
     });
+
+    // ── Text-to-Speech (agent audio) ─────────────────────────────────────────
+    const { speak, stop: stopSpeaking, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
+
+    // ── Speech-to-Text (user audio input) ────────────────────────────────────
+    const { startListening, stopListening, isListening, isSupported: isSTTSupported } = useSpeechRecognition({
+        onTranscriptChange: (fullText) => {
+            // Route transcript to whichever textarea is currently active
+            if (followupState.isActive) {
+                setFollowupAnswerText(fullText);
+            } else {
+                setAnswerText(fullText);
+            }
+        },
+    });
+
+    // Auto-speak each new AI question as it arrives
+    useEffect(() => {
+        if (!isTTSSupported) return;
+        if (questions.length > prevQuestionCountRef.current) {
+            prevQuestionCountRef.current = questions.length;
+            const latest = questions[questions.length - 1];
+            if (latest?.content) {
+                // Small delay so the chat bubble animation starts first
+                setTimeout(() => speak(latest.content), 500);
+            }
+        }
+    }, [questions.length, speak, isTTSSupported]);
+
+    // Auto-speak follow-up probes when they arrive
+    useEffect(() => {
+        if (!isTTSSupported) return;
+        const fq = followupState.currentFollowupQuestion;
+        if (fq && fq !== prevFollowupQuestionRef.current) {
+            prevFollowupQuestionRef.current = fq;
+            setTimeout(() => speak(fq), 300);
+        }
+    }, [followupState.currentFollowupQuestion, speak, isTTSSupported]);
+
+    // Stop speech when the session ends
+    useEffect(() => {
+        if (isEnding) stopSpeaking();
+    }, [isEnding, stopSpeaking]);
+
+    // Toggle microphone recording
+    const handleMicToggle = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            // Pause TTS so the mic doesn't pick up the agent's voice
+            if (isSpeaking) stopSpeaking();
+            const base = followupState.isActive ? followupAnswerText : answerText;
+            startListening(base);
+        }
+    };
 
     const progressPct = Math.min((questions.length / LIVE_SESSION_MAX_QUESTIONS) * 100, 100);
 
@@ -181,6 +244,19 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
                                                 <p className="pl-3 leading-relaxed text-gray-200 whitespace-pre-wrap text-sm">
                                                     {q.content}
                                                 </p>
+                                                {/* Replay / stop button */}
+                                                {isTTSSupported && (
+                                                    <button
+                                                        onClick={() => isSpeaking ? stopSpeaking() : speak(q.content)}
+                                                        className="absolute top-3 right-3 p-1 hover:bg-gray-800 rounded text-gray-700 hover:text-gray-400 transition-colors"
+                                                        title={isSpeaking ? "Stop speaking" : "Replay question"}
+                                                    >
+                                                        {isSpeaking
+                                                            ? <VolumeX size={13} />
+                                                            : <Volume2 size={13} />
+                                                        }
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -339,13 +415,38 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
                             />
                             <div className="flex items-center justify-between px-4 pb-3 pt-2 border-t border-gray-800">
                                 <div className="flex items-center gap-1 text-gray-600">
-                                    <button className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-600 hover:text-gray-300 transition-colors">
-                                        <Mic size={15} />
-                                    </button>
+                                    {/* Mic button — toggles speech-to-text */}
+                                    {isSTTSupported ? (
+                                        <button
+                                            onClick={handleMicToggle}
+                                            disabled={textareaDisabled}
+                                            title={isListening ? "Stop recording" : "Speak your answer"}
+                                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                                isListening
+                                                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
+                                                    : "hover:bg-gray-800 text-gray-600 hover:text-gray-300"
+                                            }`}
+                                        >
+                                            {isListening ? <MicOff size={15} /> : <Mic size={15} />}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            disabled
+                                            title="Speech input not supported in this browser (use Chrome or Edge)"
+                                            className="p-1.5 rounded-lg text-gray-700 cursor-not-allowed opacity-40"
+                                        >
+                                            <Mic size={15} />
+                                        </button>
+                                    )}
                                     <button className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-600 hover:text-gray-300 transition-colors">
                                         <Code size={15} />
                                     </button>
                                     <div className="w-px h-3.5 bg-gray-800 mx-1" />
+                                    {isListening && (
+                                        <span className="text-[10px] text-red-400 font-medium animate-pulse mr-1">
+                                            Listening…
+                                        </span>
+                                    )}
                                     <span className={`text-[10px] font-mono tabular-nums transition-colors ${
                                         (followupState.isActive ? followupAnswerText : answerText).length > 1800
                                             ? "text-red-400"

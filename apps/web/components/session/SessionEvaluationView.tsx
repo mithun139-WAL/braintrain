@@ -6,6 +6,7 @@ import {
     Activity,
     AlertCircle,
     AlertTriangle,
+    ArrowLeft,
     ArrowRight,
     Brain,
     Calendar,
@@ -174,13 +175,21 @@ export function SessionEvaluationView({ sessionId }: { sessionId: string }) {
                     <p className="text-sm text-slate-500 dark:text-gray-400">
                         Something went wrong generating your evaluation. Please try again.
                     </p>
-                    <button
-                        onClick={() => analyzeSession.mutate(sessionId)}
-                        className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white"
-                    >
-                        <RotateCcw size={16} />
-                        Retry Analysis
-                    </button>
+                    <div className="flex flex-col gap-3 w-full">
+                        <button
+                            onClick={() => analyzeSession.mutate(sessionId)}
+                            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white w-full hover:bg-primary-dark transition-all"
+                        >
+                            <RotateCcw size={16} />
+                            Retry Analysis
+                        </button>
+                        <Link href="/dashboard" className="w-full">
+                            <button className="flex items-center justify-center gap-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 w-full hover:bg-slate-50 dark:hover:bg-gray-800 transition-all">
+                                <ArrowLeft size={16} />
+                                Back to Dashboard
+                            </button>
+                        </Link>
+                    </div>
                 </div>
             </div>
         );
@@ -266,6 +275,12 @@ export function SessionEvaluationView({ sessionId }: { sessionId: string }) {
                         </p>
                     </div>
                     <div className="flex gap-3">
+                        <Link href="/dashboard">
+                            <button className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-gray-800">
+                                <ArrowLeft size={18} />
+                                <span>Back to Dashboard</span>
+                            </button>
+                        </Link>
                         <Link href="/dashboard/sessions/start">
                             <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-dark">
                                 <RotateCcw size={18} />

@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { Logo } from "@/components/ui/Logo";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
     return (
         <div className="flex flex-col min-h-screen">
             <header className="w-full px-6 py-4 flex justify-between items-center border-b border-transparent">
-                <div className="flex items-center gap-2">
-                    <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
-                        <span className="material-symbols-outlined text-2xl">
-                            psychology
-                        </span>
-                    </div>
-                    <span className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">
-                        BrainTrain
-                    </span>
-                </div>
+                <Link href="/" className="transition-opacity hover:opacity-90">
+                    <Logo
+                        iconWrapperClassName="size-9 rounded-xl"
+                        iconSize={18}
+                        textClassName="text-lg font-bold"
+                    />
+                </Link>
+
                 <Link
                     href="#"
                     className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary transition-colors flex items-center gap-1"

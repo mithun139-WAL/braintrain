@@ -1,6 +1,8 @@
+import { Mic, Zap, Smile, TrendingUp } from "lucide-react";
+
 export function Features() {
     return (
-        <section className="bg-white py-24 dark:bg-background-dark/50">
+        <section id="features" className="bg-white py-24 dark:bg-background-dark/50">
             <div className="mx-auto max-w-7xl px-6 lg:px-12">
                 <div className="mb-16 text-center">
                     <h2 className="text-3xl font-black tracking-tight text-charcoal sm:text-4xl dark:text-white">
@@ -15,9 +17,7 @@ export function Features() {
                     {/* Card 1 */}
                     <div className="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
-                            <span className="material-symbols-outlined">
-                                mic
-                            </span>
+                            <Mic className="size-6" />
                         </div>
                         <h3 className="text-lg font-bold text-charcoal dark:text-white">
                             AI Mock Interviews
@@ -30,9 +30,7 @@ export function Features() {
                     {/* Card 2 */}
                     <div className="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
-                            <span className="material-symbols-outlined">
-                                bolt
-                            </span>
+                            <Zap className="size-6" />
                         </div>
                         <h3 className="text-lg font-bold text-charcoal dark:text-white">
                             Real-time Feedback
@@ -45,9 +43,7 @@ export function Features() {
                     {/* Card 3 */}
                     <div className="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
-                            <span className="material-symbols-outlined">
-                                face
-                            </span>
+                            <Smile className="size-6" />
                         </div>
                         <h3 className="text-lg font-bold text-charcoal dark:text-white">
                             Behavioral Analysis
@@ -60,9 +56,7 @@ export function Features() {
                     {/* Card 4 */}
                     <div className="group relative rounded-2xl border border-slate-100 bg-background-light p-8 transition-all hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900/50">
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-800">
-                            <span className="material-symbols-outlined">
-                                analytics
-                            </span>
+                            <TrendingUp className="size-6" />
                         </div>
                         <h3 className="text-lg font-bold text-charcoal dark:text-white">
                             Progress Tracking

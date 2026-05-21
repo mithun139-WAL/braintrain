@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
     Timer,
     Mic,
@@ -11,7 +11,9 @@ import {
     Paperclip,
     Code,
     ChevronLeft,
-    Loader2
+    Loader2,
+    Volume2,
+    VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +23,8 @@ import {
     SessionEndButton,
     useLiveSessionComposer,
 } from "@/components/session/LiveSessionShared";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 export const PanelSession: React.FC<LiveSessionProps> = ({
     session,
@@ -29,6 +33,8 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
     isEnding,
     onEndSession
 }) => {
+    const prevQuestionCountRef = useRef(0);
+
     const {
         answerText,
         canSubmit,
@@ -41,6 +47,40 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
         setAnswerText,
         submitResponse,
     } = useLiveSessionComposer({ session, isEnding });
+
+    // ── Text-to-Speech ────────────────────────────────────────────────────────
+    const { speak, stop: stopSpeaking, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
+
+    // ── Speech-to-Text ────────────────────────────────────────────────────────
+    const { startListening, stopListening, isListening, isSupported: isSTTSupported } = useSpeechRecognition({
+        onTranscriptChange: (fullText) => setAnswerText(fullText),
+    });
+
+    // Auto-speak each new question
+    useEffect(() => {
+        if (!isTTSSupported) return;
+        if (questions.length > prevQuestionCountRef.current) {
+            prevQuestionCountRef.current = questions.length;
+            const latest = questions[questions.length - 1];
+            if (latest?.content) {
+                setTimeout(() => speak(latest.content), 500);
+            }
+        }
+    }, [questions.length, speak, isTTSSupported]);
+
+    // Stop speech when session ends
+    useEffect(() => {
+        if (isEnding) stopSpeaking();
+    }, [isEnding, stopSpeaking]);
+
+    const handleMicToggle = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            if (isSpeaking) stopSpeaking();
+            startListening(answerText);
+        }
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-background text-foreground font-display selection:bg-primary/30 selection:text-white">
@@ -129,7 +169,16 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-bold tracking-wider text-primary uppercase">Current Question</span>
-                                <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                                <div className="flex items-center gap-3 text-muted-foreground text-xs">
+                                    {isTTSSupported && currentQuestion && (
+                                        <button
+                                            onClick={() => isSpeaking ? stopSpeaking() : speak(currentQuestion.content)}
+                                            title={isSpeaking ? "Stop speaking" : "Replay question"}
+                                            className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground"
+                                        >
+                                            {isSpeaking ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                                        </button>
+                                    )}
                                     <Timer size={14} />
                                     {formatTime(seconds)}
                                 </div>
@@ -169,6 +218,22 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                     <Code size={14} />
                                     Code Snippet
                                 </button>
+                                {/* Mic toggle */}
+                                {isSTTSupported ? (
+                                    <button
+                                        onClick={handleMicToggle}
+                                        disabled={isPendingNext || isAnswered || submitResponse.isPending}
+                                        title={isListening ? "Stop recording" : "Speak your answer"}
+                                        className={`text-xs font-medium flex items-center gap-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                            isListening
+                                                ? "text-red-500 animate-pulse"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        }`}
+                                    >
+                                        {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                                        {isListening ? "Stop" : "Speak"}
+                                    </button>
+                                ) : null}
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className="text-xs text-muted-foreground hidden sm:block">Press Cmd+Enter to submit</span>

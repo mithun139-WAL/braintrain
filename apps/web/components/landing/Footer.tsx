@@ -1,19 +1,21 @@
+"use client";
+
+import { Logo } from "@/components/ui/Logo";
+import { useUiStore } from "@/lib/store/ui.store";
+
 export function Footer() {
+    const { openModal } = useUiStore();
     return (
         <footer className="border-t border-slate-200 bg-white py-12 dark:border-slate-800 dark:bg-background-dark">
             <div className="mx-auto max-w-7xl px-6 lg:px-12">
                 <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
                     <div className="col-span-2">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
-                                <span className="material-symbols-outlined !text-xl font-bold">
-                                    psychology_alt
-                                </span>
-                            </div>
-                            <span className="text-lg font-extrabold tracking-tight text-charcoal dark:text-white">
-                                BrainTrain
-                            </span>
-                        </div>
+                        <Logo
+                            className="mb-6"
+                            iconWrapperClassName="h-8 w-8 size-8 rounded-xl"
+                            iconSize={16}
+                            textClassName="text-lg"
+                        />
                         <p className="max-w-xs text-sm text-slate-500 dark:text-slate-400">
                             The world&apos;s most advanced AI interview training
                             platform for elite professionals and
@@ -28,7 +30,7 @@ export function Footer() {
                             <li>
                                 <a
                                     className="hover:text-primary transition-colors"
-                                    href="#"
+                                    href="#features"
                                 >
                                     Features
                                 </a>
@@ -36,65 +38,58 @@ export function Footer() {
                             <li>
                                 <a
                                     className="hover:text-primary transition-colors"
-                                    href="#"
+                                    href="#how-it-works"
                                 >
-                                    Enterprise
+                                    How It Works
                                 </a>
                             </li>
                             <li>
                                 <a
                                     className="hover:text-primary transition-colors"
-                                    href="#"
+                                    href="#pricing"
                                 >
                                     Pricing
                                 </a>
                             </li>
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("api")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     API
-                                </a>
+                                </button>
                             </li>
                         </ul>
                     </div>
+
                     <div>
                         <h5 className="mb-4 text-sm font-bold uppercase tracking-widest text-charcoal dark:text-white">
                             Company
                         </h5>
-                        <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                        <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400 flex flex-col items-start">
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("about")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     About Us
-                                </a>
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
-                                >
-                                    Careers
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("contact")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     Contact
-                                </a>
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("privacy")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     Privacy
-                                </a>
+                                </button>
                             </li>
                         </ul>
                     </div>
@@ -102,38 +97,38 @@ export function Footer() {
                         <h5 className="mb-4 text-sm font-bold uppercase tracking-widest text-charcoal dark:text-white">
                             Resources
                         </h5>
-                        <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                        <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400 flex flex-col items-start">
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("blog")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     Blog
-                                </a>
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("help")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     Help Center
-                                </a>
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("whitepapers")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     Whitepapers
-                                </a>
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    className="hover:text-primary transition-colors"
-                                    href="#"
+                                <button
+                                    onClick={() => openModal("guides")}
+                                    className="hover:text-primary transition-colors text-left"
                                 >
                                     Guides
-                                </a>
+                                </button>
                             </li>
                         </ul>
                     </div>

@@ -3,8 +3,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/Logo";
 import {
     dashboardNavigation,
     isDashboardItemActive,
@@ -29,9 +30,11 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
             )}
         >
             <div className="flex items-center gap-3 border-b border-border/80 px-5 py-5 flex-shrink-0">
-                <div className="flex items-center justify-center size-10 rounded-2xl bg-primary text-primary-foreground shadow-primary-sm flex-shrink-0">
-                    <Brain size={18} />
-                </div>
+                <Logo
+                    showText={false}
+                    iconWrapperClassName="size-10 rounded-2xl bg-primary text-primary-foreground shadow-primary-sm flex-shrink-0"
+                    iconSize={18}
+                />
                 <div className="min-w-0 flex-1">
                     <h1 className="text-foreground text-sm font-bold leading-none tracking-tight">
                         BrainTrain
@@ -40,6 +43,7 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
                         Your AI-native interview mentor.
                     </p>
                 </div>
+
                 {onClose ? (
                     <button
                         type="button"
