@@ -11,13 +11,12 @@ if (process.env.NODE_ENV === "production") {
         throw new Error(
             "[next.config] NEXT_PUBLIC_API_URL is not set. " +
             "Add it in your deployment platform (Vercel → Settings → Environment Variables) " +
-            "and redeploy. Without it every API call will hit http://localhost:8000."
+            "and redeploy."
         );
     }
-    if (apiUrl.includes("localhost")) {
-        console.warn(
-            "[next.config] WARNING: NEXT_PUBLIC_API_URL is set to a localhost URL in a " +
-            "production build. This will break in a deployed environment."
+    if (/localhost|127\.0\.0\.1/.test(apiUrl)) {
+        throw new Error(
+            "[next.config] NEXT_PUBLIC_API_URL points to a local address in a production build."
         );
     }
 }

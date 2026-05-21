@@ -23,6 +23,7 @@ jobs:
     name: Validate Web
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: production
 
     steps:
       - name: Checkout repository
@@ -45,9 +46,15 @@ jobs:
       - name: Build shared package
         run: pnpm --filter @braintrain/shared build
 
+      - name: Verify web env
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+        run: |
+          test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+
       - name: Build web app
         env:
-          NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
         run: pnpm --filter web build
 
   validate-api:
