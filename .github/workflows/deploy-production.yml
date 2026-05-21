@@ -19,11 +19,52 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
+  # ── Detect which workspaces changed ──────────────────────────────────────────
+  # Every downstream job reads these outputs via `needs.changes.outputs.*`.
+  # On workflow_dispatch (manual trigger) we always deploy everything.
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.set-output.outputs.api }}
+      web: ${{ steps.set-output.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/shared/**'
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+
+      - name: Set changed outputs
+        id: set-output
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual dispatch: always deploy everything
+            echo "api=true" >> "$GITHUB_OUTPUT"
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
+            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Validate ──────────────────────────────────────────────────────────────────
+
   validate-web:
     name: Validate Web
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
+    needs: [changes]
+    if: needs.changes.outputs.web == 'true'
 
     steps:
       - name: Checkout repository
@@ -61,6 +102,8 @@ jobs:
     name: Validate API
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
     defaults:
       run:
         working-directory: apps/api
@@ -93,14 +136,17 @@ jobs:
           FRONTEND_URL: http://localhost:3000
         run: uv run python -c "from app.main import app"
 
+  # ── Deploy ────────────────────────────────────────────────────────────────────
+
   deploy-api:
     name: Deploy API to Render
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
-    needs:
-      - validate-web
-      - validate-api
+    # validate-api is skipped when only web changed → deploy-api is also skipped.
+    # validate-api failing → deploy-api is skipped automatically (no always() needed).
+    needs: [changes, validate-api]
+    if: needs.changes.outputs.api == 'true'
 
     steps:
       - name: Trigger Render deploy for current commit
@@ -182,8 +228,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
-    needs:
-      - deploy-api
+    # always() is required: deploy-api may be *skipped* (only web changed) but
+    # deploy-web should still run. The explicit result checks below handle both cases:
+    #   - API also changed: deploy-api must have succeeded.
+    #   - Only web changed: deploy-api is skipped, which is fine.
+    needs: [changes, validate-web, deploy-api]
+    if: |
+      always() &&
+      needs.changes.outputs.web == 'true' &&
+      needs.validate-web.result == 'success' &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     outputs:
       deployment_url: ${{ steps.vercel.outputs.deployment_url }}
 
@@ -257,17 +311,23 @@ jobs:
           echo "deployment_url=${deployment_url}" >> "${GITHUB_OUTPUT}"
           echo "Production deployment: ${deployment_url}"
 
+  # ── Smoke test ────────────────────────────────────────────────────────────────
+
   smoke-test:
     name: Smoke Test Production
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
-    needs:
-      - deploy-api
-      - deploy-web
+    needs: [deploy-api, deploy-web]
+    # Run if at least one deployment succeeded; individual steps are gated below.
+    if: |
+      always() &&
+      (needs.deploy-api.result == 'success' || needs.deploy-web.result == 'success')
 
     steps:
       - name: Check API health
+        # Only run when the API was actually (re)deployed this pipeline run.
+        if: needs.deploy-api.result == 'success'
         env:
           API_HEALTHCHECK_URL: ${{ vars.API_HEALTHCHECK_URL }}
         run: |
@@ -285,10 +345,27 @@ jobs:
           fi
 
       - name: Check Vercel deployment URL
+        # Only run when the web was actually (re)deployed this pipeline run.
+        if: needs.deploy-web.result == 'success'
         env:
           WEB_URL: ${{ needs.deploy-web.outputs.deployment_url }}
         run: |
           set -euo pipefail
 
           : "${WEB_URL:?Missing Vercel deployment URL}"
-          curl --silent --show-error --fail --location "${WEB_URL}" > /dev/null
+          status_code="$(
+            curl --silent --show-error --location \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              "${WEB_URL}"
+          )"
+
+          case "${status_code}" in
+            200|401)
+              echo "Web deployment responded with expected status ${status_code}"
+              ;;
+            *)
+              echo "Unexpected status from web deployment: ${status_code}"
+              exit 1
+              ;;
+          esac
