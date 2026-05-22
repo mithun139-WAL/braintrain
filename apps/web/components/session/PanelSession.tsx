@@ -149,7 +149,7 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                 <div className="flex-1 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-4 custom-scrollbar">
                     {/* Panel Members */}
                     <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Sarah Chen (Frontend Lead) */}
+                        {/* Sarah Chen (Panel Member) */}
                         <div className={cn(
                             "relative bg-card rounded-xl p-5 border border-border shadow-lg flex flex-col items-center gap-3 transition-all duration-300",
                             isSarahSpeaking ? "border-primary border-t-[3px] scale-105 z-10 bg-muted/30 shadow-primary/10" : "border-t-emerald-500 border-t-[3px] opacity-80 hover:opacity-100"
@@ -173,12 +173,11 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                 </div>
                             </div>
                             <div className="text-center">
-                                <h3 className={cn("font-semibold text-sm", isSarahSpeaking ? "font-bold text-base" : "italic")}>Sarah Chen</h3>
-                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">Frontend Lead</p>
+                                <h3 className={cn("font-semibold text-sm", isSarahSpeaking ? "font-bold text-base" : "italic")}>Sarah</h3>
                             </div>
                         </div>
 
-                        {/* Marcus Johnson (Engineering Manager) */}
+                        {/* Marcus Johnson (Panel Member) */}
                         <div className={cn(
                             "relative bg-card rounded-xl p-5 border border-border shadow-lg flex flex-col items-center gap-3 transition-all duration-300",
                             isMarcusSpeaking ? "border-primary border-t-[3px] scale-105 z-10 bg-muted/30 shadow-primary/10" : "border-t-emerald-500 border-t-[3px] opacity-80 hover:opacity-100"
@@ -202,12 +201,11 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                 </div>
                             </div>
                             <div className="text-center">
-                                <h3 className={cn("font-semibold text-sm", isMarcusSpeaking ? "font-bold text-base" : "italic")}>Marcus Johnson</h3>
-                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">Engineering Manager</p>
+                                <h3 className={cn("font-semibold text-sm", isMarcusSpeaking ? "font-bold text-base" : "italic")}>Marcus</h3>
                             </div>
                         </div>
 
-                        {/* David Wright (System Architect) */}
+                        {/* David Wright (Panel Member) */}
                         <div className={cn(
                             "relative bg-card rounded-xl p-5 border border-border shadow-lg flex flex-col items-center gap-3 transition-all duration-300",
                             isDavidSpeaking ? "border-primary border-t-[3px] scale-105 z-10 bg-muted/30 shadow-primary/10" : "border-t-emerald-500 border-t-[3px] opacity-80 hover:opacity-100"
@@ -231,8 +229,7 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                 </div>
                             </div>
                             <div className="text-center">
-                                <h3 className={cn("font-semibold text-sm", isDavidSpeaking ? "font-bold text-base" : "italic")}>David Wright</h3>
-                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">System Architect</p>
+                                <h3 className={cn("font-semibold text-sm", isDavidSpeaking ? "font-bold text-base" : "italic")}>David</h3>
                             </div>
                         </div>
                     </section>
@@ -443,9 +440,9 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                         </div>
                         <div className="flex flex-col gap-3">
                             {[
-                                { name: "Marcus", role: "Engineering Manager", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc", isActive: isMarcusSpeaking },
-                                { name: "Sarah", role: "Frontend Lead", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk", isActive: isSarahSpeaking },
-                                { name: "David", role: "System Architect", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI", isActive: isDavidSpeaking },
+                                { name: "Marcus", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc", isActive: isMarcusSpeaking },
+                                { name: "Sarah", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk", isActive: isSarahSpeaking },
+                                { name: "David", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI", isActive: isDavidSpeaking },
                             ].map((panelist) => (
                                 <div
                                     key={panelist.name}

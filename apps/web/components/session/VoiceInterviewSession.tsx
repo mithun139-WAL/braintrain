@@ -271,7 +271,7 @@ const MeetRoomContainer: React.FC<{
                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-0">
                         {/* Marcus Johnson */}
                         <ParticipantTile
-                            displayName="Marcus Johnson (EM)"
+                            displayName="Marcus"
                             avatarLabel="MJ"
                             avatarGradient="from-blue-600 to-indigo-700"
                             ringColor="ring-blue-500"
@@ -292,7 +292,7 @@ const MeetRoomContainer: React.FC<{
                                 <img
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc"
                                     className="size-full rounded-full object-cover"
-                                    alt="Marcus Johnson"
+                                    alt="Marcus"
                                 />
                             }
                             className="min-h-0"
@@ -300,7 +300,7 @@ const MeetRoomContainer: React.FC<{
 
                         {/* Sarah Chen */}
                         <ParticipantTile
-                            displayName="Sarah Chen (Frontend)"
+                            displayName="Sarah"
                             avatarLabel="SC"
                             avatarGradient="from-pink-600 to-rose-700"
                             ringColor="ring-pink-500"
@@ -321,7 +321,7 @@ const MeetRoomContainer: React.FC<{
                                 <img
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk"
                                     className="size-full rounded-full object-cover"
-                                    alt="Sarah Chen"
+                                    alt="Sarah"
                                 />
                             }
                             className="min-h-0"
@@ -329,7 +329,7 @@ const MeetRoomContainer: React.FC<{
 
                         {/* David Wright */}
                         <ParticipantTile
-                            displayName="David Wright (Architect)"
+                            displayName="David"
                             avatarLabel="DW"
                             avatarGradient="from-amber-600 to-orange-700"
                             ringColor="ring-amber-500"
@@ -350,7 +350,7 @@ const MeetRoomContainer: React.FC<{
                                 <img
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI"
                                     className="size-full rounded-full object-cover"
-                                    alt="David Wright"
+                                    alt="David"
                                 />
                             }
                             className="min-h-0"

@@ -207,10 +207,9 @@ class VoiceAgent:
                 {
                     "role": "system",
                     "content": (
-                        "You are a panel of three mock interviewers: Marcus (Engineering Manager), "
-                        "Sarah (Frontend Lead), and David (System Architect). "
+                        "You are a panel of three mock interviewers: Marcus, Sarah, and David. "
                         "For each turn, you must act and speak as one of these panel members. "
-                        "Always state who is speaking at the start of your response (e.g., 'Marcus here: ...' or 'This is Sarah: ...' or 'David here: ...'). "
+                        "Always state who is speaking at the start of your response (e.g., 'Marcus: ...' or 'Sarah: ...' or 'David: ...'). "
                         "Ask one concise question or follow-up at a time. Do not output markdown, "
                         "lists, or bullets. Keep responses short and conversational "
                         "(1-2 sentences max), suitable for a voice call."
@@ -310,20 +309,59 @@ class VoiceAgent:
             return
 
         self.is_speaking = True
-        logger.info("Agent speaking: %s", text[:120])
 
-        # Append to LLM conversation history
+        # Append to LLM conversation history (store the full raw text including prefix so LLM maintains context of who said what)
         self.conversation_history.append({"role": "assistant", "content": text})
 
+        # Determine speaker name and clean text
+        speaker_name = "Interviewer"
+        clean_text = text
+        if self.interview_mode == "PANEL_AI":
+            lower_text = text.lower().strip()
+            matched_panelist = None
+            for p in ["Marcus", "Sarah", "David"]:
+                prefix_options = [
+                    p.lower() + ":",
+                    p.lower() + " here:",
+                    "this is " + p.lower() + ":",
+                    "this is " + p.lower() + " here:"
+                ]
+                if any(lower_text.startswith(opt) for opt in prefix_options):
+                    matched_panelist = p
+                    break
+            
+            if matched_panelist:
+                speaker_name = matched_panelist
+                colon_idx = text.find(":")
+                if colon_idx != -1:
+                    clean_text = text[colon_idx + 1:].strip()
+            else:
+                # Fallback to round-robin based on sequence (before save_question_to_db increments it)
+                panelists = ["Marcus", "Sarah", "David"]
+                speaker_name = panelists[self.question_sequence % 3]
+        else:
+            speaker_name = "Interviewer"
+
+        logger.info("[%s] speaking: %s", speaker_name, clean_text[:120])
+
         # Persist as a QuestionInstance so evaluation can score the answer later
-        question_id = await self._save_question_to_db(text)
+        question_id = await self._save_question_to_db(clean_text)
         if question_id:
             self.current_question_id = question_id
 
+        # Map speakers to distinct voices
+        voice_map = {
+            "Marcus": "Daniel",
+            "Sarah": "Samantha",
+            "David": "Reed (English (US))",
+            "Interviewer": "Sandy (English (US))"
+        }
+        voice_name = voice_map.get(speaker_name, "Sandy (English (US))")
+
         # Generate WAV via macOS `say` (~1-2 s)
         temp_wav = f"temp_response_{self.room_name}.wav"
-        cmd = f'say --data-format=LEI16@48000 -o "{temp_wav}" "{text}"'
-        proc = await asyncio.create_subprocess_shell(cmd)
+        cmd = ["say", "-v", voice_name, "--data-format=LEI16@48000", "-o", temp_wav, clean_text]
+        proc = await asyncio.create_subprocess_exec(*cmd)
         await proc.wait()
 
         if not os.path.exists(temp_wav):
@@ -331,15 +369,9 @@ class VoiceAgent:
             self.is_speaking = False
             return
 
-        # Determine speaker name
-        speaker_name = "Interviewer"
-        if self.interview_mode == "PANEL_AI":
-            panelists = ["David", "Marcus", "Sarah"]
-            speaker_name = panelists[self.question_sequence % 3]
-
         # Broadcast transcript NOW — WAV is ready, audio will start immediately
         # after this call, so the text and audio arrive in sync on the frontend.
-        await self.send_transcript(speaker_name, text)
+        await self.send_transcript(speaker_name, clean_text)
 
         # Stream 20 ms audio frames into the LiveKit track
         try:
