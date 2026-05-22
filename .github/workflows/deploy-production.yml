@@ -90,12 +90,15 @@ jobs:
       - name: Verify web env
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: |
           test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+          test -n "$NEXT_PUBLIC_LIVEKIT_URL" || { echo "Missing NEXT_PUBLIC_LIVEKIT_URL"; exit 1; }
 
       - name: Build web app
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: pnpm --filter web build
 
   validate-api:
@@ -265,8 +268,10 @@ jobs:
       - name: Verify web env
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: |
           test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+          test -n "$NEXT_PUBLIC_LIVEKIT_URL" || { echo "Missing NEXT_PUBLIC_LIVEKIT_URL"; exit 1; }
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -275,20 +280,24 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
           : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
+          : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
           vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel artifacts
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
           : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
+          : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
           vercel build --prod --token="${VERCEL_TOKEN}"
 
       - name: Deploy to Vercel
@@ -296,10 +305,12 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
           : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
+          : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
 
           deployment_url="$(vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}" | tr -d '\r\n')"
 

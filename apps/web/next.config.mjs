@@ -19,6 +19,19 @@ if (process.env.NODE_ENV === "production") {
             "[next.config] NEXT_PUBLIC_API_URL points to a local address in a production build."
         );
     }
+
+    const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+    if (!livekitUrl) {
+        throw new Error(
+            "[next.config] NEXT_PUBLIC_LIVEKIT_URL is not set. " +
+            "Add it in GitHub Actions variables (vars.NEXT_PUBLIC_LIVEKIT_URL) and redeploy."
+        );
+    }
+    if (/localhost|127\.0\.0\.1/.test(livekitUrl)) {
+        throw new Error(
+            "[next.config] NEXT_PUBLIC_LIVEKIT_URL points to a local address in a production build."
+        );
+    }
 }
 
 const nextConfig = {
