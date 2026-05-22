@@ -67,12 +67,15 @@ jobs:
       - name: Verify web env
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: |
           test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+          test -n "$NEXT_PUBLIC_LIVEKIT_URL" || { echo "Missing NEXT_PUBLIC_LIVEKIT_URL"; exit 1; }
 
       - name: Build web app
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
         run: pnpm --filter web build
 
   validate-api:
