@@ -3,7 +3,7 @@ VoiceAgent — real-time AI interviewer over LiveKit WebRTC.
 
 Responsibilities:
   1. Join the LiveKit room as "AI_Interviewer"
-  2. Stream synthesised speech (macOS `say`) back to the user
+  2. Stream synthesised speech (OpenAI TTS) back to the user
   3. Capture user audio via VAD (RMS threshold), transcribe with Groq Whisper,
      query NVIDIA NIM for a reply, then speak it
   4. Broadcast live transcript to the frontend via LiveKit Data Channel
@@ -27,6 +27,8 @@ import time
 import httpx
 import json
 import numpy as np
+import edge_tts
+import miniaudio
 from jose import jwt
 from livekit import rtc
 from app.core.config import get_settings
@@ -57,7 +59,7 @@ class VoiceAgent:
             }
         ]
 
-        self.audio_source = rtc.AudioSource(sample_rate=48000, num_channels=1)
+        self.audio_source = rtc.AudioSource(sample_rate=24000, num_channels=1)
         self.audio_track = rtc.LocalAudioTrack.create_audio_track(
             "agent-voice", self.audio_source
         )
@@ -349,53 +351,66 @@ class VoiceAgent:
         if question_id:
             self.current_question_id = question_id
 
-        # Map speakers to distinct voices
+        # Map speakers to distinct edge-tts neural voices (free, no API key)
         voice_map = {
-            "Marcus": "Daniel",
-            "Sarah": "Samantha",
-            "David": "Reed (English (US))",
-            "Interviewer": "Sandy (English (US))"
+            "Marcus": "en-US-GuyNeural",
+            "Sarah": "en-US-JennyNeural",
+            "David": "en-US-ChristopherNeural",
+            "Interviewer": "en-US-AriaNeural",
         }
-        voice_name = voice_map.get(speaker_name, "Sandy (English (US))")
+        voice_name = voice_map.get(speaker_name, "en-US-AriaNeural")
 
-        # Generate WAV via macOS `say` (~1-2 s)
-        temp_wav = f"temp_response_{self.room_name}.wav"
-        cmd = ["say", "-v", voice_name, "--data-format=LEI16@48000", "-o", temp_wav, clean_text]
-        proc = await asyncio.create_subprocess_exec(*cmd)
-        await proc.wait()
-
-        if not os.path.exists(temp_wav):
-            logger.error("TTS failed — WAV file not created.")
+        # Generate speech via Microsoft Edge TTS (WebSocket, no API key required)
+        mp3_chunks: list[bytes] = []
+        try:
+            communicate = edge_tts.Communicate(clean_text, voice_name)
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    mp3_chunks.append(chunk["data"])
+        except Exception as exc:
+            logger.error("TTS generation failed: %s", exc)
             self.is_speaking = False
             return
 
-        # Broadcast transcript NOW — WAV is ready, audio will start immediately
-        # after this call, so the text and audio arrive in sync on the frontend.
+        if not mp3_chunks:
+            logger.error("TTS returned no audio data.")
+            self.is_speaking = False
+            return
+
+        # Decode MP3 → raw 16-bit PCM at 24 kHz mono (no ffmpeg required)
+        try:
+            decoded = miniaudio.decode(
+                b"".join(mp3_chunks),
+                output_format=miniaudio.SampleFormat.SIGNED16,
+                nchannels=1,
+                sample_rate=24000,
+            )
+            pcm_data: bytes = decoded.samples.tobytes()
+        except Exception as exc:
+            logger.error("TTS audio decode failed: %s", exc)
+            self.is_speaking = False
+            return
+
+        # Broadcast transcript — audio is ready and will start immediately after
         await self.send_transcript(speaker_name, clean_text)
 
-        # Stream 20 ms audio frames into the LiveKit track
+        # Stream 20 ms PCM frames directly into the LiveKit audio track
         try:
-            with wave.open(temp_wav, "rb") as wf:
-                sample_rate = wf.getframerate()
-                num_channels = wf.getnchannels()
-                chunk_duration = 0.020  # 20 ms
-                chunk_size = int(sample_rate * chunk_duration) * 2 * num_channels
-
-                while self.is_speaking and self.is_running:
-                    raw = wf.readframes(chunk_size // (2 * num_channels))
-                    if not raw:
-                        break
-                    samples_per_channel = len(raw) // (2 * num_channels)
-                    frame = rtc.AudioFrame(raw, sample_rate, num_channels, samples_per_channel)
-                    await self.audio_source.capture_frame(frame)
-                    await asyncio.sleep(chunk_duration)
+            sample_rate = 24000
+            num_channels = 1
+            chunk_duration = 0.020  # 20 ms
+            bytes_per_chunk = int(sample_rate * chunk_duration) * 2 * num_channels  # 960 bytes
+            offset = 0
+            while self.is_speaking and self.is_running and offset < len(pcm_data):
+                chunk = pcm_data[offset:offset + bytes_per_chunk]
+                samples_per_channel = len(chunk) // (2 * num_channels)
+                frame = rtc.AudioFrame(chunk, sample_rate, num_channels, samples_per_channel)
+                await self.audio_source.capture_frame(frame)
+                await asyncio.sleep(chunk_duration)
+                offset += bytes_per_chunk
         except Exception as exc:
             logger.error("Error streaming voice response: %s", exc)
         finally:
-            try:
-                os.remove(temp_wav)
-            except OSError:
-                pass
             self.is_speaking = False
             # Record when we finished speaking so response_time_ms is accurate
             self.question_asked_at = time.time()
@@ -476,6 +491,19 @@ class VoiceAgent:
             self.is_processing = False
             return
 
+        try:
+            await self._process_user_response_inner(audio_data, sample_rate, num_channels)
+        except Exception as exc:
+            logger.exception("Unhandled exception in process_user_response: %s", exc)
+        finally:
+            # Always release the processing lock, even if something above crashes.
+            # Without this, is_processing stays True forever and all future user
+            # audio is silently dropped in handle_user_audio.
+            self.is_processing = False
+
+    async def _process_user_response_inner(
+        self, audio_data: bytes, sample_rate: int, num_channels: int
+    ) -> None:
         # Measure how long the user took to respond
         response_time_ms = (
             int((time.time() - self.question_asked_at) * 1000)
@@ -522,7 +550,6 @@ class VoiceAgent:
 
         if not transcription:
             logger.info("Empty transcription — skipping LLM turn.")
-            self.is_processing = False
             return
 
         # ── 3. Broadcast user transcript to frontend ───────────────────────

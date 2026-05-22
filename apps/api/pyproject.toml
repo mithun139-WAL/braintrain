@@ -40,6 +40,10 @@ dependencies = [
   # Voice / WebRTC Agent Dependencies
   "numpy>=2.0.0",
   "livekit>=1.1.0",
+  # TTS — edge-tts uses Microsoft Edge neural voices (free, no API key)
+  # miniaudio decodes the MP3 output to raw PCM without requiring ffmpeg
+  "edge-tts>=6.1",
+  "miniaudio>=1.2",
 ]
 
 [project.optional-dependencies]
