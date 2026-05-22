@@ -8,7 +8,17 @@ export const identityApi = {
     },
 
     register: async (data: RegisterDto) => {
-        const response = await apiClient.post<ApiResponse<User>>("/identity/register", data);
+        const response = await apiClient.post<ApiResponse<{ message: string }>>("/identity/register", data);
+        return response.data;
+    },
+
+    confirmEmail: async (token: string) => {
+        const response = await apiClient.post<ApiResponse<{ accessToken: string; user: User }>>("/identity/confirm-email", { token });
+        return response.data;
+    },
+
+    resendConfirmation: async (email: string) => {
+        const response = await apiClient.post<ApiResponse<{ message: string }>>("/identity/resend-confirmation", { email });
         return response.data;
     },
 
@@ -28,12 +38,12 @@ export const identityApi = {
     },
 
     verifyOtp: async (data: VerifyOtpDto) => {
-        const response = await apiClient.post<ApiResponse<User>>("/identity/verify-otp", data);
+        const response = await apiClient.post<ApiResponse<{ accessToken: string; user: User }>>("/identity/verify-otp", data);
         return response.data;
     },
 
     googleLogin: async (data: GoogleLoginDto) => {
-        const response = await apiClient.post<ApiResponse<User>>("/identity/google", data);
+        const response = await apiClient.post<ApiResponse<{ accessToken: string; user: User }>>("/identity/google", data);
         return response.data;
     },
     updateProfile: async (data: UpdateProfileDto) => {

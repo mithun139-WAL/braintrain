@@ -86,6 +86,9 @@ async def create_user(
     display_name: Optional[str] = None,
     google_id: Optional[str] = None,
     avatar_url: Optional[str] = None,
+    email_verified: bool = False,
+    email_confirmation_token: Optional[str] = None,
+    email_confirmation_expires_at: Optional[datetime] = None,
 ) -> User:
     user = User(
         email=email,
@@ -94,10 +97,26 @@ async def create_user(
         display_name=display_name,
         google_id=google_id,
         avatar_url=avatar_url,
+        email_verified=email_verified,
+        email_confirmation_token=email_confirmation_token,
+        email_confirmation_expires_at=email_confirmation_expires_at,
     )
     db.add(user)
     await db.flush()  # get generated id before commit
     return user
+
+
+async def get_user_by_confirmation_token(
+    db: AsyncSession, token: str
+) -> Optional[User]:
+    """Return an unverified user whose confirmation token matches."""
+    result = await db.execute(
+        select(User).where(
+            User.email_confirmation_token == token,
+            User.deleted_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def update_user(

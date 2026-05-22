@@ -90,8 +90,17 @@ apiClient.interceptors.response.use(
     (error) => {
         // Global 401 redirect
         if (error.response?.status === 401 && typeof window !== "undefined") {
-            useAuthStore.getState().logout();
-            window.location.href = "/login";
+            const isAuthPage = ["/login", "/register", "/verify-otp", "/confirm-email"].some(
+                (path) => window.location.pathname.startsWith(path)
+            );
+            const isAuthRequest = ["/identity/login", "/identity/verify-otp", "/identity/google", "/identity/request-otp"].some(
+                (url) => error.config?.url?.includes(url)
+            );
+
+            if (!isAuthPage && !isAuthRequest) {
+                useAuthStore.getState().logout();
+                window.location.href = "/login";
+            }
         }
 
         // Normalize error message for hooks layer

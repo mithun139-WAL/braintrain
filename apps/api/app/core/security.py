@@ -94,3 +94,24 @@ def verify_google_id_token(token: str) -> dict:
         return payload
     except Exception as exc:
         raise ValueError(f"Invalid Google token: {exc}") from exc
+
+
+async def verify_google_access_token(access_token: str) -> dict:
+    """
+    Exchange a Google OAuth access token for user info by calling the UserInfo endpoint.
+    Returns a dict with 'sub', 'email', 'name', 'picture'.
+    Raises ValueError if the token is invalid or the request fails.
+    """
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+        if resp.status_code != 200:
+            raise ValueError(f"Google UserInfo returned {resp.status_code}")
+        return resp.json()
+    except Exception as exc:
+        raise ValueError(f"Google access token verification failed: {exc}") from exc

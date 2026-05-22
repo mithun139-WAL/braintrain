@@ -40,6 +40,13 @@ class User(Base):
     bio: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+    # ── Email verification ─────────────────────────────────────────────────────
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
+    email_confirmation_token: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
+    email_confirmation_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

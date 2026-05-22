@@ -47,12 +47,10 @@ class Settings(BaseSettings):
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_whisper_model: str = "whisper-large-v3"
 
-    # ─── SMTP (Email OTP) ─────────────────────────────────────────────────────
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 465
-    smtp_user: str = ""
-    smtp_pass: str = ""
-    smtp_from: str = "noreply@braintrain.ai"
+    # ─── Resend (Transactional Email) ────────────────────────────────────────
+    resend_api_key: str = ""
+    email_from: str = "BrainTrain <noreply@braintrain.ai>"
+    frontend_url: str = "http://localhost:3000"
 
     # ─── Twilio (SMS OTP) ─────────────────────────────────────────────────────
     twilio_account_sid: str = ""
@@ -60,7 +58,6 @@ class Settings(BaseSettings):
     twilio_phone_number: str = ""
 
     # ─── CORS ─────────────────────────────────────────────────────────────────
-    frontend_url: str = "http://localhost:3000"
 
     # ─── LiveKit WebRTC ───────────────────────────────────────────────────────
     livekit_api_key: str = "devkey"

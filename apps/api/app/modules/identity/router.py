@@ -5,6 +5,8 @@ Route prefix /identity is applied when this router is mounted in main.py.
 
 Public routes (no JWT):
   POST /identity/register
+  POST /identity/confirm-email
+  POST /identity/resend-confirmation
   POST /identity/login
   POST /identity/request-otp
   POST /identity/verify-otp
@@ -26,11 +28,13 @@ from app.modules.identity import service
 from app.modules.identity.schemas import (
     AddSkillPreferenceRequest,
     AuthResponse,
+    ConfirmEmailRequest,
     GoogleLoginRequest,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
     RequestOtpRequest,
+    ResendConfirmationRequest,
     SkillPreferenceResponse,
     SkillTagResponse,
     UpdateProfileRequest,
@@ -44,9 +48,19 @@ router = APIRouter()
 # ── Auth (public) ──────────────────────────────────────────────────────────────
 
 
-@router.post("/register", response_model=AuthResponse, status_code=201)
+@router.post("/register", response_model=MessageResponse, status_code=201)
 async def register(body: RegisterRequest, db: DBSession):
     return await service.register(db, body)
+
+
+@router.post("/confirm-email", response_model=AuthResponse)
+async def confirm_email(body: ConfirmEmailRequest, db: DBSession):
+    return await service.confirm_email(db, body.token)
+
+
+@router.post("/resend-confirmation", response_model=MessageResponse)
+async def resend_confirmation(body: ResendConfirmationRequest, db: DBSession):
+    return await service.resend_confirmation(db, body.email)
 
 
 @router.post("/login", response_model=AuthResponse)

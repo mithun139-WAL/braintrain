@@ -1,36 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import React, { useRef, KeyboardEvent, useState, Suspense } from "react";
+import React, { useRef, KeyboardEvent, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth.store";
 import { useVerifyOtpMutation } from "@/hooks/mutations/useVerifyOtpMutation";
 import { useRequestOtpMutation } from "@/hooks/mutations/useRequestOtpMutation";
 
+const RESEND_COOLDOWN = 30;
+
 function VerifyOtpForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "";
-    const phone = searchParams.get("phone") || "";
-    const identifier = email || phone;
+    const identifier = email;
     const setAuth = useAuthStore((state) => state.setAuth);
 
     const inputRefs = useRef<(HTMLInputElement | null)[]>(Array(6).fill(null));
     const [error, setError] = useState<string | null>(null);
+    const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
+    const [resendSuccess, setResendSuccess] = useState(false);
 
     const verifyOtpMutation = useVerifyOtpMutation();
     const requestOtpMutation = useRequestOtpMutation();
 
     const isLoading = verifyOtpMutation.isPending || requestOtpMutation.isPending;
 
+    // Countdown timer
+    useEffect(() => {
+        if (cooldown <= 0) return;
+        const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [cooldown]);
+
+    const formatTime = (s: number) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setResendSuccess(false);
 
-        const code = inputRefs.current.map(input => input?.value || "").join("");
+        const code = inputRefs.current.map((input) => input?.value || "").join("");
 
         if (code.length < 6) {
-            setError("Please enter the full 6-digit code");
+            setError("Please enter all 6 digits");
             return;
         }
 
@@ -41,30 +58,47 @@ function VerifyOtpForm() {
                 setAuth(user, accessToken);
                 router.push("/dashboard");
             } else {
-                setError(response.message || "Invalid or expired OTP");
+                setError(response.message || "Invalid or expired code. Please try again.");
+                // Clear inputs on error
+                inputRefs.current.forEach((input) => {
+                    if (input) input.value = "";
+                });
+                inputRefs.current[0]?.focus();
+            }
+        } catch (err: any) {
+            setError(typeof err === "string" ? err : err.message || "An error occurred");
+            inputRefs.current.forEach((input) => {
+                if (input) input.value = "";
+            });
+            inputRefs.current[0]?.focus();
+        }
+    };
+
+    const handleResend = async () => {
+        if (!identifier || cooldown > 0 || isLoading) return;
+        setError(null);
+        setResendSuccess(false);
+        try {
+            const response = await requestOtpMutation.mutateAsync({ identifier });
+            if (response.success) {
+                setCooldown(RESEND_COOLDOWN);
+                setResendSuccess(true);
+                inputRefs.current.forEach((input) => {
+                    if (input) input.value = "";
+                });
+                inputRefs.current[0]?.focus();
+            } else {
+                setError(response.message || "Failed to resend code");
             }
         } catch (err: any) {
             setError(typeof err === "string" ? err : err.message || "An error occurred");
         }
     };
 
-    const handleResend = async () => {
-        if (!identifier) return;
-        setError(null);
-        try {
-            const response = await requestOtpMutation.mutateAsync({ identifier });
-            if (!response.success) {
-                setError(response.message || "Failed to resend OTP");
-            }
-        } catch (err: any) {
-            setError(typeof err === "string" ? err : err.message || "An error occurred");
-        }
-    }
-
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
         if (e.key >= "0" && e.key <= "9") {
             const input = inputRefs.current[index];
-            if (input) input.value = ""; // Clear for new input
+            if (input) input.value = "";
         }
         if (e.key === "Backspace") {
             const input = inputRefs.current[index];
@@ -73,110 +107,175 @@ function VerifyOtpForm() {
                 e.preventDefault();
             }
         }
-    };
-
-    const handleInput = (
-        e: React.FormEvent<HTMLInputElement>,
-        index: number
-    ) => {
-        const input = e.currentTarget;
-        const val = input.value;
-        if (val.length === 1 && index < 5) {
+        if (e.key === "ArrowLeft" && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+        if (e.key === "ArrowRight" && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
     };
 
+    const handleInput = (e: React.FormEvent<HTMLInputElement>, index: number) => {
+        const input = e.currentTarget;
+        const val = input.value.replace(/\D/g, "");
+        input.value = val.slice(-1); // keep only last digit
+        if (val.length >= 1 && index < 5) {
+            inputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+        pasted.split("").forEach((char, i) => {
+            if (inputRefs.current[i]) {
+                inputRefs.current[i]!.value = char;
+            }
+        });
+        const nextEmpty = Math.min(pasted.length, 5);
+        inputRefs.current[nextEmpty]?.focus();
+    };
+
     return (
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden relative">
-            <div className="p-8 sm:p-10">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6 text-primary">
-                        <span className="material-symbols-outlined text-[32px]">
-                            lock_reset
-                        </span>
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
-                        Verify Your Identity
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
-                        We've sent a 6-digit code to{" "}
-                        <span className="font-medium text-slate-700 dark:text-slate-200">
-                            {identifier || "your device"}
-                        </span>
-                        . Enter it below to confirm your account.
-                    </p>
-                </div>
+        <div className="w-full max-w-[400px] animate-fade-in group/card relative">
+            {/* Ambient card shadow glow */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/25 to-violet-500/25 rounded-2xl blur-lg opacity-75 group-hover/card:opacity-100 transition duration-500" />
+            
+            {/* Card Container */}
+            <div className="relative rounded-2xl bg-card/85 backdrop-blur-xl border border-border/80 dark:border-border/30 shadow-card overflow-hidden">
+                {/* Top gradient accent line */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-primary via-sky-400 to-violet-500" />
 
-                {error && (
-                    <div className="mb-6 p-3 bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold rounded-lg text-center animate-shake">
-                        {error}
-                    </div>
-                )}
-
-                <form className="space-y-8" onSubmit={handleSubmit}>
-                    <div className="flex justify-center gap-2 sm:gap-3">
-                        {[...Array(6)].map((_, index) => (
-                            <input
-                                key={index}
-                                ref={(el) => { inputRefs.current[index] = el; }}
-                                autoComplete="one-time-code"
-                                className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border-2 border-slate-200 dark:border-slate-700 bg-transparent focus:border-primary focus:ring-0 focus:outline-none transition-all placeholder-transparent text-slate-900 dark:text-white caret-primary disabled:opacity-50"
-                                inputMode="numeric"
-                                maxLength={1}
-                                pattern="[0-9]*"
-                                type="text"
-                                onKeyDown={(e) => handleKeyDown(e, index)}
-                                onInput={(e) => handleInput(e, index)}
-                                required
-                                disabled={isLoading}
-                            />
-                        ))}
-                    </div>
-
-                    <button
-                        className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold h-12 rounded-lg shadow-md shadow-primary/20 hover:shadow-primary/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:bg-primary/50 disabled:cursor-not-allowed"
-                        type="submit"
-                        disabled={isLoading}
-                    >
-                        <span>{isLoading ? "Verifying..." : "Verify OTP"}</span>
-                        {!isLoading && (
-                            <span className="material-symbols-outlined text-[20px]">
-                                arrow_forward
+                {/* Card body */}
+                <div className="px-6 py-6 sm:px-8 sm:py-7">
+                    {/* Header */}
+                    <div className="text-center mb-5">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/10 to-violet-500/10 border border-primary/20 shadow-inner mb-3.5">
+                            <span className="material-symbols-outlined text-primary text-[22px] drop-shadow-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                verified
                             </span>
+                        </div>
+                        <h1 className="font-display text-xl sm:text-2xl font-black tracking-tight text-foreground mb-1.5">
+                            Enter verification code
+                        </h1>
+                        <p className="text-muted-foreground text-xs sm:text-sm font-medium leading-relaxed">
+                            We sent a 6-digit code to{" "}
+                            <span className="font-bold text-foreground">
+                                {identifier || "your email"}
+                            </span>
+                        </p>
+                    </div>
+
+                    {/* Error banner */}
+                    {error && (
+                        <div className="mb-4.5 flex items-start gap-3 p-3 rounded-2xl bg-gradient-to-r from-ruby/12 to-ruby/4 dark:from-ruby/10 dark:to-transparent backdrop-blur-md border border-ruby/30 dark:border-ruby/20 text-ruby text-xs font-medium shadow-md shadow-ruby/5 animate-fade-in relative overflow-hidden group">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-ruby to-rose-500" />
+                            <span className="material-symbols-outlined text-ruby text-[18px] flex-shrink-0 mt-0.5 select-none drop-shadow-[0_2px_4px_rgba(var(--ruby),0.2)] animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                error
+                            </span>
+                            <div className="flex-grow pr-5 leading-relaxed">
+                                <span className="font-semibold block mb-0.5 text-foreground/90">Verification error</span>
+                                <span className="text-ruby/90 dark:text-ruby/95 font-medium">{error}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setError(null)}
+                                className="absolute top-2.5 right-2.5 text-ruby/60 hover:text-ruby p-1 rounded-lg hover:bg-ruby/10 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[15px] block">close</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Resend success */}
+                    {resendSuccess && (
+                        <div className="mb-4 flex items-center gap-2 py-2 px-3 rounded-lg bg-emerald/10 border border-emerald/20 text-emerald text-xs animate-fade-in">
+                            <span className="material-symbols-outlined text-[14px] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                check_circle
+                            </span>
+                            <span>New code sent! Check your inbox.</span>
+                        </div>
+                    )}
+
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                        {/* OTP inputs */}
+                        <div className="flex justify-center gap-2">
+                            {[...Array(6)].map((_, index) => (
+                                <input
+                                    key={index}
+                                    ref={(el) => { inputRefs.current[index] = el; }}
+                                    autoComplete={index === 0 ? "one-time-code" : "off"}
+                                    className="w-10 h-11 sm:w-11 sm:h-12 text-center text-lg font-bold rounded-xl border border-border/80 dark:border-border/30 bg-background/50 hover:bg-background/80 focus:bg-background text-foreground placeholder-muted-foreground/60 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200 disabled:opacity-50"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    pattern="[0-9]*"
+                                    type="text"
+                                    onKeyDown={(e) => handleKeyDown(e, index)}
+                                    onInput={(e) => handleInput(e, index)}
+                                    onPaste={handlePaste}
+                                    required
+                                    disabled={isLoading}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Verify button */}
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-card disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Verifying...
+                                </>
+                            ) : (
+                                <>
+                                    Verify & Sign In
+                                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Resend section */}
+                    <div className="mt-4 pt-3.5 border-t border-border/80 dark:border-border/30 flex flex-col items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground font-medium">
+                            Didn&apos;t receive the code?
+                        </p>
+                        {cooldown > 0 ? (
+                            <p className="text-xs text-muted-foreground font-medium">
+                                Resend available in{" "}
+                                <span className="font-bold text-foreground tabular">{formatTime(cooldown)}</span>
+                            </p>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleResend}
+                                disabled={isLoading}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-primary hover:bg-primary/10 hover:text-primary-dark transition-all duration-200 disabled:opacity-50"
+                            >
+                                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                                Resend Code
+                            </button>
                         )}
-                    </button>
-                </form>
-
-                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center gap-3">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Didn't receive the code?
-                    </p>
-                    <button
-                        className="group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-                        onClick={handleResend}
-                        disabled={isLoading || !identifier}
-                    >
-                        <span className="material-symbols-outlined text-[18px] group-hover:rotate-180 transition-transform duration-500">
-                            refresh
-                        </span>
-                        Resend Code
-                    </button>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                        Resend available in 00:30
-                    </p>
+                    </div>
                 </div>
-            </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 text-center border-t border-slate-100 dark:border-slate-800">
-                <Link
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-                    href="/login"
-                >
-                    <span className="material-symbols-outlined text-[16px]">
-                        arrow_back
-                    </span>
-                    Back to Login
-                </Link>
+                {/* Footer */}
+                <div className="px-6 py-3 bg-muted/20 border-t border-border/80 dark:border-border/30 text-center">
+                    <Link
+                        href="/login"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors font-medium"
+                    >
+                        <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+                        Back to Sign In
+                    </Link>
+                </div>
             </div>
         </div>
     );
@@ -184,7 +283,12 @@ function VerifyOtpForm() {
 
 export default function VerifyOtpPage() {
     return (
-        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center">Loading...</div>}>
+        <Suspense fallback={
+            <div className="w-full max-w-[420px] relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/25 to-violet-500/25 rounded-2xl blur-lg opacity-75" />
+                <div className="relative rounded-2xl bg-card border border-border/80 dark:border-border/30 shadow-card h-80 animate-pulse" />
+            </div>
+        }>
             <VerifyOtpForm />
         </Suspense>
     );

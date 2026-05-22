@@ -11,6 +11,7 @@ Rules:
 import logging
 import math
 import random
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -25,6 +26,7 @@ from app.core.exceptions import (
 from app.core.security import (
     create_access_token,
     hash_password,
+    verify_google_access_token,
     verify_google_id_token,
     verify_password,
 )
@@ -58,6 +60,9 @@ _OTP_EMAIL_EXPIRE_MINUTES = 2
 _OTP_SMS_EXPIRE_MINUTES = 1
 _OTP_MAX_ATTEMPTS = 3
 
+# Email confirmation token expiry
+_CONFIRMATION_EXPIRE_HOURS = 24
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -80,10 +85,20 @@ def _build_auth_response(user: User) -> AuthResponse:
     )
 
 
+def _build_confirmation_url(token: str) -> str:
+    from app.core.config import get_settings
+    settings = get_settings()
+    return f"{settings.frontend_url}/confirm-email?token={token}"
+
+
 # ── Registration & Login ───────────────────────────────────────────────────────
 
 
-async def register(db: AsyncSession, dto: RegisterRequest) -> AuthResponse:
+async def register(db: AsyncSession, dto: RegisterRequest) -> MessageResponse:
+    """
+    Register a new user with email + password.
+    Sends a confirmation email; does NOT issue a JWT until the email is verified.
+    """
     if dto.email:
         existing = await repo.get_user_by_email(db, dto.email)
         if existing:
@@ -98,16 +113,102 @@ async def register(db: AsyncSession, dto: RegisterRequest) -> AuthResponse:
     if dto.password:
         password_hash = hash_password(dto.password)
 
+    # Generate confirmation token (email registrations only)
+    confirmation_token: Optional[str] = None
+    confirmation_expires: Optional[datetime] = None
+    if dto.email:
+        confirmation_token = secrets.token_urlsafe(32)
+        confirmation_expires = datetime.now(timezone.utc) + timedelta(
+            hours=_CONFIRMATION_EXPIRE_HOURS
+        )
+
     user = await repo.create_user(
         db,
         email=dto.email,
         phone_number=dto.phone_number,
         password_hash=password_hash,
         display_name=dto.name,
+        # Phone-based registrations are auto-verified via OTP
+        email_verified=dto.email is None,
+        email_confirmation_token=confirmation_token,
+        email_confirmation_expires_at=confirmation_expires,
     )
     await db.commit()
     await db.refresh(user)
+
+    # Send confirmation email asynchronously
+    if dto.email and confirmation_token:
+        confirmation_url = _build_confirmation_url(confirmation_token)
+        await _email_provider.send_confirmation(
+            to_email=dto.email,
+            confirmation_url=confirmation_url,
+            display_name=dto.name,
+        )
+
+    return MessageResponse(
+        message="Registration successful! Please check your email to confirm your account."
+    )
+
+
+async def confirm_email(db: AsyncSession, token: str) -> AuthResponse:
+    """Verify an email confirmation token and activate the account."""
+    user = await repo.get_user_by_confirmation_token(db, token)
+
+    if not user:
+        raise BadRequestException("Invalid or expired confirmation link")
+
+    if user.email_verified:
+        # Already verified — just log them in
+        return _build_auth_response(user)
+
+    now = datetime.now(timezone.utc)
+    if user.email_confirmation_expires_at and user.email_confirmation_expires_at < now:
+        raise BadRequestException("Confirmation link has expired. Please request a new one.")
+
+    # Mark verified and clear the token
+    await repo.update_user(
+        db,
+        user,
+        email_verified=True,
+        email_confirmation_token=None,
+        email_confirmation_expires_at=None,
+    )
+    await db.commit()
+    await db.refresh(user)
+
     return _build_auth_response(user)
+
+
+async def resend_confirmation(db: AsyncSession, email: str) -> MessageResponse:
+    """Generate a fresh confirmation token and resend the confirmation email."""
+    user = await repo.get_user_by_email(db, email)
+
+    if not user:
+        # Return success to prevent user enumeration
+        return MessageResponse(message="If that email exists, a confirmation link has been sent.")
+
+    if user.email_verified:
+        raise BadRequestException("Email is already verified")
+
+    confirmation_token = secrets.token_urlsafe(32)
+    confirmation_expires = datetime.now(timezone.utc) + timedelta(hours=_CONFIRMATION_EXPIRE_HOURS)
+
+    await repo.update_user(
+        db,
+        user,
+        email_confirmation_token=confirmation_token,
+        email_confirmation_expires_at=confirmation_expires,
+    )
+    await db.commit()
+
+    confirmation_url = _build_confirmation_url(confirmation_token)
+    await _email_provider.send_confirmation(
+        to_email=email,
+        confirmation_url=confirmation_url,
+        display_name=user.display_name,
+    )
+
+    return MessageResponse(message="If that email exists, a confirmation link has been sent.")
 
 
 async def login(db: AsyncSession, dto: LoginRequest) -> AuthResponse:
@@ -122,6 +223,12 @@ async def login(db: AsyncSession, dto: LoginRequest) -> AuthResponse:
 
     if not verify_password(dto.password or "", user.password_hash):
         raise UnauthorizedException("Invalid credentials")
+
+    # Block unverified email accounts
+    if dto.email and not user.email_verified:
+        raise UnauthorizedException(
+            "Please verify your email before logging in. Check your inbox for a confirmation link."
+        )
 
     return _build_auth_response(user)
 
@@ -148,6 +255,8 @@ async def request_otp(db: AsyncSession, identifier: str) -> MessageResponse:
     user: Optional[User] = None
     if is_email:
         user = await repo.get_user_by_email(db, identifier)
+        if not user:
+            raise BadRequestException("This email address is not registered.")
     else:
         user = await repo.get_user_by_phone(db, identifier)
 
@@ -186,10 +295,12 @@ async def verify_otp(db: AsyncSession, dto: VerifyOtpRequest) -> AuthResponse:
 
     await repo.mark_otp_used(db, otp_record)
 
-    # Find or create user
+    # Find or create user — OTP login auto-verifies the email
     is_email = "@" in dto.identifier
     if is_email:
         user = await repo.get_user_by_email(db, dto.identifier)
+        if not user:
+            raise BadRequestException("This email address is not registered.")
     else:
         user = await repo.get_user_by_phone(db, dto.identifier)
 
@@ -198,6 +309,15 @@ async def verify_otp(db: AsyncSession, dto: VerifyOtpRequest) -> AuthResponse:
             db,
             email=dto.identifier if is_email else None,
             phone_number=dto.identifier if not is_email else None,
+            email_verified=True,  # OTP login = verified
+        )
+    elif is_email and not user.email_verified:
+        # Auto-verify existing unverified accounts on OTP login
+        await repo.update_user(
+            db, user,
+            email_verified=True,
+            email_confirmation_token=None,
+            email_confirmation_expires_at=None,
         )
 
     await db.commit()
@@ -209,8 +329,18 @@ async def verify_otp(db: AsyncSession, dto: VerifyOtpRequest) -> AuthResponse:
 
 
 async def google_login(db: AsyncSession, token: str) -> AuthResponse:
+    """
+    Authenticate with Google. Accepts either:
+      - An OAuth access token (from @react-oauth/google useGoogleLogin hook)
+      - A Google ID token (from GoogleLogin component)
+    """
     try:
-        payload = verify_google_id_token(token)
+        # Try access token first (shorter, non-JWT format from useGoogleLogin)
+        # ID tokens are JWTs and start with "eyJ"; access tokens are opaque strings
+        if token.startswith("eyJ"):
+            payload = verify_google_id_token(token)
+        else:
+            payload = await verify_google_access_token(token)
     except ValueError as exc:
         logger.warning("Google token verification failed: %s", exc)
         raise UnauthorizedException("Google authentication failed")
@@ -232,16 +362,20 @@ async def google_login(db: AsyncSession, token: str) -> AuthResponse:
             google_id=google_id,
             display_name=name,
             avatar_url=picture,
+            email_verified=True,  # Google-verified email
         )
-    elif not user.google_id:
-        # Link Google account to existing email-based user
-        user = await repo.update_user(
-            db,
-            user,
-            google_id=google_id,
-            display_name=user.display_name or name,
-            avatar_url=user.avatar_url or picture,
-        )
+    else:
+        updates: dict = {}
+        if not user.google_id:
+            updates["google_id"] = google_id
+        if not user.display_name and name:
+            updates["display_name"] = name
+        if not user.avatar_url and picture:
+            updates["avatar_url"] = picture
+        if not user.email_verified:
+            updates["email_verified"] = True
+        if updates:
+            user = await repo.update_user(db, user, **updates)
 
     await db.commit()
     await db.refresh(user)

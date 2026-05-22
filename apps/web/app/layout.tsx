@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/core/components/providers/ThemeProvider";
 import { QueryProvider } from "@/core/components/providers/QueryProvider";
+import { GoogleProvider } from "@/core/components/providers/GoogleProvider";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "@/styles/globals.css";
 
@@ -42,7 +43,9 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <QueryProvider>{children}</QueryProvider>
+                    <GoogleProvider>
+                        <QueryProvider>{children}</QueryProvider>
+                    </GoogleProvider>
                 </ThemeProvider>
             </body>
         </html>

@@ -59,6 +59,14 @@ class VerifyOtpRequest(BaseModel):
     code: str
 
 
+class ConfirmEmailRequest(BaseModel):
+    token: str
+
+
+class ResendConfirmationRequest(BaseModel):
+    email: EmailStr
+
+
 class GoogleLoginRequest(BaseModel):
     token: str
 
