@@ -37,6 +37,9 @@ dependencies = [
   # Utilities
   "python-multipart>=0.0.9",    # multipart/form-data support
   "stripe>=11",
+  # Voice / WebRTC Agent Dependencies
+  "numpy>=2.0.0",
+  "livekit>=1.1.0",
 ]
 
 [project.optional-dependencies]
