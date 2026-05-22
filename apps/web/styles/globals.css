@@ -136,3 +136,30 @@
   .custom-scrollbar::-webkit-scrollbar-thumb        { background: hsl(var(--border)); border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover  { background: hsl(var(--muted-foreground)); }
 }
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Voice session: speaking bar waveform animation ────────────────── */
+@keyframes speakingBar {
+  0%   { transform: scaleY(0.25); opacity: 0.5; }
+  100% { transform: scaleY(1.0);  opacity: 1.0; }
+}
+
+.speaking-bar {
+  animation: speakingBar 0.65s ease-in-out infinite alternate;
+  transform-origin: bottom;
+}
+

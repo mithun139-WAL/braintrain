@@ -81,3 +81,51 @@ async def get_session_status(
     session_id: uuid.UUID, current_user: CurrentUser, db: DBSession
 ):
     return await service.get_session_status(db, session_id, current_user.id)
+
+
+@router.get("/{session_id}/webrtc-token")
+async def get_webrtc_token(
+    session_id: uuid.UUID, current_user: CurrentUser, db: DBSession
+):
+    # Verify session exists and is owned by the user
+    await service.get_session_by_id(db, session_id, current_user.id)
+    
+    # Generate LiveKit WebRTC Access Token using python-jose
+    import time
+    from jose import jwt
+    from app.core.config import get_settings
+    
+    settings = get_settings()
+    current_time = int(time.time())
+    expire_time = current_time + 3600 * 2  # 2 hours validity
+    
+    # Identity is the user name or email or ID
+    identity = current_user.display_name or current_user.email or str(current_user.id)
+    
+    payload = {
+        "iss": settings.livekit_api_key,
+        "sub": identity,
+        "nbf": current_time - 60,  # avoid clock drift issues
+        "exp": expire_time,
+        "video": {
+            "roomJoin": True,
+            "room": str(session_id),
+            "canPublish": True,
+            "canSubscribe": True,
+            "canPublishData": True
+        }
+    }
+    
+    token = jwt.encode(
+        payload,
+        settings.livekit_api_secret,
+        algorithm="HS256"
+    )
+    
+    # Launch voice agent in the background for this session
+    from app.ai.voice_agent import launch_voice_agent
+    launch_voice_agent(str(session_id))
+    
+    return {"token": token}
+
+

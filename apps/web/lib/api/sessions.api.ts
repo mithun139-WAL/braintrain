@@ -88,4 +88,10 @@ export const sessionsApi = {
         const response = await apiClient.get<ApiResponse<{ status: Session["status"] }>>(`/sessions/${id}/status`);
         return response.data;
     },
+
+    getWebRTCToken: async (id: string) => {
+        const response = await apiClient.get<ApiResponse<{ token: string }>>(`/sessions/${id}/webrtc-token`);
+        return response.data;
+    },
 };
+

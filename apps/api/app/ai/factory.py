@@ -119,9 +119,11 @@ def get_followup_provider():
     # NIM shares the same OpenAI-compatible interface; use OpenAI provider with NIM base_url
     if settings.nim_enabled:
         from app.ai.providers.openai_followup import OpenAIFollowupProvider
-        import openai as _openai
-        # Reuse OpenAIFollowupProvider — it only needs an api_key; NIM uses same API shape
-        return OpenAIFollowupProvider(api_key=settings.nvidia_api_key)
+        return OpenAIFollowupProvider(
+            api_key=settings.nvidia_api_key,
+            base_url=settings.nvidia_base_url,
+            model=settings.nvidia_model,
+        )
 
     if settings.openai_enabled:
         from app.ai.providers.openai_followup import OpenAIFollowupProvider

@@ -31,29 +31,47 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
     seconds,
     formatTime,
     isEnding,
-    onEndSession
+    onEndSession,
+    setIsVoiceMode,
 }) => {
     const prevQuestionCountRef = useRef(0);
 
     const {
         answerText,
+        setAnswerText,
+        followupAnswerText,
+        setFollowupAnswerText,
+        followupState,
         canSubmit,
+        canSubmitFollowup,
         currentQuestion,
         handleKeyDown,
         handleSubmit,
+        handleFollowupSubmit,
         isAnswered,
         isPendingNext,
+        isCheckingFollowup,
         questions,
-        setAnswerText,
         submitResponse,
     } = useLiveSessionComposer({ session, isEnding });
 
     // ── Text-to-Speech ────────────────────────────────────────────────────────
     const { speak, stop: stopSpeaking, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
 
+    const speakerIndex = questions.length > 0 ? (questions.length - 1) % 3 : -1;
+    const isMarcusSpeaking = isSpeaking && speakerIndex === 0;
+    const isSarahSpeaking = isSpeaking && speakerIndex === 1;
+    const isDavidSpeaking = isSpeaking && speakerIndex === 2;
+
     // ── Speech-to-Text ────────────────────────────────────────────────────────
     const { startListening, stopListening, isListening, isSupported: isSTTSupported } = useSpeechRecognition({
-        onTranscriptChange: (fullText) => setAnswerText(fullText),
+        onTranscriptChange: (fullText) => {
+            if (followupState.isActive) {
+                setFollowupAnswerText(fullText);
+            } else {
+                setAnswerText(fullText);
+            }
+        },
     });
 
     // Auto-speak each new question
@@ -68,6 +86,18 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
         }
     }, [questions.length, speak, isTTSSupported]);
 
+    const prevFollowupQuestionRef = useRef<string | null>(null);
+
+    // Auto-speak follow-up probes when they arrive
+    useEffect(() => {
+        if (!isTTSSupported) return;
+        const fq = followupState.currentFollowupQuestion;
+        if (fq && fq !== prevFollowupQuestionRef.current) {
+            prevFollowupQuestionRef.current = fq;
+            setTimeout(() => speak(fq), 300);
+        }
+    }, [followupState.currentFollowupQuestion, speak, isTTSSupported]);
+
     // Stop speech when session ends
     useEffect(() => {
         if (isEnding) stopSpeaking();
@@ -78,7 +108,8 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
             stopListening();
         } else {
             if (isSpeaking) stopSpeaking();
-            startListening(answerText);
+            const base = followupState.isActive ? followupAnswerText : answerText;
+            startListening(base);
         }
     };
 
@@ -98,6 +129,15 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                         <SessionBrand labelClassName="text-xl font-bold tracking-tight" />
                 </div>
                 <div className="flex items-center gap-4">
+                    {setIsVoiceMode && (
+                        <button
+                            onClick={() => setIsVoiceMode(true)}
+                            className="flex-shrink-0 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-primary border border-primary/20 bg-primary/10 hover:bg-primary/25 hover:border-primary/40 transition-all"
+                        >
+                            <Mic size={12} className="animate-pulse" />
+                            Real-time Voice
+                        </button>
+                    )}
                     <SessionEndButton
                         isEnding={isEnding}
                         onClick={onEndSession}
@@ -119,45 +159,89 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                 <div className="flex-1 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-4 custom-scrollbar">
                     {/* Panel Members */}
                     <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="relative bg-card rounded-xl p-5 border border-border border-t-emerald-500 border-t-[3px] shadow-lg flex flex-col items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+                        {/* Sarah Chen (Frontend Lead) */}
+                        <div className={cn(
+                            "relative bg-card rounded-xl p-5 border border-border shadow-lg flex flex-col items-center gap-3 transition-all duration-300",
+                            isSarahSpeaking ? "border-primary border-t-[3px] scale-105 z-10 bg-muted/30 shadow-primary/10" : "border-t-emerald-500 border-t-[3px] opacity-80 hover:opacity-100"
+                        )}>
+                            {isSarahSpeaking && (
+                                <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary uppercase tracking-wider">
+                                    <Activity className="animate-pulse" size={10} />
+                                    Speaking
+                                </div>
+                            )}
                             <div className="relative">
-                                <div className="size-20 rounded-full bg-muted bg-cover bg-center border-2 border-border" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk')" }}></div>
-                                <div className="absolute bottom-0 right-0 size-5 bg-card rounded-full flex items-center justify-center border border-border">
-                                    <MicOff className="text-muted-foreground" size={12} />
+                                <div className={cn(
+                                    "size-20 rounded-full bg-muted bg-cover bg-center border-2 transition-all duration-300",
+                                    isSarahSpeaking ? "border-primary size-24" : "border-border"
+                                )} style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk')" }}></div>
+                                <div className={cn(
+                                    "absolute bottom-0 right-0 rounded-full flex items-center justify-center border transition-all duration-300",
+                                    isSarahSpeaking ? "-bottom-1 -right-1 size-7 bg-primary border-2 border-background" : "size-5 bg-card border-border"
+                                )}>
+                                    {isSarahSpeaking ? <Mic className="text-white" size={14} /> : <MicOff className="text-muted-foreground" size={12} />}
                                 </div>
                             </div>
                             <div className="text-center">
-                                <h3 className="font-semibold italic text-sm">Sarah Chen</h3>
+                                <h3 className={cn("font-semibold text-sm", isSarahSpeaking ? "font-bold text-base" : "italic")}>Sarah Chen</h3>
                                 <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">Frontend Lead</p>
                             </div>
                         </div>
 
-                        <div className="relative bg-muted/30 rounded-xl p-6 border-2 border-primary shadow-xl shadow-primary/10 flex flex-col items-center gap-4 transform scale-105 z-10 transition-transform">
-                            <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary uppercase tracking-wider">
-                                <Activity className="animate-pulse" size={10} />
-                                Speaking
-                            </div>
+                        {/* Marcus Johnson (Engineering Manager) */}
+                        <div className={cn(
+                            "relative bg-card rounded-xl p-5 border border-border shadow-lg flex flex-col items-center gap-3 transition-all duration-300",
+                            isMarcusSpeaking ? "border-primary border-t-[3px] scale-105 z-10 bg-muted/30 shadow-primary/10" : "border-t-emerald-500 border-t-[3px] opacity-80 hover:opacity-100"
+                        )}>
+                            {isMarcusSpeaking && (
+                                <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary uppercase tracking-wider">
+                                    <Activity className="animate-pulse" size={10} />
+                                    Speaking
+                                </div>
+                            )}
                             <div className="relative">
-                                <div className="size-24 rounded-full bg-muted bg-cover bg-center border-2 border-primary" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc')" }}></div>
-                                <div className="absolute -bottom-1 -right-1 size-7 bg-primary rounded-full flex items-center justify-center border-2 border-background">
-                                    <Mic className="text-white" size={14} />
+                                <div className={cn(
+                                    "size-20 rounded-full bg-muted bg-cover bg-center border-2 transition-all duration-300",
+                                    isMarcusSpeaking ? "border-primary size-24" : "border-border"
+                                )} style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc')" }}></div>
+                                <div className={cn(
+                                    "absolute bottom-0 right-0 rounded-full flex items-center justify-center border transition-all duration-300",
+                                    isMarcusSpeaking ? "-bottom-1 -right-1 size-7 bg-primary border-2 border-background" : "size-5 bg-card border-border"
+                                )}>
+                                    {isMarcusSpeaking ? <Mic className="text-white" size={14} /> : <MicOff className="text-muted-foreground" size={12} />}
                                 </div>
                             </div>
                             <div className="text-center">
-                                <h3 className="font-bold text-lg">Marcus Johnson</h3>
-                                <p className="text-xs text-muted-foreground font-bold tracking-widest uppercase mt-0.5">Engineering Manager</p>
+                                <h3 className={cn("font-semibold text-sm", isMarcusSpeaking ? "font-bold text-base" : "italic")}>Marcus Johnson</h3>
+                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">Engineering Manager</p>
                             </div>
                         </div>
 
-                        <div className="relative bg-card rounded-xl p-5 border border-border border-t-emerald-500 border-t-[3px] shadow-lg flex flex-col items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+                        {/* David Wright (System Architect) */}
+                        <div className={cn(
+                            "relative bg-card rounded-xl p-5 border border-border shadow-lg flex flex-col items-center gap-3 transition-all duration-300",
+                            isDavidSpeaking ? "border-primary border-t-[3px] scale-105 z-10 bg-muted/30 shadow-primary/10" : "border-t-emerald-500 border-t-[3px] opacity-80 hover:opacity-100"
+                        )}>
+                            {isDavidSpeaking && (
+                                <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary uppercase tracking-wider">
+                                    <Activity className="animate-pulse" size={10} />
+                                    Speaking
+                                </div>
+                            )}
                             <div className="relative">
-                                <div className="size-20 rounded-full bg-muted bg-cover bg-center border-2 border-border" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI')" }}></div>
-                                <div className="absolute bottom-0 right-0 size-5 bg-card rounded-full flex items-center justify-center border border-border">
-                                    <MicOff className="text-muted-foreground" size={12} />
+                                <div className={cn(
+                                    "size-20 rounded-full bg-muted bg-cover bg-center border-2 transition-all duration-300",
+                                    isDavidSpeaking ? "border-primary size-24" : "border-border"
+                                )} style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI')" }}></div>
+                                <div className={cn(
+                                    "absolute bottom-0 right-0 rounded-full flex items-center justify-center border transition-all duration-300",
+                                    isDavidSpeaking ? "-bottom-1 -right-1 size-7 bg-primary border-2 border-background" : "size-5 bg-card border-border"
+                                )}>
+                                    {isDavidSpeaking ? <Mic className="text-white" size={14} /> : <MicOff className="text-muted-foreground" size={12} />}
                                 </div>
                             </div>
                             <div className="text-center">
-                                <h3 className="font-semibold text-sm italic">David Wright</h3>
+                                <h3 className={cn("font-semibold text-sm", isDavidSpeaking ? "font-bold text-base" : "italic")}>David Wright</h3>
                                 <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">System Architect</p>
                             </div>
                         </div>
@@ -165,14 +249,27 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
 
                     {/* Question Card */}
                     <section className="flex-1 min-h-[200px] flex flex-col">
-                        <div className="bg-card rounded-xl border border-border border-t-emerald-500 border-t-[3px] p-8 shadow-lg flex flex-col gap-4 relative overflow-hidden">
+                        <div className={cn(
+                            "bg-card rounded-xl border p-8 shadow-lg flex flex-col gap-4 relative overflow-hidden transition-all duration-300",
+                            followupState.isActive ? "border-amber-500/30 border-t-[3px] border-t-amber-500" : "border-border border-t-emerald-500 border-t-[3px]"
+                        )}>
                             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-bold tracking-wider text-primary uppercase">Current Question</span>
+                                <span className={cn(
+                                    "text-xs font-bold tracking-wider uppercase transition-colors",
+                                    followupState.isActive ? "text-amber-500" : "text-primary"
+                                )}>
+                                    {followupState.isActive ? `Follow-up Probe (Round ${followupState.exchanges.length + 1})` : "Current Question"}
+                                </span>
                                 <div className="flex items-center gap-3 text-muted-foreground text-xs">
-                                    {isTTSSupported && currentQuestion && (
+                                    {isTTSSupported && (followupState.isActive ? followupState.currentFollowupQuestion : currentQuestion?.content) && (
                                         <button
-                                            onClick={() => isSpeaking ? stopSpeaking() : speak(currentQuestion.content)}
+                                            onClick={() => {
+                                                const txt = followupState.isActive ? followupState.currentFollowupQuestion : currentQuestion?.content;
+                                                if (txt) {
+                                                    isSpeaking ? stopSpeaking() : speak(txt);
+                                                }
+                                            }}
                                             title={isSpeaking ? "Stop speaking" : "Replay question"}
                                             className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground"
                                         >
@@ -184,9 +281,31 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                 </div>
                             </div>
                             <h2 className="text-2xl md:text-3xl font-medium leading-relaxed">
-                                {currentQuestion ? `"${currentQuestion.content}"` : isPendingNext ? "AI is generating the next question..." : "Waiting for interview to begin..."}
+                                {followupState.isActive && followupState.currentFollowupQuestion
+                                    ? `"${followupState.currentFollowupQuestion}"`
+                                    : currentQuestion
+                                    ? `"${currentQuestion.content}"`
+                                    : isPendingNext
+                                    ? "AI is generating the next question..."
+                                    : "Waiting for interview to begin..."}
                             </h2>
-                            {currentQuestion && (
+                            {followupState.isActive && followupState.acknowledgement && (
+                                <p className="text-xs text-amber-500/80 italic font-medium">
+                                    "{followupState.acknowledgement}"
+                                </p>
+                            )}
+                            {followupState.exchanges.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-border/80 space-y-3 max-h-[150px] overflow-y-auto custom-scrollbar">
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Follow-up History</h4>
+                                    {followupState.exchanges.map((exchange, exIdx) => (
+                                        <div key={exIdx} className="space-y-1 text-xs">
+                                            <p className="text-amber-500 font-semibold">Follow-up: <span className="text-muted-foreground font-normal">{exchange.followupQuestion}</span></p>
+                                            <p className="text-foreground font-semibold">Your Answer: <span className="text-muted-foreground font-normal">{exchange.followupAnswer}</span></p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {currentQuestion && !followupState.isActive && (
                                 <div className="mt-4 flex gap-2">
                                     <span className="px-2.5 py-1 rounded bg-muted text-muted-foreground text-xs border border-border capitalize">{session.topicName}</span>
                                     <span className="px-2.5 py-1 rounded bg-muted text-muted-foreground text-xs border border-border capitalize">{session.difficulty.toLowerCase()}</span>
@@ -197,15 +316,37 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                     </section>
 
                     {/* Input Section */}
-                    <section className="bg-card rounded-xl border border-border p-1 flex flex-col shadow-lg">
+                    <section className={cn(
+                        "bg-card rounded-xl border p-1 flex flex-col shadow-lg transition-all duration-300",
+                        followupState.isActive ? "border-amber-500/30 focus-within:ring-amber-500/20" : "border-border"
+                    )}>
                         <div className="relative w-full">
                             <textarea
                                 className="w-full bg-transparent text-foreground placeholder-muted-foreground rounded-lg border-0 p-4 focus:ring-1 focus:ring-primary focus:bg-muted/30 resize-none h-32 md:h-40 leading-relaxed outline-none"
-                                placeholder={isPendingNext ? "AI is thinking..." : "Type your answer here or speak to answer..."}
-                                value={answerText}
-                                onChange={(e) => setAnswerText(e.target.value)}
+                                placeholder={
+                                    isPendingNext
+                                        ? "AI is thinking..."
+                                        : isCheckingFollowup
+                                        ? "AI is analysing your answer..."
+                                        : followupState.isActive
+                                        ? "Answer the follow-up question..."
+                                        : isAnswered && !followupState.isActive
+                                        ? "Waiting for next question..."
+                                        : "Type your answer here or speak to answer..."
+                                }
+                                value={followupState.isActive ? followupAnswerText : answerText}
+                                onChange={(e) =>
+                                    followupState.isActive
+                                        ? setFollowupAnswerText(e.target.value)
+                                        : setAnswerText(e.target.value)
+                                }
                                 onKeyDown={handleKeyDown}
-                                disabled={isPendingNext || isAnswered || submitResponse.isPending}
+                                disabled={
+                                    isPendingNext ||
+                                    isCheckingFollowup ||
+                                    submitResponse.isPending ||
+                                    (isAnswered && !followupState.isActive)
+                                }
                             ></textarea>
                         </div>
                         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
@@ -222,7 +363,12 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                 {isSTTSupported ? (
                                     <button
                                         onClick={handleMicToggle}
-                                        disabled={isPendingNext || isAnswered || submitResponse.isPending}
+                                        disabled={
+                                            isPendingNext ||
+                                            isCheckingFollowup ||
+                                            submitResponse.isPending ||
+                                            (isAnswered && !followupState.isActive)
+                                        }
                                         title={isListening ? "Stop recording" : "Speak your answer"}
                                         className={`text-xs font-medium flex items-center gap-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                                             isListening
@@ -238,20 +384,20 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                             <div className="flex items-center gap-3">
                                 <span className="text-xs text-muted-foreground hidden sm:block">Press Cmd+Enter to submit</span>
                                 <button
-                                    onClick={handleSubmit}
-                                    disabled={!canSubmit}
-                                    className="bg-primary hover:bg-primary-dark disabled:bg-muted disabled:text-muted-foreground text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors shadow-lg shadow-primary/20 flex items-center gap-2 group"
+                                    onClick={followupState.isActive ? handleFollowupSubmit : handleSubmit}
+                                    disabled={followupState.isActive ? !canSubmitFollowup : !canSubmit}
+                                    className={cn(
+                                        "text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors shadow-lg flex items-center gap-2 group",
+                                        followupState.isActive
+                                            ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20"
+                                            : "bg-primary hover:bg-primary-dark shadow-primary/20"
+                                    )}
                                 >
-                                    {submitResponse.isPending ? (
+                                    {submitResponse.isPending || isCheckingFollowup || isPendingNext || questions.length === 0 ? (
                                         <Loader2 className="animate-spin" size={16} />
-                                    ) : questions.length === 0 ? (
-                                        <>
-                                            Waiting...
-                                            <Loader2 className="animate-spin" size={14} />
-                                        </>
                                     ) : (
                                         <>
-                                            Submit Answer
+                                            {followupState.isActive ? "Answer Follow-up" : "Submit Answer"}
                                             <Send size={16} className="group-hover:translate-x-0.5 transition-transform" />
                                         </>
                                     )}
@@ -306,36 +452,40 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                             <Users size={16} className="text-muted-foreground" />
                         </div>
                         <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/30">
-                                <div className="relative">
-                                    <div className="size-8 rounded-full bg-muted bg-cover bg-center" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc')" }}></div>
-                                    <span className="absolute bottom-0 right-0 size-2.5 bg-green-500 border border-card rounded-full"></span>
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-center text-[11px]">
-                                        <span className="font-semibold">Marcus</span>
-                                        <span className="text-primary uppercase font-bold tracking-widest">Active</span>
+                            {[
+                                { name: "Marcus", role: "Engineering Manager", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc", isActive: isMarcusSpeaking },
+                                { name: "Sarah", role: "Frontend Lead", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk", isActive: isSarahSpeaking },
+                                { name: "David", role: "System Architect", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI", isActive: isDavidSpeaking },
+                            ].map((panelist) => (
+                                <div
+                                    key={panelist.name}
+                                    className={cn(
+                                        "flex items-center gap-3 p-3 rounded-lg border transition-all duration-300",
+                                        panelist.isActive
+                                            ? "bg-primary/10 border-primary/30 shadow-sm"
+                                            : "hover:bg-muted/50 border-transparent hover:border-border"
+                                    )}
+                                >
+                                    <div className="relative">
+                                        <div className="size-8 rounded-full bg-muted bg-cover bg-center" style={{ backgroundImage: `url('${panelist.avatar}')` }}></div>
+                                        <span className={cn("absolute bottom-0 right-0 size-2.5 border border-card rounded-full transition-colors", panelist.isActive ? "bg-green-500" : "bg-gray-500")}></span>
                                     </div>
-                                    <div className="w-full bg-muted h-1 mt-2 rounded-full overflow-hidden">
-                                        <div className="bg-primary h-full rounded-full animate-pulse" style={{ width: "75%" }}></div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className={cn("font-semibold", !panelist.isActive && "text-muted-foreground")}>{panelist.name}</span>
+                                            <span className={cn("uppercase font-bold tracking-widest text-[9px] transition-colors", panelist.isActive ? "text-primary animate-pulse" : "text-muted-foreground")}>
+                                                {panelist.isActive ? "Speaking" : "Listening"}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-muted h-1 mt-2 rounded-full overflow-hidden">
+                                            <div
+                                                className={cn("h-full rounded-full transition-all duration-500", panelist.isActive ? "bg-primary animate-pulse" : "bg-muted-foreground/30")}
+                                                style={{ width: panelist.isActive ? "75%" : "10%" }}
+                                            ></div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
-                                <div className="relative">
-                                    <div className="size-8 rounded-full bg-muted bg-cover bg-center" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk')" }}></div>
-                                    <span className="absolute bottom-0 right-0 size-2.5 bg-green-500 border border-card rounded-full"></span>
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-center text-[11px]">
-                                        <span className="font-semibold text-muted-foreground">Sarah</span>
-                                        <span className="text-muted-foreground uppercase">Listening</span>
-                                    </div>
-                                    <div className="w-full bg-muted h-1 mt-2 rounded-full overflow-hidden">
-                                        <div className="bg-muted-foreground/30 h-full rounded-full" style={{ width: "10%" }}></div>
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
                         <div className="mt-6 pt-4 border-t border-border">
@@ -344,7 +494,9 @@ export const PanelSession: React.FC<LiveSessionProps> = ({
                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Real-time Hint</span>
                             </div>
                             <p className="text-[11px] text-muted-foreground italic bg-muted/40 p-3 rounded border border-border/50 leading-relaxed">
-                                {questions.length <= 2 
+                                {followupState.isActive
+                                    ? "Explain details of the missing concept to address the panel's concerns."
+                                    : questions.length <= 2 
                                     ? "Start by providing a concise overview of your relevant experience."
                                     : "Consider mentioning the CAP theorem trade-offs when discussing consistency vs availability."}
                             </p>

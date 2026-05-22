@@ -30,7 +30,8 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
     seconds,
     formatTime,
     isEnding,
-    onEndSession
+    onEndSession,
+    setIsVoiceMode,
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const prevQuestionCountRef = useRef(0);
@@ -186,13 +187,24 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
                         textClassName="text-sm font-semibold tracking-widest text-white"
                     />
 
-                    {/* Right — end session */}
-                    <SessionEndButton
-                        isEnding={isEnding}
-                        onClick={onEndSession}
-                        className="flex-shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/20 hover:text-white disabled:cursor-wait disabled:opacity-50"
-                        labelClassName="hidden sm:inline"
-                    />
+                    {/* Right — end session & voice mode */}
+                    <div className="flex items-center gap-3">
+                        {setIsVoiceMode && (
+                            <button
+                                onClick={() => setIsVoiceMode(true)}
+                                className="flex-shrink-0 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-primary border border-primary/20 bg-primary/10 hover:bg-primary/25 hover:border-primary/40 transition-all"
+                            >
+                                <Mic size={12} className="animate-pulse" />
+                                Real-time Voice
+                            </button>
+                        )}
+                        <SessionEndButton
+                            isEnding={isEnding}
+                            onClick={onEndSession}
+                            className="flex-shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/20 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                            labelClassName="hidden sm:inline"
+                        />
+                    </div>
                 </div>
 
                 {/* Progress bar — full width under header */}

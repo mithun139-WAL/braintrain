@@ -11,6 +11,7 @@ Design:
 import asyncio
 import json
 import logging
+import re
 from typing import Optional
 
 from app.ai.prompts.followup import (
@@ -24,16 +25,35 @@ logger = logging.getLogger(__name__)
 
 MAX_OUTPUT_TOKENS = 200
 
+_JSON_FENCE_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
+
+
+def _extract_json(raw: str) -> str:
+    """
+    NIM models sometimes wrap JSON in markdown fences.
+    Try to strip them; fall back to the raw string.
+    """
+    match = _JSON_FENCE_RE.search(raw)
+    if match:
+        return match.group(1).strip()
+    # Look for first '{' to last '}' as a fallback
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return raw[start : end + 1]
+    return raw
+
 
 class OpenAIFollowupProvider:
     """
-    GPT-4o-mini follow-up analysis provider.
+    GPT-4o-mini / NIM follow-up analysis provider.
     Implements the FollowupProvider protocol.
     """
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, base_url: Optional[str] = None, model: Optional[str] = None) -> None:
         import openai
-        self._client = openai.OpenAI(api_key=api_key)
+        self._client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        self._model = model or FOLLOWUP_MODEL_USED
         from app.ai.providers.stub_followup import StubFollowupProvider
         self._fallback = StubFollowupProvider()
 
@@ -62,7 +82,7 @@ class OpenAIFollowupProvider:
             try:
                 completion = await asyncio.to_thread(
                     self._client.chat.completions.create,
-                    model=FOLLOWUP_MODEL_USED,
+                    model=self._model,
                     response_format={"type": "json_object"},
                     temperature=0.4,
                     max_tokens=MAX_OUTPUT_TOKENS,
@@ -72,7 +92,8 @@ class OpenAIFollowupProvider:
                     ],
                 )
                 raw = completion.choices[0].message.content or ""
-                signal = self._parse(raw)
+                cleaned = _extract_json(raw)
+                signal = self._parse(cleaned)
                 if signal is not None:
                     logger.debug(
                         "Followup analysis | needs_followup=%s | gap=%s",
@@ -83,7 +104,7 @@ class OpenAIFollowupProvider:
 
                 logger.warning("Attempt %d: malformed followup JSON. Raw: %.200s", attempt, raw)
             except Exception as exc:
-                logger.error("Attempt %d: followup OpenAI call failed — %s", attempt, exc)
+                logger.error("Attempt %d: followup OpenAI/NIM call failed — %s", attempt, exc)
 
         return None
 

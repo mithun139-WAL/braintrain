@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     # ─── CORS ─────────────────────────────────────────────────────────────────
     frontend_url: str = "http://localhost:3000"
 
+    # ─── LiveKit WebRTC ───────────────────────────────────────────────────────
+    livekit_api_key: str = "devkey"
+    livekit_api_secret: str = "secret"
+    livekit_url: str = "ws://localhost:7880"
+
+
     # ─── Stripe Billing ───────────────────────────────────────────────────────
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

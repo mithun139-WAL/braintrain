@@ -13,7 +13,10 @@ export interface LiveSessionProps {
     formatTime: (s: number) => string;
     isEnding: boolean;
     onEndSession: () => void;
+    isVoiceMode?: boolean;
+    setIsVoiceMode?: (v: boolean) => void;
 }
+
 
 interface UseLiveSessionComposerOptions {
     session: Session;
