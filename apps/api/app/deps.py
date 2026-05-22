@@ -101,3 +101,17 @@ async def get_current_user(
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_current_pro_user(
+    current_user: Annotated[User, Depends(get_current_user)]
+) -> User:
+    if (current_user.plan_type or "FREE").upper() != "PRO":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This feature is only available on the PRO plan. Upgrade to PRO to access.",
+        )
+    return current_user
+
+
+CurrentProUser = Annotated[User, Depends(get_current_pro_user)]

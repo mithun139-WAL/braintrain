@@ -47,6 +47,7 @@ class InterviewSession(Base):
     difficulty: Mapped[str] = mapped_column(String, nullable=False)
     adaptive: Mapped[bool] = mapped_column(Boolean, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_voice: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Stores AI interviewer personality configuration (Panel mode etc.)
     personality_config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)

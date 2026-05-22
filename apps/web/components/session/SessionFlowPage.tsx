@@ -28,13 +28,23 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
     const [seconds, setSeconds] = useState(0);
     const [started, setStarted] = useState(false);
     const [isEnding, setIsEnding] = useState(false);
-    // Voice mode is the default — the AI voice interviewer launches automatically.
-    const [isVoiceMode, setIsVoiceMode] = useState(true);
+    // Voice mode state (initialized from session isVoice flag once loaded)
+    const [isVoiceMode, setIsVoiceMode] = useState<boolean | null>(null);
     // Ref keeps the latest isVoiceMode value accessible inside stale callbacks.
-    const isVoiceModeRef = useRef(true);
+    const isVoiceModeRef = useRef<boolean | null>(null);
+
     useEffect(() => {
         isVoiceModeRef.current = isVoiceMode;
     }, [isVoiceMode]);
+
+    // Initialize voice mode once session is loaded
+    useEffect(() => {
+        if (session && isVoiceMode === null) {
+            const initialMode = session.isVoice ?? true;
+            setIsVoiceMode(initialMode);
+            isVoiceModeRef.current = initialMode;
+        }
+    }, [session, isVoiceMode]);
 
     // localStorage key that persists this session's wall-clock start time across refreshes
     const timerStorageKey = `braintrain-timer-${sessionId}`;
@@ -45,7 +55,7 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
 
 
     useEffect(() => {
-        if (!session || !sessionId) return;
+        if (!session || !sessionId || isVoiceMode === null) return;
 
         if (session.status === SessionStatus.CREATED && !startSession.isPending && !started) {
             setStarted(true);
@@ -143,21 +153,7 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
     // Keep the ref in sync so the auto-end effect always invokes the latest closure
     handleEndSessionRef.current = handleEndSession;
 
-    /**
-     * Switch from voice → chat mode.
-     * If the chat UI has no questions yet (voice agent was handling everything),
-     * generate the first chat question before rendering OneOnOneSession.
-     */
-    const handleSwitchToChat = () => {
-        isVoiceModeRef.current = false;
-        setIsVoiceMode(false);
-        const hasQuestions = (session?.questions?.length ?? 0) > 0;
-        if (!hasQuestions && !generateQuestion.isPending) {
-            generateQuestion.mutate(sessionId);
-        }
-    };
-
-    if (isLoading) {
+    if (isLoading || isVoiceMode === null) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-gray-950">
                 <Loader2 className="animate-spin text-primary" size={48} />
@@ -199,12 +195,6 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
                         </div>
                         
                         <div className="flex items-center gap-4">
-                            <button
-                                onClick={handleSwitchToChat}
-                                className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 text-primary rounded-lg text-xs font-semibold transition-colors"
-                            >
-                                Switch to Chat Mode
-                            </button>
                             <SessionTimerPill
                                 time={formatTime(seconds)}
                                 className="border border-gray-700 bg-gray-900 flex"
@@ -238,8 +228,6 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
         formatTime,
         isEnding,
         onEndSession: handleEndSession,
-        isVoiceMode,
-        setIsVoiceMode,
     };
 
     switch (session.interviewMode) {

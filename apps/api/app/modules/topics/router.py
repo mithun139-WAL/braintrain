@@ -14,7 +14,7 @@ import uuid
 
 from fastapi import APIRouter
 
-from app.deps import CurrentUser, DBSession
+from app.deps import CurrentProUser, CurrentUser, DBSession
 from app.modules.topics import service
 from app.modules.topics.schemas import (
     CreateTopicRequest,
@@ -32,7 +32,7 @@ async def list_topics(current_user: CurrentUser, db: DBSession):
 
 @router.post("", response_model=TopicResponse, status_code=201)
 async def create_topic(
-    body: CreateTopicRequest, current_user: CurrentUser, db: DBSession
+    body: CreateTopicRequest, current_user: CurrentProUser, db: DBSession
 ):
     return await service.create_topic(db, body, current_user.id)
 
@@ -46,6 +46,6 @@ async def get_topic(
 
 @router.delete("/{topic_id}", response_model=MessageResponse)
 async def delete_topic(
-    topic_id: uuid.UUID, current_user: CurrentUser, db: DBSession
+    topic_id: uuid.UUID, current_user: CurrentProUser, db: DBSession
 ):
     return await service.delete_topic(db, topic_id, current_user.id)

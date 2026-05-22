@@ -16,4 +16,5 @@ export interface Session {
     questions: any[];
     adaptive?: boolean;
     durationMinutes: number;
+    isVoice?: boolean;
 }

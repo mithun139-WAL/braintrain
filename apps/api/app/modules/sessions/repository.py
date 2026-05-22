@@ -140,6 +140,7 @@ async def create_session(
     difficulty: str,
     adaptive: bool,
     duration_minutes: int,
+    is_voice: bool = True,
     personality_config: Optional[dict] = None,
 ) -> InterviewSession:
     session = InterviewSession(
@@ -150,6 +151,7 @@ async def create_session(
         difficulty=difficulty,
         adaptive=adaptive,
         duration_minutes=duration_minutes,
+        is_voice=is_voice,
         personality_config=personality_config,
         status="CREATED",
     )

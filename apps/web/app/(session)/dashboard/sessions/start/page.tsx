@@ -58,12 +58,14 @@ export default function StartSessionPage() {
         difficulty,
         adaptive,
         durationMinutes,
+        isVoice,
         setTopicId,
         setInterviewType,
         setInterviewMode,
         setDifficulty,
         setAdaptive,
         setDurationMinutes,
+        setIsVoice,
         nextStep,
         prevStep,
         reset
@@ -79,8 +81,15 @@ export default function StartSessionPage() {
     const billingStatus = billingStatusResponse?.data;
     const isPro = (profile?.planType || "FREE").toUpperCase() === "PRO";
     const isBillingConfigured = billingStatus?.configured ?? false;
-    const sessionLimit = isPro ? 20 : 3;
-    const sessionsUsed = profile?.monthlySessionCount || 0;
+
+    // Separate limits for FREE, total limit for PRO
+    const sessionLimit = isPro
+        ? 20
+        : (isVoice ? (profile?.voiceSessionLimit ?? 1) : (profile?.chatSessionLimit ?? 3));
+    const sessionsUsed = isPro
+        ? (profile?.monthlySessionCount ?? 0)
+        : (isVoice ? (profile?.voiceSessionCount ?? 0) : (profile?.chatSessionCount ?? 0));
+
     const sessionsRemaining = Math.max(0, sessionLimit - sessionsUsed);
     const hasReachedSessionLimit = sessionsRemaining === 0;
     const canStartSession =
@@ -97,6 +106,14 @@ export default function StartSessionPage() {
         }
     }, [presetTopicId, reset, setTopicId]);
 
+    // Enforce FREE plan constraints dynamically
+    useEffect(() => {
+        if (!isLoadingProfile && !isPro) {
+            setDurationMinutes(15);
+            setInterviewMode(InterviewMode.ONE_ON_ONE_AI);
+        }
+    }, [isPro, isLoadingProfile, setDurationMinutes, setInterviewMode]);
+
     const handleStartSession = () => {
         if (!topicId || !interviewType || !interviewMode || hasReachedSessionLimit) return;
 
@@ -106,7 +123,8 @@ export default function StartSessionPage() {
             interviewMode: interviewMode as any,
             difficulty: difficulty as any,
             adaptive,
-            durationMinutes
+            durationMinutes,
+            isVoice
         });
     };
 
@@ -196,7 +214,7 @@ export default function StartSessionPage() {
                             ) : null}
 
                             {/* Hero Section */}
-                            <div className="mb-16">
+                            <div className="mb-8">
                                 <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
                                     New Practice <span className="text-primary relative inline-block">
                                         Session
@@ -204,6 +222,36 @@ export default function StartSessionPage() {
                                     </span>
                                 </h1>
                                 <p className="text-muted-foreground text-base">Configure your AI interview parameters to simulate real-world scenarios.</p>
+                            </div>
+
+                            {/* Session Medium Choice */}
+                            <div className="bg-card border border-border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm mb-6">
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-lg">Interview Medium</h3>
+                                    <p className="text-xs text-muted-foreground font-medium">Choose between real-time voice speaking or text-based chat.</p>
+                                </div>
+                                <div className="inline-flex rounded-xl p-1 bg-muted border border-border shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsVoice(true)}
+                                        className={cn(
+                                            "px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2",
+                                            isVoice ? "bg-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Bot size={16} /> Real-time Voice
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsVoice(false)}
+                                        className={cn(
+                                            "px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2",
+                                            !isVoice ? "bg-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <MessageSquare size={16} /> Chat/Text
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Step 1: Select Topic */}
@@ -304,32 +352,48 @@ export default function StartSessionPage() {
                                 <div className="flex flex-col gap-5">
                                     <h3 className="text-lg font-bold">Select Interview Format</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {interviewModes.map((mode) => (
-                                            <button
-                                                key={mode.id}
-                                                onClick={() => setInterviewMode(mode.id)}
-                                                className={cn(
-                                                    "p-5 rounded-xl border transition-all flex flex-col gap-4 text-left",
-                                                    interviewMode === mode.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-card hover:border-primary/40"
-                                                )}
-                                            >
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm font-bold">{mode.title}</span>
-                                                    <div className={cn(
-                                                        "size-4 rounded-full border flex items-center justify-center transition-colors",
-                                                        interviewMode === mode.id ? "border-primary bg-primary" : "border-border bg-card"
-                                                    )}>
-                                                        <div className="size-1.5 rounded-full bg-white"></div>
+                                        {interviewModes.map((mode) => {
+                                            const isModeLocked = !isPro && mode.id !== InterviewMode.ONE_ON_ONE_AI;
+                                            return (
+                                                <button
+                                                    key={mode.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (isModeLocked) return;
+                                                        setInterviewMode(mode.id);
+                                                    }}
+                                                    className={cn(
+                                                        "p-5 rounded-xl border transition-all flex flex-col gap-4 text-left relative overflow-hidden",
+                                                        interviewMode === mode.id 
+                                                            ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                                                            : "border-border bg-card hover:border-primary/40",
+                                                        isModeLocked && "opacity-60 cursor-not-allowed bg-muted/20"
+                                                    )}
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-bold">{mode.title}</span>
+                                                        {isModeLocked ? (
+                                                            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                                                                <Crown size={8} /> PRO
+                                                            </span>
+                                                        ) : (
+                                                            <div className={cn(
+                                                                "size-4 rounded-full border flex items-center justify-center transition-colors",
+                                                                interviewMode === mode.id ? "border-primary bg-primary" : "border-border bg-card"
+                                                            )}>
+                                                                <div className="size-1.5 rounded-full bg-white"></div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 pl-1">
-                                                    <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                                                        <mode.icon size={18} />
+                                                    <div className="flex items-center gap-2 pl-1">
+                                                        <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
+                                                            <mode.icon size={18} />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground leading-relaxed">{mode.description}</p>
-                                            </button>
-                                        ))}
+                                                    <p className="text-xs text-muted-foreground leading-relaxed">{mode.description}</p>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </section>
@@ -407,12 +471,18 @@ export default function StartSessionPage() {
                                                 <input
                                                     type="range"
                                                     min="15"
-                                                    max="60"
+                                                    max={isPro ? "60" : "15"}
                                                     step="5"
                                                     value={durationMinutes}
+                                                    disabled={!isPro}
                                                     onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
-                                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary disabled:opacity-50"
                                                 />
+                                                {!isPro && (
+                                                    <span className="text-[11px] text-amber-500 font-medium flex items-center gap-1">
+                                                        <Crown size={12} /> Custom duration (up to 60m) is a PRO feature. Maximum 15 mins for FREE plan.
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -446,9 +516,15 @@ export default function StartSessionPage() {
                                                 <Gauge size={20} />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Plan usage</span>
+                                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                                                    {isPro ? "Total monthly usage" : (isVoice ? "Voice session usage" : "Chat session usage")}
+                                                </span>
                                                 <span className="text-sm font-bold truncate max-w-[180px]">
-                                                    {isLoadingProfile ? "Loading..." : `${sessionsUsed} / ${sessionLimit} sessions used`}
+                                                    {isLoadingProfile 
+                                                        ? "Loading..." 
+                                                        : isPro 
+                                                        ? `${sessionsUsed} / ${sessionLimit} sessions` 
+                                                        : `${sessionsUsed} / ${sessionLimit} ${isVoice ? "voice" : "chat"} session${sessionLimit === 1 ? "" : "s"}`}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground">
                                                     {isLoadingProfile

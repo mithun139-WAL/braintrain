@@ -29,6 +29,7 @@ class CreateSessionRequest(BaseModel):
     difficulty: DifficultyLiteral
     adaptive: bool
     duration_minutes: int
+    is_voice: bool = True
     personality_config: Optional[Dict[str, Any]] = None
 
     @field_validator("duration_minutes")
@@ -83,6 +84,7 @@ class SessionResponse(BaseModel):
     difficulty: str
     adaptive: bool
     duration_minutes: int
+    is_voice: bool = True
     personality_config: Optional[Dict[str, Any]] = None
     status: str
     started_at: Optional[datetime] = None
@@ -127,6 +129,7 @@ class SessionListItemResponse(BaseModel):
     difficulty: str
     adaptive: bool
     duration_minutes: int
+    is_voice: bool = True
     status: str
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None

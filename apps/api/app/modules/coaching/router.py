@@ -12,7 +12,7 @@ import uuid
 
 from fastapi import APIRouter
 
-from app.deps import CurrentUser, DBSession
+from app.deps import CurrentProUser, DBSession
 from app.modules.coaching import service
 from app.modules.coaching.schemas import (
     CoachingSessionListResponse,
@@ -34,7 +34,7 @@ router = APIRouter()
 async def create_coaching_session(
     body: CreateCoachingSessionRequest,
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> CoachingSessionResponse:
     return await service.create_session(db, body, current_user.id)
 
@@ -47,7 +47,7 @@ async def create_coaching_session(
 )
 async def list_coaching_sessions(
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
     page: int = 1,
     limit: int = 20,
 ) -> CoachingSessionListResponse:
@@ -63,7 +63,7 @@ async def list_coaching_sessions(
 async def get_coaching_session(
     session_id: uuid.UUID,
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> CoachingSessionResponse:
     return await service.get_session(db, session_id, current_user.id)
 
@@ -78,7 +78,7 @@ async def send_message(
     session_id: uuid.UUID,
     body: SendMessageRequest,
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> SendMessageResponse:
     return await service.send_message(db, session_id, current_user.id, body.content)
 
@@ -92,6 +92,6 @@ async def send_message(
 async def end_coaching_session(
     session_id: uuid.UUID,
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> CoachingSessionResponse:
     return await service.end_session(db, session_id, current_user.id)

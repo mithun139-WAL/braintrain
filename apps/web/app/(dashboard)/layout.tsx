@@ -7,6 +7,7 @@ import { TopBar } from "@/core/components/layout/dashboard/TopBar";
 import { useAuthStore } from "@/lib/store/auth.store";
 import { useUiStore } from "@/lib/store/ui.store";
 import { cn } from "@/lib/utils";
+import { useGetProfile } from "@/hooks/queries/useGetProfile";
 
 export default function DashboardLayout({
     children,
@@ -20,26 +21,43 @@ export default function DashboardLayout({
     const closeSidebar = useUiStore((state) => state.closeSidebar);
     const [isChecking, setIsChecking] = useState(true);
 
+    const { data: profileResponse, isLoading: isProfileLoading } = useGetProfile();
+    const user = profileResponse?.data;
+    const isFree = user?.planType === "FREE";
+    const isForbiddenPath =
+        pathname.startsWith("/dashboard/coach") ||
+        pathname.startsWith("/dashboard/training") ||
+        pathname.startsWith("/dashboard/topics");
+
+    const isRedirecting = isForbiddenPath && (isProfileLoading || (user && isFree));
+
     useEffect(() => {
         if (!hasHydrated) return;
 
         if (!isAuthenticated) {
             router.replace("/login");
-        } else {
-            setIsChecking(false);
+            return;
         }
-    }, [isAuthenticated, hasHydrated, router]);
+
+        setIsChecking(false);
+
+        if (!isProfileLoading && isFree && isForbiddenPath) {
+            router.replace("/dashboard");
+        }
+    }, [isAuthenticated, hasHydrated, isProfileLoading, isFree, isForbiddenPath, router]);
 
     useEffect(() => {
         closeSidebar();
     }, [pathname, closeSidebar]);
 
-    if (isChecking) {
+    if (isChecking || isRedirecting) {
         return (
             <div className="flex min-h-dvh w-full items-center justify-center bg-background text-foreground">
                 <div className="flex flex-col items-center gap-4">
                     <div className="size-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                    <p className="text-muted-foreground font-medium animate-pulse">Authenticating...</p>
+                    <p className="text-muted-foreground font-medium animate-pulse">
+                        {isChecking ? "Authenticating..." : "Redirecting..."}
+                    </p>
                 </div>
             </div>
         );

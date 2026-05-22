@@ -12,7 +12,7 @@ from typing import Optional
 
 from fastapi import APIRouter
 
-from app.deps import CurrentUser, DBSession
+from app.deps import CurrentProUser, DBSession
 from app.modules.training_plans import service
 from app.modules.training_plans.schemas import (
     CompleteTaskResponse,
@@ -33,7 +33,7 @@ router = APIRouter()
 async def generate_plan(
     body: GeneratePlanRequest,
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> TrainingPlanResponse:
     return await service.generate_plan(db, current_user.id, session_id=body.session_id)
 
@@ -46,7 +46,7 @@ async def generate_plan(
 )
 async def get_current_plan(
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> TrainingPlanResponse:
     return await service.get_current_plan(db, current_user.id)
 
@@ -59,7 +59,7 @@ async def get_current_plan(
 )
 async def list_plans(
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
     page: int = 1,
     limit: int = 10,
 ) -> TrainingPlanListResponse:
@@ -75,6 +75,6 @@ async def list_plans(
 async def complete_task(
     task_id: uuid.UUID,
     db: DBSession,
-    current_user: CurrentUser,
+    current_user: CurrentProUser,
 ) -> CompleteTaskResponse:
     return await service.complete_task(db, task_id, current_user.id)

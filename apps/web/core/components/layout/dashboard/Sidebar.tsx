@@ -12,6 +12,7 @@ import {
     START_SESSION_HREF,
 } from "@/core/components/layout/dashboard/navigation";
 import { buttonStyles } from "@/core/components/ui/button";
+import { useGetProfile } from "@/hooks/queries/useGetProfile";
 
 interface SidebarProps {
     className?: string;
@@ -21,6 +22,23 @@ interface SidebarProps {
 
 export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const { data: profileResponse } = useGetProfile();
+    const planType = profileResponse?.data?.planType || "FREE";
+
+    const filteredNavigation = dashboardNavigation
+        .map((section) => {
+            const filteredItems = section.items.filter((item) => {
+                if (planType === "FREE") {
+                    return !["Coach", "Topics", "Plan"].includes(item.name);
+                }
+                return true;
+            });
+            return {
+                ...section,
+                items: filteredItems,
+            };
+        })
+        .filter((section) => section.items.length > 0);
 
     return (
         <aside
@@ -56,7 +74,7 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
                 ) : null}
             </div>
             <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-6 custom-scrollbar">
-                {dashboardNavigation.map((section) => (
+                {filteredNavigation.map((section) => (
                     <div key={section.label} className="flex flex-col gap-2">
                         <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
                             {section.label}
@@ -114,7 +132,9 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
                                 Run a focused practice session
                             </p>
                             <p className="text-xs leading-relaxed text-muted-foreground">
-                                Capture a fresh readiness signal, then let the coach adapt your plan.
+                                {planType === "PRO"
+                                    ? "Capture a fresh readiness signal, then let the coach adapt your plan."
+                                    : "Capture a fresh readiness signal and start building your scoring."}
                             </p>
                         </div>
                     </div>
@@ -130,3 +150,4 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
         </aside>
     );
 }
+

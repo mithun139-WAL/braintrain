@@ -15,6 +15,10 @@ export interface User {
     stripeSubscriptionStatus?: string | null;
     monthlySessionCount?: number;
     monthlyEvaluationCredits?: number;
+    voiceSessionCount?: number;
+    chatSessionCount?: number;
+    voiceSessionLimit?: number;
+    chatSessionLimit?: number;
     skills?: string[];
     skillPreferences?: SkillPreference[];
     createdAt: string;

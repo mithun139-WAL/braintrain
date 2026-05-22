@@ -48,6 +48,7 @@ def _build_session_response(session) -> SessionResponse:
         difficulty=session.difficulty,
         adaptive=session.adaptive,
         duration_minutes=session.duration_minutes,
+        is_voice=session.is_voice,
         personality_config=session.personality_config,
         status=session.status,
         started_at=session.started_at,
@@ -92,11 +93,22 @@ def _build_session_response(session) -> SessionResponse:
 async def create_session(
     db: AsyncSession, dto: CreateSessionRequest, user_id: uuid.UUID
 ) -> SessionResponse:
+    # Check plan type to enforce constraints
+    from sqlalchemy import select
+    from app.db.models.user import User
+    user_res = await db.execute(select(User.plan_type).where(User.id == user_id))
+    user_plan = user_res.scalar_one_or_none() or "FREE"
+
+    if user_plan.upper() == "FREE":
+        if dto.interview_mode != "ONE_ON_ONE_AI":
+            raise BadRequestException("Only 1:1 AI Interview format is available on the Free Plan.")
+        if dto.duration_minutes > 15:
+            raise BadRequestException("Maximum session duration is 15 minutes on the Free Plan.")
+
     # 0. Check usage limit
-    await usage_svc.check_session_limit(db, user_id)
+    await usage_svc.check_session_limit(db, user_id, is_voice=dto.is_voice)
 
     # 1. Validate topic
-    from sqlalchemy import or_, select
     from app.db.models.topic import Topic
 
     result = await db.execute(
@@ -119,6 +131,7 @@ async def create_session(
         difficulty=dto.difficulty,
         adaptive=dto.adaptive,
         duration_minutes=dto.duration_minutes,
+        is_voice=dto.is_voice,
         personality_config=dto.personality_config,
     )
     await db.commit()
@@ -243,6 +256,7 @@ async def list_sessions(
                 difficulty=s.difficulty,
                 adaptive=s.adaptive,
                 duration_minutes=s.duration_minutes,
+                is_voice=s.is_voice,
                 status=s.status,
                 started_at=s.started_at,
                 ended_at=s.ended_at,

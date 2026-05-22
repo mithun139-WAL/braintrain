@@ -51,6 +51,8 @@ export default function DashboardPage() {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
+    const isPro = user?.planType === "PRO";
+
     const focusSignals = [
         analytics?.improvement.topWeakDimension
             ? {
@@ -66,11 +68,13 @@ export default function DashboardPage() {
                   body: "This is becoming a repeatable strength. Keep reinforcing it.",
               }
             : null,
-        {
-            tone: "bg-sky-500",
-            title: "Turn insight into drills",
-            body: "Open your adaptive plan to turn the latest session signal into deliberate practice.",
-        },
+        isPro
+            ? {
+                  tone: "bg-sky-500",
+                  title: "Turn insight into drills",
+                  body: "Open your adaptive plan to turn the latest session signal into deliberate practice.",
+              }
+            : null,
     ].filter(Boolean) as Array<{ tone: string; title: string; body: string }>;
 
     return (
@@ -86,10 +90,14 @@ export default function DashboardPage() {
                     hasImprovement && progressionDelta! > 0
                         ? `You improved by +${progressionDelta!.toFixed(1)} points since your last session. Keep the momentum going with another focused practice run.`
                         : hasImprovement && progressionDelta! < 0
-                        ? `Your score moved ${progressionDelta!.toFixed(1)} points from the previous session. Use the coach and plan to recover quickly.`
+                        ? isPro
+                            ? `Your score moved ${progressionDelta!.toFixed(1)} points from the previous session. Use the coach and plan to recover quickly.`
+                            : `Your score moved ${progressionDelta!.toFixed(1)} points from the previous session. Practice again to recover quickly.`
                         : analytics?.analyzedSessions && analytics.analyzedSessions > 0
                         ? `${analytics.analyzedSessions} analyzed sessions are shaping your practice loop. Review the signal, then act on the next best move.`
-                        : "Run your first session to unlock readiness scoring, adaptive coaching, and a personalized training plan."
+                        : isPro
+                        ? "Run your first session to unlock readiness scoring, adaptive coaching, and a personalized training plan."
+                        : "Run your first session to unlock readiness scoring and start practicing."
                 }
                 meta={
                     <>
@@ -100,10 +108,12 @@ export default function DashboardPage() {
                 }
                 actions={
                     <>
-                        <Link href="/dashboard/coach" className={buttonStyles({ variant: "secondary" })}>
-                            <Compass size={16} />
-                            Open Coach
-                        </Link>
+                        {isPro && (
+                            <Link href="/dashboard/coach" className={buttonStyles({ variant: "secondary" })}>
+                                <Compass size={16} />
+                                Open Coach
+                            </Link>
+                        )}
                         <Link href="/dashboard/sessions/start" className={buttonStyles()}>
                             <Zap size={16} />
                             Start Session
@@ -130,7 +140,9 @@ export default function DashboardPage() {
                         <p className="max-w-reading text-body-md text-white/70">
                             {readinessScore !== null
                                 ? "Use one more session to confirm whether your current trend is becoming a reliable strength or still volatile under pressure."
-                                : "A single session is enough to generate your first readiness score, identify weak dimensions, and create an adaptive plan."}
+                                : isPro
+                                ? "A single session is enough to generate your first readiness score, identify weak dimensions, and create an adaptive plan."
+                                : "A single session is enough to generate your first readiness score and identify weak dimensions."}
                         </p>
                     </div>
 
@@ -146,10 +158,12 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                             <div className="flex flex-wrap gap-3 pt-2">
-                                <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "border-white/10 bg-white/5 text-white hover:bg-white/10") }>
-                                    <Sparkles size={14} />
-                                    Open Plan
-                                </Link>
+                                {isPro && (
+                                    <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "border-white/10 bg-white/5 text-white hover:bg-white/10") }>
+                                        <Sparkles size={14} />
+                                        Open Plan
+                                    </Link>
+                                )}
                                 <Link href="/dashboard/analytics" className={cn(buttonStyles({ variant: "ghost", size: "sm" }), "text-white/70 hover:bg-white/10 hover:text-white") }>
                                     View Insights
                                     <ArrowRight size={14} />
@@ -215,54 +229,56 @@ export default function DashboardPage() {
             {/* ── Main Content Grid ─────────────────────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Chart */}
-                <div className="lg:col-span-2">
+                <div className={cn(isPro ? "lg:col-span-2" : "lg:col-span-3")}>
                     <PerformanceChart trend={analytics?.trend} />
                 </div>
 
                 {/* AI Coaching Panel */}
-                <Surface padding="none" className="lg:col-span-1 flex flex-col overflow-hidden">
-                    <div className="flex items-center justify-between border-b border-border px-5 pb-4 pt-5">
-                        <div className="flex items-center gap-2">
-                            <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Lightbulb size={15} className="text-primary" />
-                            </div>
-                            <h3 className="text-sm font-bold text-foreground">AI Coaching</h3>
-                        </div>
-                        <Link
-                            href="/dashboard/coach"
-                            className="text-xs font-semibold text-primary hover:text-primary-dark transition-colors flex items-center gap-1"
-                        >
-                            Open Coach
-                            <ArrowRight size={12} />
-                        </Link>
-                    </div>
-
-                    <div className="flex flex-col gap-2 p-4 flex-1">
-                        {focusSignals.map((signal) => (
-                            <CoachTip key={`panel-${signal.title}`} dot={signal.tone} title={signal.title} body={signal.body} />
-                        ))}
-
-                        {/* Empty state */}
-                        {(!analytics || analytics.totalSessions === 0) && (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4">
-                                <div className="size-10 rounded-xl bg-muted flex items-center justify-center mb-3">
-                                    <Brain size={20} className="text-muted-foreground" />
+                {isPro && (
+                    <Surface padding="none" className="lg:col-span-1 flex flex-col overflow-hidden">
+                        <div className="flex items-center justify-between border-b border-border px-5 pb-4 pt-5">
+                            <div className="flex items-center gap-2">
+                                <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Lightbulb size={15} className="text-primary" />
                                 </div>
-                                <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                                    Complete your first session to unlock personalised AI coaching insights.
-                                </p>
+                                <h3 className="text-sm font-bold text-foreground">AI Coaching</h3>
                             </div>
-                        )}
+                            <Link
+                                href="/dashboard/coach"
+                                className="text-xs font-semibold text-primary hover:text-primary-dark transition-colors flex items-center gap-1"
+                            >
+                                Open Coach
+                                <ArrowRight size={12} />
+                            </Link>
+                        </div>
 
-                    </div>
+                        <div className="flex flex-col gap-2 p-4 flex-1">
+                            {focusSignals.map((signal) => (
+                                <CoachTip key={`panel-${signal.title}`} dot={signal.tone} title={signal.title} body={signal.body} />
+                            ))}
 
-                    <div className="p-4 pt-2 border-t border-border">
-                        <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm", fullWidth: true }), "border-dashed") }>
-                            <Sparkles size={13} />
-                            View Training Plan
-                        </Link>
-                    </div>
-                </Surface>
+                            {/* Empty state */}
+                            {(!analytics || analytics.totalSessions === 0) && (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4">
+                                    <div className="size-10 rounded-xl bg-muted flex items-center justify-center mb-3">
+                                        <Brain size={20} className="text-muted-foreground" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                                        Complete your first session to unlock personalised AI coaching insights.
+                                    </p>
+                                </div>
+                            )}
+
+                        </div>
+
+                        <div className="p-4 pt-2 border-t border-border">
+                            <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm", fullWidth: true }), "border-dashed") }>
+                                <Sparkles size={13} />
+                                View Training Plan
+                            </Link>
+                        </div>
+                    </Surface>
+                )}
             </div>
 
             {/* ── Recent Sessions ───────────────────────────────────────── */}

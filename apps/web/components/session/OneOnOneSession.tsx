@@ -31,7 +31,6 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
     formatTime,
     isEnding,
     onEndSession,
-    setIsVoiceMode,
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const prevQuestionCountRef = useRef(0);
@@ -187,17 +186,8 @@ export const OneOnOneSession: React.FC<LiveSessionProps> = ({
                         textClassName="text-sm font-semibold tracking-widest text-white"
                     />
 
-                    {/* Right — end session & voice mode */}
+                    {/* Right — end session */}
                     <div className="flex items-center gap-3">
-                        {setIsVoiceMode && (
-                            <button
-                                onClick={() => setIsVoiceMode(true)}
-                                className="flex-shrink-0 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-primary border border-primary/20 bg-primary/10 hover:bg-primary/25 hover:border-primary/40 transition-all"
-                            >
-                                <Mic size={12} className="animate-pulse" />
-                                Real-time Voice
-                            </button>
-                        )}
                         <SessionEndButton
                             isEnding={isEnding}
                             onClick={onEndSession}

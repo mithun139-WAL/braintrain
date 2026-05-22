@@ -255,6 +255,14 @@ async def get_profile(db: AsyncSession, user_id) -> UserProfileResponse:
     user = await repo.get_user_by_id_with_preferences(db, user_id)
     if not user:
         raise NotFoundException("User not found")
+    
+    from app.usage import service as usage_svc
+    usage = await usage_svc.get_user_usage(db, user_id)
+    user.voice_session_count = usage.get("voice_session_count", 0)
+    user.chat_session_count = usage.get("chat_session_count", 0)
+    user.voice_session_limit = usage.get("voice_session_limit", 0)
+    user.chat_session_limit = usage.get("chat_session_limit", 0)
+
     return UserProfileResponse.model_validate(user)
 
 
@@ -282,6 +290,14 @@ async def update_profile(
 
     # Reload with skill_preferences for full profile response
     user = await repo.get_user_by_id_with_preferences(db, user_id)
+    
+    from app.usage import service as usage_svc
+    usage = await usage_svc.get_user_usage(db, user_id)
+    user.voice_session_count = usage.get("voice_session_count", 0)
+    user.chat_session_count = usage.get("chat_session_count", 0)
+    user.voice_session_limit = usage.get("voice_session_limit", 0)
+    user.chat_session_limit = usage.get("chat_session_limit", 0)
+
     return UserProfileResponse.model_validate(user)
 
 

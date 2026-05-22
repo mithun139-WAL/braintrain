@@ -9,6 +9,7 @@ export interface CreateSessionDto {
     difficulty: Difficulty;
     adaptive: boolean;
     durationMinutes: number;
+    isVoice?: boolean;
 }
 
 export interface SubmitAnswerDto {

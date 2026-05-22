@@ -142,6 +142,10 @@ class UserProfileResponse(BaseModel):
     monthly_session_count: int
     monthly_evaluation_credits: int
     usage_period_start: datetime
+    voice_session_count: int
+    chat_session_count: int
+    voice_session_limit: int
+    chat_session_limit: int
     created_at: datetime
     updated_at: datetime
     skill_preferences: list[SkillPreferenceResponse] = []
