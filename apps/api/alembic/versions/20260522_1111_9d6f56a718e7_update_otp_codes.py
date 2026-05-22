@@ -42,8 +42,6 @@ def upgrade() -> None:
                existing_nullable=True)
     op.drop_constraint(op.f('evaluation_jobs_session_id_key'), 'evaluation_jobs', type_='unique')
     op.drop_index(op.f('ix_evaluation_jobs_status'), table_name='evaluation_jobs')
-    op.create_index('ix_evaluation_jobs_status_evaluation_started_at', 'evaluation_jobs', ['status', 'evaluation_started_at'], unique=False)
-    op.create_index('ix_evaluation_jobs_status_next_retry_at_created_at', 'evaluation_jobs', ['status', 'next_retry_at', 'created_at'], unique=False)
     op.create_unique_constraint('uq_evaluation_job_session_id', 'evaluation_jobs', ['session_id'])
     op.alter_column('evaluation_reports', 'clarity_score',
                existing_type=sa.DOUBLE_PRECISION(precision=53),
@@ -395,8 +393,6 @@ def downgrade() -> None:
                existing_type=sa.DOUBLE_PRECISION(precision=53),
                nullable=True)
     op.drop_constraint('uq_evaluation_job_session_id', 'evaluation_jobs', type_='unique')
-    op.drop_index('ix_evaluation_jobs_status_next_retry_at_created_at', table_name='evaluation_jobs')
-    op.drop_index('ix_evaluation_jobs_status_evaluation_started_at', table_name='evaluation_jobs')
     op.create_index(op.f('ix_evaluation_jobs_status'), 'evaluation_jobs', ['status'], unique=False)
     op.create_unique_constraint(op.f('evaluation_jobs_session_id_key'), 'evaluation_jobs', ['session_id'], postgresql_nulls_not_distinct=False)
     op.alter_column('evaluation_jobs', 'last_error',
