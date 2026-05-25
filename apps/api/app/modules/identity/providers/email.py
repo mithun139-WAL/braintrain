@@ -22,7 +22,10 @@ class EmailProvider:
         self._settings = get_settings()
 
     def _is_configured(self) -> bool:
-        return bool(self._settings.resend_api_key)
+        return bool(
+            self._settings.resend_api_key
+            and self._settings.resend_api_key != "re_your_api_key_here"
+        )
 
     async def send_otp(self, to_email: str, otp_code: str) -> None:
         """Send a 6-digit OTP code to `to_email`."""
