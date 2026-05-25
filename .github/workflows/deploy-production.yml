@@ -163,20 +163,55 @@ jobs:
           : "${RENDER_API_KEY:?Missing RENDER_API_KEY}"
           : "${RENDER_SERVICE_ID:?Missing RENDER_SERVICE_ID}"
 
-          response="$(
-            curl --silent --show-error --fail \
-              --request POST \
-              --url "${RENDER_API_BASE_URL}/services/${RENDER_SERVICE_ID}/deploys" \
-              --header "Accept: application/json" \
-              --header "Authorization: Bearer ${RENDER_API_KEY}" \
-              --header "Content-Type: application/json" \
-              --data "{\"commitId\":\"${GITHUB_SHA}\"}"
-          )"
+          trigger_deploy() {
+            local data="$1"
+            local body_file status
 
-          deploy_id="$(jq -r '.id' <<<"${response}")"
-          status="$(jq -r '.status' <<<"${response}")"
+            body_file="$(mktemp)"
+            status="$(
+              curl --silent --show-error \
+                --output "${body_file}" \
+                --write-out "%{http_code}" \
+                --request POST \
+                --url "${RENDER_API_BASE_URL}/services/${RENDER_SERVICE_ID}/deploys" \
+                --header "Accept: application/json" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                --header "Content-Type: application/json" \
+                --data "${data}"
+            )"
 
-          if [ -z "${deploy_id}" ] || [ "${deploy_id}" = "null" ]; then
+            echo "HTTP ${status}" >&2
+            cat "${body_file}" >&2
+
+            if [[ "${status}" =~ ^2[0-9][0-9]$ ]]; then
+              cat "${body_file}"
+              return 0
+            fi
+
+            return 1
+          }
+
+          response=""
+          for attempt in 1 2 3; do
+            echo "Render deploy attempt ${attempt} with commit ${GITHUB_SHA}"
+            if response="$(trigger_deploy "{\"commitId\":\"${GITHUB_SHA}\"}")"; then
+              break
+            fi
+
+            if [ "${attempt}" -lt 3 ]; then
+              sleep 10
+            fi
+          done
+
+          if [ -z "${response}" ]; then
+            echo "Retrying Render deploy without commitId fallback"
+            response="$(trigger_deploy "{}")"
+          fi
+
+          deploy_id="$(jq -r '.id // empty' <<<"${response}")"
+          status="$(jq -r '.status // empty' <<<"${response}")"
+
+          if [ -z "${deploy_id}" ]; then
             echo "Render did not return a deploy id"
             echo "${response}"
             exit 1
