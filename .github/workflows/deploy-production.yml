@@ -274,7 +274,7 @@ jobs:
           test -n "$NEXT_PUBLIC_LIVEKIT_URL" || { echo "Missing NEXT_PUBLIC_LIVEKIT_URL"; exit 1; }
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: npm install --global vercel@48.4.1
 
       - name: Pull Vercel production settings
         env:
@@ -298,7 +298,7 @@ jobs:
           : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
           : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
           : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
-          vercel build --prod --token="${VERCEL_TOKEN}"
+          vercel build --prod --yes --token="${VERCEL_TOKEN}"
 
       - name: Deploy to Vercel
         id: vercel
@@ -312,7 +312,17 @@ jobs:
           : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
           : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
 
-          deployment_url="$(vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}" | tr -d '\r\n')"
+          for attempt in 1 2 3; do
+            echo "Vercel deploy attempt ${attempt}..."
+            if deployment_url="$(vercel deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}" | tr -d '\r\n')"; then
+              break
+            fi
+            if [ "${attempt}" -eq 3 ]; then
+              echo "Vercel deploy failed after 3 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
 
           case "${deployment_url}" in
             http://*|https://*) ;;
