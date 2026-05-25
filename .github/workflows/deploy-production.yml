@@ -323,6 +323,9 @@ jobs:
           : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
           vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
+      - name: Verify Node version
+        run: node -v
+
       - name: Build Vercel artifacts
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
