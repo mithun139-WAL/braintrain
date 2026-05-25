@@ -122,22 +122,18 @@ export default function DashboardPage() {
                 }
             />
 
-            <Surface variant="hero" padding="xl" className="relative overflow-hidden bg-background-dark text-white">
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute right-[-8rem] top-[-8rem] h-72 w-72 rounded-full bg-primary/25 blur-3xl" />
-                    <div className="absolute bottom-[-6rem] left-[20%] h-56 w-56 rounded-full bg-emerald/15 blur-3xl" />
-                </div>
+            <Surface variant="default" padding="lg" className="relative overflow-hidden bg-card">
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.95fr)] lg:items-center">
-                    <div className="space-y-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-primary/80">
-                            Mission Brief
+                    <div className="space-y-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary">
+                            Status Overview
                         </p>
-                        <h2 className="max-w-2xl font-display text-display-lg text-white">
+                        <h2 className="max-w-2xl font-display text-display-md text-foreground">
                             {readinessScore !== null
                                 ? `You are ${readinessScore >= 75 ? "close to interview ready" : readinessScore >= 50 ? "building real momentum" : "still early in the climb"}.`
                                 : "Your AI mentor is waiting for the first real signal."}
                         </h2>
-                        <p className="max-w-reading text-body-md text-white/70">
+                        <p className="max-w-reading text-body-sm text-muted-foreground">
                             {readinessScore !== null
                                 ? "Use one more session to confirm whether your current trend is becoming a reliable strength or still volatile under pressure."
                                 : isPro
@@ -146,27 +142,27 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <Surface variant="subtle" padding="lg" className="border-white/10 bg-white/5 backdrop-blur-xl">
+                    <Surface variant="subtle" padding="md" className="border-border bg-muted/40">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
-                                <Lightbulb size={14} className="text-primary" />
+                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                                <Lightbulb size={13} className="text-primary" />
                                 AI Next Best Move
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                                 {focusSignals.map((signal) => (
                                     <CoachTip key={signal.title} dot={signal.tone} title={signal.title} body={signal.body} />
                                 ))}
                             </div>
-                            <div className="flex flex-wrap gap-3 pt-2">
+                            <div className="flex flex-wrap gap-2 pt-1">
                                 {isPro && (
-                                    <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "border-white/10 bg-white/5 text-white hover:bg-white/10") }>
-                                        <Sparkles size={14} />
+                                    <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "rounded-md border-border bg-card hover:bg-muted") }>
+                                        <Sparkles size={12} />
                                         Open Plan
                                     </Link>
                                 )}
-                                <Link href="/dashboard/analytics" className={cn(buttonStyles({ variant: "ghost", size: "sm" }), "text-white/70 hover:bg-white/10 hover:text-white") }>
+                                <Link href="/dashboard/analytics" className={cn(buttonStyles({ variant: "ghost", size: "sm" }), "text-muted-foreground hover:text-foreground") }>
                                     View Insights
-                                    <ArrowRight size={14} />
+                                    <ArrowRight size={12} />
                                 </Link>
                             </div>
                         </div>
@@ -178,7 +174,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {analyticsLoading ? (
                     Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="h-36 rounded-2xl bg-card border border-border animate-pulse" />
+                        <div key={i} className="h-32 rounded-xl bg-card border border-border animate-pulse" />
                     ))
                 ) : (
                     <>
@@ -198,9 +194,9 @@ export default function DashboardPage() {
                             unit="%"
                             trend={Math.round(confidenceDelta)}
                             icon={Smile}
-                            iconColor="text-sky-500"
-                            iconBg="bg-sky-500/10"
-                            accentColor="bg-sky-500"
+                            iconColor="text-primary"
+                            iconBg="bg-primary/10"
+                            accentColor="bg-primary"
                         />
                         <StatCard
                             label="Clarity"
@@ -208,9 +204,9 @@ export default function DashboardPage() {
                             unit="%"
                             trend={Math.round(clarityDelta)}
                             icon={MessageSquare}
-                            iconColor="text-violet-500"
-                            iconBg="bg-violet-500/10"
-                            accentColor="bg-violet-500"
+                            iconColor="text-primary"
+                            iconBg="bg-primary/10"
+                            accentColor="bg-primary"
                         />
                         <StatCard
                             label="Technical Depth"
@@ -218,9 +214,9 @@ export default function DashboardPage() {
                             unit="%"
                             trend={0}
                             icon={Database}
-                            iconColor="text-amber-500"
-                            iconBg="bg-amber-500/10"
-                            accentColor="bg-amber-500"
+                            iconColor="text-primary"
+                            iconBg="bg-primary/10"
+                            accentColor="bg-primary"
                         />
                     </>
                 )}
@@ -235,13 +231,13 @@ export default function DashboardPage() {
 
                 {/* AI Coaching Panel */}
                 {isPro && (
-                    <Surface padding="none" className="lg:col-span-1 flex flex-col overflow-hidden">
-                        <div className="flex items-center justify-between border-b border-border px-5 pb-4 pt-5">
+                    <Surface padding="none" className="lg:col-span-1 flex flex-col overflow-hidden bg-card border border-border rounded-xl">
+                        <div className="flex items-center justify-between border-b border-border px-5 py-4">
                             <div className="flex items-center gap-2">
-                                <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <Lightbulb size={15} className="text-primary" />
+                                <div className="size-6 rounded bg-primary/10 flex items-center justify-center text-primary">
+                                    <Lightbulb size={13} />
                                 </div>
-                                <h3 className="text-sm font-bold text-foreground">AI Coaching</h3>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">AI Coaching</h3>
                             </div>
                             <Link
                                 href="/dashboard/coach"
@@ -260,20 +256,20 @@ export default function DashboardPage() {
                             {/* Empty state */}
                             {(!analytics || analytics.totalSessions === 0) && (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4">
-                                    <div className="size-10 rounded-xl bg-muted flex items-center justify-center mb-3">
-                                        <Brain size={20} className="text-muted-foreground" />
+                                    <div className="size-10 rounded bg-muted flex items-center justify-center mb-3 text-muted-foreground">
+                                        <Brain size={18} />
                                     </div>
                                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                                        Complete your first session to unlock personalised AI coaching insights.
+                                        Complete your first session to unlock personalized AI coaching insights.
                                     </p>
                                 </div>
                             )}
 
                         </div>
 
-                        <div className="p-4 pt-2 border-t border-border">
-                            <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm", fullWidth: true }), "border-dashed") }>
-                                <Sparkles size={13} />
+                        <div className="p-4 border-t border-border bg-muted/20">
+                            <Link href="/dashboard/training" className={cn(buttonStyles({ variant: "secondary", size: "sm", fullWidth: true }), "border-dashed rounded-md bg-card") }>
+                                <Sparkles size={12} />
                                 View Training Plan
                             </Link>
                         </div>

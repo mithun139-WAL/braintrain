@@ -65,11 +65,6 @@ export default function DashboardLayout({
 
     return (
         <div className="h-dvh overflow-hidden bg-background text-foreground">
-            <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-                <div className="absolute left-[8%] top-[-6rem] h-[24rem] w-[24rem] rounded-full bg-primary/10 blur-3xl" />
-                <div className="absolute right-[-4rem] top-[18%] h-[22rem] w-[22rem] rounded-full bg-sky/10 blur-3xl" />
-                <div className="absolute bottom-[-8rem] left-[25%] h-[26rem] w-[26rem] rounded-full bg-violet/8 blur-3xl" />
-            </div>
 
             <div className="flex h-full w-full">
                 <Sidebar className="hidden xl:flex" />

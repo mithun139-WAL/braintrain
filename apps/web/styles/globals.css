@@ -5,52 +5,52 @@
 @layer base {
   :root {
     color-scheme: light;
-    --background: 216 33% 97%;
-    --background-light: 216 33% 99%;
-    --background-dark: 222 29% 12%;
+    --background: 45 17% 95%;
+    --background-light: 45 17% 97%;
+    --background-dark: 210 11% 7%;
     --background-elevated: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 0 0% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --muted: 216 25% 94%;
-    --muted-foreground: 216 13% 43%;
-    --border: 214 26% 87%;
-    --border-subtle: 214 29% 92%;
-    --primary: 224 89% 60%;
-    --primary-strong: 228 84% 54%;
-    --primary-foreground: 210 40% 98%;
-    --emerald: 160 84% 39%;
-    --ruby: 348 83% 58%;
-    --gold: 39 92% 52%;
-    --sky: 198 93% 60%;
-    --violet: 259 94% 67%;
-    --charcoal: 222 47% 11%;
-    --shadow: 222 47% 11%;
+    --card-foreground: 0 0% 7%;
+    --muted: 37 21% 94%;
+    --muted-foreground: 40 7% 35%;
+    --border: 37 21% 88%;
+    --border-subtle: 37 21% 92%;
+    --primary: 214 35% 37%;
+    --primary-strong: 214 35% 30%;
+    --primary-foreground: 0 0% 100%;
+    --emerald: 135 15% 42%;
+    --ruby: 6 34% 49%;
+    --gold: 27 31% 55%;
+    --sky: 214 35% 45%;
+    --violet: 214 35% 45%;
+    --charcoal: 0 0% 7%;
+    --shadow: 40 7% 20%;
   }
 
   .dark {
     color-scheme: dark;
-    --background: 224 30% 7%;
-    --background-light: 223 24% 10%;
-    --background-dark: 224 32% 5%;
-    --background-elevated: 223 26% 10%;
-    --foreground: 210 25% 96%;
-    --card: 223 26% 10%;
-    --card-foreground: 210 25% 96%;
-    --muted: 223 19% 16%;
-    --muted-foreground: 217 14% 68%;
-    --border: 223 18% 20%;
-    --border-subtle: 223 18% 16%;
-    --primary: 223 100% 68%;
-    --primary-strong: 226 94% 63%;
-    --primary-foreground: 222 47% 11%;
-    --emerald: 160 84% 44%;
-    --ruby: 347 89% 67%;
-    --gold: 41 96% 62%;
-    --sky: 198 93% 67%;
-    --violet: 262 91% 73%;
-    --charcoal: 210 25% 96%;
-    --shadow: 220 50% 2%;
+    --background: 210 11% 7%;
+    --background-light: 216 9% 10%;
+    --background-dark: 210 11% 5%;
+    --background-elevated: 216 9% 10%;
+    --foreground: 40 19% 91%;
+    --card: 216 9% 10%;
+    --card-foreground: 40 19% 91%;
+    --muted: 214 8% 14%;
+    --muted-foreground: 35 6% 63%;
+    --border: 214 8% 18%;
+    --border-subtle: 214 8% 14%;
+    --primary: 213 40% 63%;
+    --primary-strong: 213 40% 70%;
+    --primary-foreground: 210 11% 7%;
+    --emerald: 135 15% 42%;
+    --ruby: 6 34% 49%;
+    --gold: 27 31% 55%;
+    --sky: 213 40% 63%;
+    --violet: 213 40% 63%;
+    --charcoal: 40 19% 91%;
+    --shadow: 210 11% 2%;
   }
 
   * {
@@ -64,10 +64,6 @@
   body {
     color: hsl(var(--foreground));
     background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(circle at top left, hsl(var(--primary) / 0.08), transparent 28%),
-      radial-gradient(circle at top right, hsl(var(--sky) / 0.05), transparent 24%),
-      linear-gradient(180deg, hsl(var(--background-light)), hsl(var(--background)) 30%);
     font-family: var(--font-inter), sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -82,15 +78,15 @@
 ::-webkit-scrollbar-thumb:hover  { background: hsl(var(--muted-foreground)); }
 
 /* ── Selection ─────────────────────────────────────────────────────── */
-::selection {
-  background: hsl(var(--primary) / 0.18);
+::-selection {
+  background: hsl(var(--primary) / 0.12);
   color: hsl(var(--foreground));
 }
 
 /* ── Focus ring ────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid hsl(var(--primary) / 0.8);
-  outline-offset: 2px;
+  outline: 1px solid hsl(var(--primary) / 0.5);
+  outline-offset: 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -105,25 +101,6 @@
 }
 
 @layer utilities {
-  /* Gradient presets */
-  .emerald-gradient  { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-  .primary-gradient  { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
-  .gold-gradient     { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-  .navy-gradient     { background: linear-gradient(160deg, #0c1628 0%, #080d1b 100%); }
-
-  /* Glow effects */
-  .glow-primary {
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25),
-                 0 4px 24px hsl(var(--primary) / 0.18),
-                 0 8px 40px hsl(var(--primary) / 0.08);
-  }
-  .glow-emerald {
-    box-shadow: 0 0 0 1px rgba(16,185,129,0.25), 0 4px 20px rgba(16,185,129,0.18);
-  }
-  .glow-gold {
-    box-shadow: 0 0 0 1px rgba(245,158,11,0.25), 0 4px 20px rgba(245,158,11,0.18);
-  }
-
   /* Tabular numbers — for scores and metrics */
   .tabular {
     font-variant-numeric: tabular-nums;
@@ -140,7 +117,7 @@
 @keyframes fadeInSlide {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -149,17 +126,18 @@
 }
 
 .animate-fade-in {
-  animation: fadeInSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ── Voice session: speaking bar waveform animation ────────────────── */
 @keyframes speakingBar {
-  0%   { transform: scaleY(0.25); opacity: 0.5; }
+  0%   { transform: scaleY(0.4); opacity: 0.7; }
   100% { transform: scaleY(1.0);  opacity: 1.0; }
 }
 
 .speaking-bar {
-  animation: speakingBar 0.65s ease-in-out infinite alternate;
+  animation: speakingBar 0.8s ease-in-out infinite alternate;
   transform-origin: bottom;
 }
+
 

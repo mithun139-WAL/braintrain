@@ -1,0 +1,124 @@
+# Interview Topic Boundary Rules
+# These rules prevent domain drift during interviews
+
+rules:
+  - id: frontend_scope_only
+    name: Frontend Scope Enforcement
+    description: Frontend interviews must not drift into backend or distributed systems
+    type: topic_boundary
+    severity: blocker
+    enabled: true
+    applies_to:
+      - domain: frontend
+    allowed_domains:
+      - frontend
+    forbidden_domains:
+      - backend
+      - system_design
+      - data_structures
+    forbidden_keywords:
+      - distributed systems
+      - load balancing
+      - database sharding
+      - microservices architecture
+      - message queues
+      - consensus algorithms
+    allowed_keywords:
+      - react
+      - vue
+      - angular
+      - css
+      - html
+      - javascript
+      - typescript
+      - dom
+      - browser apis
+      - responsive design
+
+  - id: backend_scope_only
+    name: Backend Scope Enforcement
+    description: Backend interviews must not drift into frontend specifics
+    type: topic_boundary
+    severity: blocker
+    enabled: true
+    applies_to:
+      - domain: backend
+    allowed_domains:
+      - backend
+    forbidden_domains:
+      - frontend
+    warning_domains:
+      - system_design  # Warning, not blocker - related but different focus
+    forbidden_keywords:
+      - react components
+      - css styling
+      - dom manipulation
+      - browser events
+
+  - id: behavioral_scope_only
+    name: Behavioral Scope Enforcement
+    description: Behavioral interviews must focus on experiences, not technical implementation
+    type: topic_boundary
+    severity: blocker
+    enabled: true
+    applies_to:
+      - type: behavioral
+    allowed_domains:
+      - behavioral
+    forbidden_domains:
+      - frontend
+      - backend
+      - system_design
+      - data_structures
+    forbidden_keywords:
+      - write code
+      - implement function
+      - algorithm complexity
+      - data structure choice
+      - syntax
+    required_keywords:
+      - experience
+      - situation
+      - challenge
+      - team
+      - decision
+      - conflict
+      - leadership
+
+  - id: system_design_scope_controlled
+    name: System Design Scope Control
+    description: System design interviews should stay at architecture level, not implementation details
+    type: topic_boundary
+    severity: warning
+    enabled: true
+    applies_to:
+      - domain: system_design
+    allowed_domains:
+      - system_design
+      - backend
+    forbidden_domains:
+      - frontend
+      - data_structures
+    focus:
+      - architecture patterns
+      - scalability strategies
+      - tradeoff analysis
+      - component design
+    avoid:
+      - coding challenges
+      - algorithm optimization
+      - frontend styling
+
+  - id: no_coding_in_behavioral
+    name: No Coding in Behavioral Rounds
+    description: Behavioral rounds should not ask for code or technical implementation
+    type: topic_boundary
+    severity: blocker
+    enabled: true
+    applies_to:
+      - type: behavioral
+    blocked_patterns:
+      - "write.*code"
+      - "implement.*function"
+      - "show me.*syntax"
+      - "what would the code look like"

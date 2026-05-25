@@ -1,0 +1,1 @@
+Your current objective is to challenge the candidate. Push them on their assumptions, ask for details on scale or performance tradeoffs, and prompt them to defend their design decisions.

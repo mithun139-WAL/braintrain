@@ -15,6 +15,7 @@ from app.modules.analytics.schemas import (
     AnalyticsResponseSchema,
     ProgressionResponseSchema,
     TopicAnalyticsResponseSchema,
+    CognitiveAnalyticsResponseSchema,
 )
 from app.modules.analytics.topic_metrics import get_topic_analytics as get_topic_analytics_service
 from app.modules.topics import repository as topics_repo
@@ -47,6 +48,19 @@ async def get_progression(
     current_user: CurrentUser,
 ) -> ProgressionResponseSchema:
     return await service.get_progression(db, current_user.id)
+
+
+@router.get(
+    "/cognitive",
+    response_model=CognitiveAnalyticsResponseSchema,
+    status_code=200,
+    summary="Get cognitive reinforcement graph and mind state details for user",
+)
+async def get_cognitive_analytics(
+    db: DBSession,
+    current_user: CurrentUser,
+) -> CognitiveAnalyticsResponseSchema:
+    return await service.get_cognitive_analytics(db, current_user.id)
 
 
 @router.get(

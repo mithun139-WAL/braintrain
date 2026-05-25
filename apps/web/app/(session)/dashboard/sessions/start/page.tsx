@@ -1,37 +1,23 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     ChevronLeft,
     Brain,
     MessageSquare,
-    Code,
-    Shuffle,
-    CheckCircle2,
-    SlidersHorizontal,
-    ChevronDown,
-    BarChart2,
-    Timer,
-    ArrowRight,
-    Users,
-    User,
-    Zap,
-    Target,
-    Settings,
-    History,
-    TrendingUp,
     Terminal,
-    Bolt,
-    Check,
-    ChevronRight,
-    Play,
-    Sparkles,
-    Layers,
-    Bot,
-    Gauge,
+    Users,
+    SlidersHorizontal,
     Crown,
     AlertTriangle,
+    Loader2,
+    ArrowRight,
+    Volume2,
+    Keyboard,
+    Activity,
+    Check,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
@@ -44,12 +30,12 @@ import { useBillingStatus } from "@/hooks/queries/useBillingStatus";
 import { useGetProfile } from "@/hooks/queries/useGetProfile";
 import { Surface } from "@/core/components/ui/Surface";
 import { buttonStyles } from "@/core/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 
 export default function StartSessionPage() {
     const searchParams = useSearchParams();
     const presetTopicId = searchParams.get("topicId");
+    const router = useRouter();
+
     const {
         step,
         topicId,
@@ -82,7 +68,7 @@ export default function StartSessionPage() {
     const isPro = (profile?.planType || "FREE").toUpperCase() === "PRO";
     const isBillingConfigured = billingStatus?.configured ?? false;
 
-    // Separate limits for FREE, total limit for PRO
+    // Session limits check
     const sessionLimit = isPro
         ? 20
         : (isVoice ? (profile?.voiceSessionLimit ?? 1) : (profile?.chatSessionLimit ?? 3));
@@ -92,21 +78,14 @@ export default function StartSessionPage() {
 
     const sessionsRemaining = Math.max(0, sessionLimit - sessionsUsed);
     const hasReachedSessionLimit = sessionsRemaining === 0;
-    const canStartSession =
-        !hasReachedSessionLimit &&
-        !isLoadingProfile &&
-        Boolean(topicId && interviewType && interviewMode && difficulty) &&
-        !createSession.isPending;
 
     useEffect(() => {
-        // Reset on mount for a fresh flow
         reset();
         if (presetTopicId) {
             setTopicId(presetTopicId);
         }
     }, [presetTopicId, reset, setTopicId]);
 
-    // Enforce FREE plan constraints dynamically
     useEffect(() => {
         if (!isLoadingProfile && !isPro) {
             setDurationMinutes(15);
@@ -130,484 +109,404 @@ export default function StartSessionPage() {
 
     const topics = topicsData?.data || [];
 
-    const interviewTypes = [
-        { id: InterviewType.TECHNICAL, title: "Technical", description: "Hard skills & Code", icon: Terminal },
-        { id: InterviewType.BEHAVIORAL, title: "Behavioral", description: "STAR Method", icon: MessageSquare },
-        { id: InterviewType.MIXED, title: "Mixed", description: "Tech + Soft Skills", icon: Shuffle },
-    ];
+    // Experience mapping helper
+    const getExperienceLabel = (diff: Difficulty) => {
+        if (diff === Difficulty.EASY) return "Junior";
+        if (diff === Difficulty.MEDIUM) return "Mid-Level";
+        return "Senior";
+    };
 
-    const interviewModes = [
-        { id: InterviewMode.ONE_ON_ONE_AI, title: "1:1 AI Interview", description: "Standard single interviewer format.", icon: User },
-        { id: InterviewMode.PANEL_AI, title: "Panel AI", description: "Multiple AI personas with different criteria.", icon: Users },
-        { id: InterviewMode.HYBRID, title: "Hybrid", description: "Human supervision with AI-driven analysis.", icon: Zap },
-    ];
+    const handleSelectStyle = (styleKey: "conversational" | "technical" | "panel") => {
+        if (styleKey === "conversational") {
+            setInterviewType(InterviewType.BEHAVIORAL);
+            setInterviewMode(InterviewMode.ONE_ON_ONE_AI);
+        } else if (styleKey === "technical") {
+            setInterviewType(InterviewType.TECHNICAL);
+            setInterviewMode(InterviewMode.ONE_ON_ONE_AI);
+        } else if (styleKey === "panel") {
+            setInterviewType(InterviewType.MIXED);
+            setInterviewMode(InterviewMode.PANEL_AI);
+        }
+    };
+
+    const currentStyleKey = () => {
+        if (interviewMode === InterviewMode.PANEL_AI) return "panel";
+        if (interviewType === InterviewType.TECHNICAL) return "technical";
+        if (interviewType === InterviewType.BEHAVIORAL) return "conversational";
+        return null;
+    };
+
+    const canContinue = () => {
+        if (step === 1) return !!topicId;
+        if (step === 2) return !!currentStyleKey();
+        if (step === 3) return !!difficulty;
+        if (step === 4) return true;
+        return false;
+    };
+
+    // Calculate step state for custom rendering
+    const maxSteps = 5;
 
     return (
-        <div className="min-h-screen bg-background text-foreground font-display antialiased selection:bg-primary/10 selection:text-primary">
-            <div className="min-h-screen flex flex-col">
-                {/* Header */}
-                <header className="flex items-center justify-between border-b border-border bg-background/90 px-6 py-4 sticky top-0 z-50 backdrop-blur-sm">
-                    <div className="flex items-center gap-4">
-                        <Link href="/dashboard">
-                            <button className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                                <ChevronLeft size={20} />
-                            </button>
-                        </Link>
-                        <div className="h-5 w-px bg-border"></div>
-                        <Logo iconWrapperClassName="size-7 rounded-lg" iconSize={14} textClassName="text-lg font-bold tracking-tight" />
-                    </div>
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-                            <span className="size-2 rounded-full bg-primary animate-pulse"></span>
-                            Configuring New Session
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/10 selection:text-primary">
+            {/* Simple Top Header */}
+            <header className="flex items-center justify-between border-b border-border/60 bg-background/50 px-6 py-4 sticky top-0 z-50 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                    <Link href="/dashboard">
+                        <button className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                            <ChevronLeft size={16} />
+                        </button>
+                    </Link>
+                    <div className="h-4 w-px bg-border/60"></div>
+                    <span className="text-xs font-medium text-muted-foreground">Cancel practice</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                    <span>Step {step} of {maxSteps}</span>
+                </div>
+            </header>
+
+            {/* Main setup area */}
+            <main className="flex-grow flex items-center justify-center p-6">
+                <div className="w-full max-w-lg mx-auto flex flex-col gap-8">
+                    
+                    {/* Progress Indicator line */}
+                    {step < 5 && (
+                        <div className="flex gap-2 w-full justify-between items-center px-1">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={cn(
+                                        "h-1 flex-1 rounded-full transition-all duration-300",
+                                        step > i ? "bg-primary" : "bg-border/60"
+                                    )}
+                                />
+                            ))}
                         </div>
-                    </div>
-                </header>
+                    )}
 
-                <main className="flex-1 w-full max-w-[1200px] mx-auto p-6 md:p-10">
-                    <div className="flex flex-col xl:flex-row gap-10 relative">
-                        <div className="flex-1 flex flex-col gap-12">
-                            {hasReachedSessionLimit ? (
-                                <Surface variant="subtle" padding="lg" className="border-amber-500/20 bg-amber-500/5">
-                                    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-amber-300">
+                    {/* Step Content */}
+                    <div className="min-h-[350px] flex flex-col justify-between">
+                        <div>
+                            {step === 1 && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="space-y-1">
+                                        <h2 className="text-display-md font-semibold text-foreground">What area are you focusing on?</h2>
+                                        <p className="text-body-sm text-muted-foreground">Select a topic for your interview simulation.</p>
+                                    </div>
+
+                                    {hasReachedSessionLimit && (
+                                        <div className="p-4 rounded-xl border border-warning/20 bg-warning/5 text-warning text-xs space-y-2">
+                                            <div className="flex items-center gap-2 font-semibold">
                                                 <AlertTriangle size={14} />
-                                                Session limit reached
+                                                Session Limit Reached
                                             </div>
-                                            <div className="space-y-2">
-                                                <h2 className="text-xl font-bold tracking-tight text-foreground">
-                                                    You have used all {sessionLimit} sessions in your current {(profile?.planType || "FREE").toUpperCase()} cycle.
-                                                </h2>
-                                                <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                                                    New sessions are blocked until your monthly usage resets or your plan changes. You can still review past sessions, analytics, and current plan details from Settings.
-                                                </p>
-                                                {!isBillingConfigured ? (
-                                                    <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                                                        This environment does not have Stripe configured yet, so in-app upgrade checkout is currently unavailable.
-                                                    </p>
-                                                ) : null}
-                                            </div>
+                                            <p className="text-muted-foreground">
+                                                You have used your limit of {sessionLimit} sessions. Please update your subscription in settings to continue.
+                                            </p>
                                         </div>
+                                    )}
 
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <Link href="/dashboard/settings" className={buttonStyles()}>
-                                                <Gauge size={16} />
-                                                Manage plan
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                onClick={() => startCheckout.mutate()}
-                                                disabled={startCheckout.isPending || !isBillingConfigured || isBillingStatusLoading}
-                                                className={buttonStyles({ variant: "secondary" })}
-                                            >
-                                                <Crown size={16} />
-                                                {!isBillingConfigured
-                                                    ? "Billing unavailable"
-                                                    : startCheckout.isPending
-                                                    ? "Opening checkout..."
-                                                    : "Upgrade to PRO"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </Surface>
-                            ) : null}
-
-                            {/* Hero Section */}
-                            <div className="mb-8">
-                                <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
-                                    New Practice <span className="text-primary relative inline-block">
-                                        Session
-                                        <span className="absolute bottom-1.5 left-0 w-full h-3 bg-primary/10 -z-10"></span>
-                                    </span>
-                                </h1>
-                                <p className="text-muted-foreground text-base">Configure your AI interview parameters to simulate real-world scenarios.</p>
-                            </div>
-
-                            {/* Session Medium Choice */}
-                            <div className="bg-card border border-border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm mb-6">
-                                <div className="space-y-1">
-                                    <h3 className="font-bold text-lg">Interview Medium</h3>
-                                    <p className="text-xs text-muted-foreground font-medium">Choose between real-time voice speaking or text-based chat.</p>
-                                </div>
-                                <div className="inline-flex rounded-xl p-1 bg-muted border border-border shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsVoice(true)}
-                                        className={cn(
-                                            "px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2",
-                                            isVoice ? "bg-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        <Bot size={16} /> Real-time Voice
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsVoice(false)}
-                                        className={cn(
-                                            "px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2",
-                                            !isVoice ? "bg-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        <MessageSquare size={16} /> Chat/Text
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Step 1: Select Topic */}
-                            <section className="relative pl-12">
-                                <div className="absolute left-[15px] top-[40px] bottom-[-48px] w-[2px] bg-primary/20 z-0"></div>
-                                <div className={cn(
-                                    "absolute left-0 top-0 size-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md z-10 transition-colors",
-                                    topicId ? "bg-primary text-white" : "bg-foreground text-background"
-                                )}>
-                                    {topicId ? <CheckCircle2 size={16} /> : "1"}
-                                </div>
-                                <div className="flex flex-col gap-5">
-                                    <div className="flex justify-between items-end">
-                                        <h3 className="text-lg font-bold">Select Topic</h3>
-                                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Required</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="flex flex-col gap-2">
                                         {isLoadingTopics ? (
-                                            <div className="col-span-full h-32 flex items-center justify-center">
-                                                <Loader2 className="animate-spin text-primary" />
+                                            <div className="h-40 flex items-center justify-center">
+                                                <Loader2 className="animate-spin text-primary" size={24} />
                                             </div>
                                         ) : (
                                             topics.map((topic) => (
                                                 <button
                                                     key={topic.id}
+                                                    type="button"
                                                     onClick={() => setTopicId(topic.id)}
                                                     className={cn(
-                                                        "group p-5 rounded-2xl border-2 transition-all flex items-center gap-4 text-left relative overflow-hidden",
+                                                        "w-full text-left p-4 rounded-xl border transition-colors flex items-center justify-between",
                                                         topicId === topic.id
-                                                            ? "bg-primary/5 border-primary shadow-md"
-                                                            : "bg-card border-border hover:border-primary/30 hover:shadow-sm"
+                                                            ? "border-primary bg-primary/5 text-primary"
+                                                            : "border-border hover:border-primary/40 text-foreground bg-card"
                                                     )}
                                                 >
-                                                    <div className={cn(
-                                                        "size-12 rounded-xl flex items-center justify-center transition-colors",
-                                                        topicId === topic.id ? "bg-primary text-white" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-                                                    )}>
-                                                        <Brain size={24} />
+                                                    <div className="flex items-center gap-3">
+                                                        <Brain size={16} className={cn(topicId === topic.id ? "text-primary" : "text-muted-foreground")} />
+                                                        <span className="text-sm font-medium">{topic.name}</span>
                                                     </div>
-                                                    <div>
-                                                        <h4 className="font-bold">{topic.name}</h4>
-                                                        <p className="text-xs text-muted-foreground font-medium">Core technical concepts & common interview questions</p>
-                                                    </div>
-                                                    {topicId === topic.id && <Check className="absolute top-4 right-4 text-primary" size={20} />}
+                                                    {topicId === topic.id && <Check size={16} />}
                                                 </button>
                                             ))
                                         )}
                                     </div>
                                 </div>
-                            </section>
+                            )}
 
-                            {/* Step 2: Select Interview Type */}
-                            <section className="relative pl-12 opacity-90 transition-opacity hover:opacity-100">
-                                <div className="absolute left-[15px] top-[40px] bottom-[-48px] w-[2px] bg-primary/20 z-0"></div>
-                                <div className={cn(
-                                    "absolute left-0 top-0 size-8 rounded-full border-2 flex items-center justify-center text-sm font-bold z-10 transition-colors",
-                                    interviewType ? "bg-primary text-white border-primary" : "bg-card border-border text-muted-foreground"
-                                )}>
-                                    {interviewType ? <CheckCircle2 size={16} /> : "2"}
-                                </div>
-                                <div className="flex flex-col gap-5">
-                                    <h3 className="text-lg font-bold">Select Interview Type</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                                        {interviewTypes.map((type) => (
+                            {step === 2 && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="space-y-1">
+                                        <h2 className="text-display-md font-semibold text-foreground">Select Interview Style & Medium</h2>
+                                        <p className="text-body-sm text-muted-foreground">Choose your communication mode and interviewer format.</p>
+                                    </div>
+
+                                    {/* Medium Selection Toggle */}
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Medium</label>
+                                        <div className="grid grid-cols-2 gap-2 bg-muted/30 p-1 rounded-xl border border-border/40">
                                             <button
-                                                key={type.id}
-                                                onClick={() => setInterviewType(type.id)}
+                                                type="button"
+                                                onClick={() => setIsVoice(true)}
                                                 className={cn(
-                                                    "flex flex-col justify-between p-4 rounded-xl border transition-all text-center gap-3 min-h-[140px]",
-                                                    interviewType === type.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-card hover:border-primary/40"
+                                                    "py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all",
+                                                    isVoice ? "bg-card text-primary border border-border/50 shadow-sm" : "text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <div className={cn(
-                                                    "mx-auto size-10 rounded-full flex items-center justify-center transition-colors",
-                                                    interviewType === type.id ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                                                )}>
-                                                    <type.icon size={20} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-sm whitespace-nowrap">{type.title}</h4>
-                                                    <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{type.description}</p>
-                                                </div>
+                                                <Volume2 size={14} />
+                                                Real-time Voice
                                             </button>
-                                        ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsVoice(false)}
+                                                className={cn(
+                                                    "py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all",
+                                                    !isVoice ? "bg-card text-primary border border-border/50 shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <Keyboard size={14} />
+                                                Chat / Text
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </section>
 
-                            {/* Step 3: Select Interview Format */}
-                            <section className="relative pl-12">
-                                <div className="absolute left-[15px] top-[40px] bottom-[-48px] w-[2px] bg-primary/20 z-0"></div>
-                                <div className={cn(
-                                    "absolute left-0 top-0 size-8 rounded-full border-2 flex items-center justify-center text-sm font-bold z-10 transition-colors",
-                                    interviewMode ? "bg-primary text-white border-primary" : "bg-card border-border text-muted-foreground"
-                                )}>
-                                    {interviewMode ? <CheckCircle2 size={16} /> : "3"}
-                                </div>
-                                <div className="flex flex-col gap-5">
-                                    <h3 className="text-lg font-bold">Select Interview Format</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {interviewModes.map((mode) => {
-                                            const isModeLocked = !isPro && mode.id !== InterviewMode.ONE_ON_ONE_AI;
-                                            return (
-                                                <button
-                                                    key={mode.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (isModeLocked) return;
-                                                        setInterviewMode(mode.id);
-                                                    }}
-                                                    className={cn(
-                                                        "p-5 rounded-xl border transition-all flex flex-col gap-4 text-left relative overflow-hidden",
-                                                        interviewMode === mode.id 
-                                                            ? "border-primary bg-primary/5 ring-1 ring-primary" 
-                                                            : "border-border bg-card hover:border-primary/40",
-                                                        isModeLocked && "opacity-60 cursor-not-allowed bg-muted/20"
-                                                    )}
-                                                >
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-bold">{mode.title}</span>
-                                                        {isModeLocked ? (
-                                                            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                                                <Crown size={8} /> PRO
-                                                            </span>
-                                                        ) : (
-                                                            <div className={cn(
-                                                                "size-4 rounded-full border flex items-center justify-center transition-colors",
-                                                                interviewMode === mode.id ? "border-primary bg-primary" : "border-border bg-card"
-                                                            )}>
-                                                                <div className="size-1.5 rounded-full bg-white"></div>
-                                                            </div>
+                                    {/* Style Selection Options */}
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Format</label>
+                                        <div className="flex flex-col gap-2">
+                                            {[
+                                                {
+                                                    key: "conversational",
+                                                    label: "Conversational",
+                                                    desc: "1:1 discussion focusing on behavioral questions and STAR alignment.",
+                                                    icon: MessageSquare
+                                                },
+                                                {
+                                                    key: "technical",
+                                                    label: "Technical",
+                                                    desc: "1:1 session focusing on technical knowledge, problem solving, and analytical thinking.",
+                                                    icon: Terminal
+                                                },
+                                                {
+                                                    key: "panel",
+                                                    label: "Panel Interview",
+                                                    desc: "Practice with multiple AI personas, each evaluating different criteria.",
+                                                    icon: Users,
+                                                    proOnly: true
+                                                }
+                                            ].map((style) => {
+                                                const isLocked = style.proOnly && !isPro;
+                                                const isSelected = currentStyleKey() === style.key;
+                                                return (
+                                                    <button
+                                                        key={style.key}
+                                                        type="button"
+                                                        disabled={isLocked}
+                                                        onClick={() => handleSelectStyle(style.key as any)}
+                                                        className={cn(
+                                                            "w-full text-left p-4 rounded-xl border transition-colors relative flex items-start gap-3",
+                                                            isSelected
+                                                                ? "border-primary bg-primary/5 text-primary"
+                                                                : "border-border text-foreground bg-card hover:border-primary/40",
+                                                            isLocked && "opacity-50 cursor-not-allowed bg-muted/10 hover:border-border"
                                                         )}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 pl-1">
-                                                        <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                                                            <mode.icon size={18} />
+                                                    >
+                                                        <style.icon size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
+                                                        <div className="space-y-0.5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-semibold">{style.label}</span>
+                                                                {isLocked && (
+                                                                    <span className="flex items-center gap-0.5 text-[9px] font-semibold text-warning bg-warning/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                                        <Crown size={8} /> Pro
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground leading-relaxed">{style.desc}</p>
                                                         </div>
-                                                    </div>
-                                                    <p className="text-xs text-muted-foreground leading-relaxed">{mode.description}</p>
-                                                </button>
-                                            );
-                                        })}
+                                                        {isSelected && <Check size={16} className="absolute right-4 top-4 shrink-0" />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
-                            </section>
+                            )}
 
-                            {/* Step 4: Difficulty */}
-                            <section className="relative pl-12">
-                                <div className="absolute left-[15px] top-[40px] bottom-[-48px] w-[2px] bg-primary/20 z-0"></div>
-                                <div className={cn(
-                                    "absolute left-0 top-0 size-8 rounded-full border-2 flex items-center justify-center text-sm font-bold z-10 transition-colors",
-                                    difficulty ? "bg-primary text-white border-primary" : "bg-card border-border text-muted-foreground"
-                                )}>
-                                    {difficulty ? <CheckCircle2 size={16} /> : "4"}
-                                </div>
-                                <div className="flex flex-col gap-5">
-                                    <h3 className="text-lg font-bold">Select Difficulty</h3>
-                                    <div className="inline-flex rounded-xl p-1 bg-muted border border-border w-full md:w-auto self-start">
-                                        {[Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD].map((lvl) => (
+                            {step === 3 && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="space-y-1">
+                                        <h2 className="text-display-md font-semibold text-foreground">Select Experience Level</h2>
+                                        <p className="text-body-sm text-muted-foreground">Adjusts the complexity and tone of the interviewer's prompts.</p>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { lvl: Difficulty.EASY, label: "Junior", desc: "Foundational questions, supportive guidance, focus on core skills." },
+                                            { lvl: Difficulty.MEDIUM, label: "Mid-Level", desc: "Standard production scenarios, typical architectural trade-offs." },
+                                            { lvl: Difficulty.HARD, label: "Senior", desc: "Complex systems design, ambiguous challenges, high-pressure leadership." }
+                                        ].map((item) => (
                                             <button
-                                                key={lvl}
-                                                onClick={() => setDifficulty(lvl)}
+                                                key={item.lvl}
+                                                type="button"
+                                                onClick={() => setDifficulty(item.lvl)}
                                                 className={cn(
-                                                    "flex-1 md:flex-none px-8 py-2.5 rounded-lg text-sm font-bold transition-all",
-                                                    difficulty === lvl ? "bg-primary text-white shadow-md scale-[1.02]" : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+                                                    "w-full text-left p-4 rounded-xl border transition-colors flex items-start gap-3 justify-between",
+                                                    difficulty === item.lvl
+                                                        ? "border-primary bg-primary/5 text-primary"
+                                                        : "border-border text-foreground bg-card hover:border-primary/40"
                                                 )}
                                             >
-                                                {lvl.charAt(0) + lvl.slice(1).toLowerCase()}
+                                                <div className="space-y-0.5">
+                                                    <span className="text-sm font-semibold">{item.label}</span>
+                                                    <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                                                </div>
+                                                {difficulty === item.lvl && <Check size={16} className="mt-1 shrink-0" />}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                            </section>
+                            )}
 
-                            {/* Step 5: Final Settings */}
-                            <section className="relative pl-12 pb-20">
-                                <div className="absolute left-0 top-0 size-8 rounded-full bg-card border-2 border-border text-muted-foreground flex items-center justify-center text-sm font-bold z-10">
-                                    5
-                                </div>
-                                <div className="flex flex-col gap-5">
-                                    <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-                                        <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors cursor-default">
-                                            <div className="flex items-center gap-3">
-                                                <div className="size-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                                                    <SlidersHorizontal size={18} />
-                                                </div>
-                                                <div>
-                                                    <span className="block font-bold">Advanced Settings</span>
-                                                    <span className="text-xs text-muted-foreground">Adaptive mode, duration</span>
-                                                </div>
+                            {step === 4 && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="space-y-1">
+                                        <h2 className="text-display-md font-semibold text-foreground">Duration & Complexity</h2>
+                                        <p className="text-body-sm text-muted-foreground">Configure the length and adaptiveness of this session.</p>
+                                    </div>
+
+                                    <div className="space-y-5 p-6 border border-border/80 bg-card rounded-xl">
+                                        {/* Adaptive Toggle */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <span className="text-sm font-semibold text-foreground">Adaptive Response Mode</span>
+                                                <p className="text-xs text-muted-foreground leading-normal">
+                                                    AI adjusts complexity based on your answers
+                                                </p>
                                             </div>
-                                        </div>
-                                        <div className="px-6 pb-6 pt-2 flex flex-col gap-6 border-t border-border">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-sm font-semibold">Adaptive Difficulty</span>
-                                                    <span className="text-xs text-muted-foreground">AI adjusts difficulty based on performance</span>
-                                                </div>
-                                                <button
-                                                    onClick={() => setAdaptive(!adaptive)}
-                                                    className={cn(
-                                                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                                                        adaptive ? "bg-primary" : "bg-muted"
-                                                    )}
-                                                >
-                                                    <span className={cn(
-                                                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                                                        adaptive ? "translate-x-6" : "translate-x-1"
-                                                    )} />
-                                                </button>
-                                            </div>
-                                            <div className="flex flex-col gap-4">
-                                                <div className="flex justify-between text-sm font-semibold">
-                                                    <span>Session Duration</span>
-                                                    <span className="text-primary font-bold">{durationMinutes}m</span>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="15"
-                                                    max={isPro ? "60" : "15"}
-                                                    step="5"
-                                                    value={durationMinutes}
-                                                    disabled={!isPro}
-                                                    onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
-                                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary disabled:opacity-50"
-                                                />
-                                                {!isPro && (
-                                                    <span className="text-[11px] text-amber-500 font-medium flex items-center gap-1">
-                                                        <Crown size={12} /> Custom duration (up to 60m) is a PRO feature. Maximum 15 mins for FREE plan.
-                                                    </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAdaptive(!adaptive)}
+                                                className={cn(
+                                                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                                                    adaptive ? "bg-primary" : "bg-muted"
                                                 )}
+                                            >
+                                                <span className={cn(
+                                                    "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+                                                    adaptive ? "translate-x-5" : "translate-x-0.5"
+                                                )} />
+                                            </button>
+                                        </div>
+
+                                        <div className="h-px bg-border/60" />
+
+                                        {/* Duration Selector */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-sm font-semibold text-foreground">Session Duration</span>
+                                                <span className="text-sm font-bold text-primary">{durationMinutes}m</span>
                                             </div>
+                                            <input
+                                                type="range"
+                                                min="15"
+                                                max={isPro ? "60" : "15"}
+                                                step="15"
+                                                value={durationMinutes}
+                                                disabled={!isPro}
+                                                onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
+                                                className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary disabled:opacity-50"
+                                            />
+                                            {!isPro && (
+                                                <span className="text-[10px] text-warning font-medium flex items-center gap-1 mt-1.5">
+                                                    <Crown size={11} /> Longer custom durations require a PRO account. Max 15 mins for Free plan.
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                            </section>
-                        </div>
+                            )}
 
-                        {/* Sidebar: Session Preview */}
-                        <aside className="w-full xl:w-[360px] shrink-0">
-                            <div className="sticky top-28 flex flex-col gap-4">
-                                <div className="bg-card rounded-xl shadow-lg ring-1 ring-border p-6 flex flex-col gap-6">
-                                    <div className="flex items-center justify-between border-b border-border pb-4">
-                                        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Session Preview</h3>
-                                        <div className={cn(
-                                            "flex items-center gap-2 rounded px-2 py-1 text-xs font-medium",
-                                            hasReachedSessionLimit
-                                                ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                                                : "bg-primary/10 text-primary"
-                                        )}>
-                                            <span className={cn(
-                                                "size-1.5 rounded-full",
-                                                hasReachedSessionLimit ? "bg-amber-500" : "bg-primary animate-pulse"
-                                            )}></span>
-                                            {hasReachedSessionLimit ? "Limit reached" : "Ready"}
-                                        </div>
+                            {step === 5 && (
+                                <div className="space-y-8 text-center py-8 animate-fade-in flex flex-col items-center">
+                                    <div className="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
+                                        <Activity size={20} className="animate-pulse" />
+                                    </div>
+                                    
+                                    <div className="max-w-md space-y-4">
+                                        <h2 className="text-display-md font-semibold tracking-tight text-foreground">Take a moment.</h2>
+                                        <p className="text-body-md text-muted-foreground leading-relaxed">
+                                            This session is designed to help you improve, <br />
+                                            not judge you.
+                                        </p>
+                                        <p className="text-body-md text-muted-foreground leading-relaxed">
+                                            The interviewer will challenge your thinking <br />
+                                            like a real interview.
+                                        </p>
+                                        <p className="text-body-md text-foreground font-medium pt-2">
+                                            Ready when you are.
+                                        </p>
                                     </div>
 
-                                    <div className="flex flex-col gap-4">
-                                        <div className="bg-muted/50 rounded-lg p-3 flex gap-4 items-center border border-border">
-                                            <div className="size-10 bg-card rounded-md shadow-sm border border-border flex items-center justify-center text-primary shrink-0">
-                                                <Gauge size={20} />
+                                    {hasReachedSessionLimit && (
+                                        <div className="p-4 rounded-xl border border-warning/20 bg-warning/5 text-warning text-xs text-left max-w-sm mt-4">
+                                            <div className="flex items-center gap-2 font-bold mb-1">
+                                                <AlertTriangle size={14} />
+                                                Usage Limit Exceeded
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                                                    {isPro ? "Total monthly usage" : (isVoice ? "Voice session usage" : "Chat session usage")}
-                                                </span>
-                                                <span className="text-sm font-bold truncate max-w-[180px]">
-                                                    {isLoadingProfile 
-                                                        ? "Loading..." 
-                                                        : isPro 
-                                                        ? `${sessionsUsed} / ${sessionLimit} sessions` 
-                                                        : `${sessionsUsed} / ${sessionLimit} ${isVoice ? "voice" : "chat"} session${sessionLimit === 1 ? "" : "s"}`}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {isLoadingProfile
-                                                        ? "Checking current plan limits"
-                                                        : hasReachedSessionLimit
-                                                        ? "Start a new cycle or update your plan in Settings"
-                                                        : `${sessionsRemaining} session${sessionsRemaining === 1 ? "" : "s"} remaining this cycle`}
-                                                </span>
-                                            </div>
+                                            <p className="text-muted-foreground leading-normal">
+                                                You cannot start a new session because your account has exhausted its cycles. You can manage or upgrade your plan in settings.
+                                            </p>
                                         </div>
+                                    )}
 
-                                        <div className="bg-muted/50 rounded-lg p-3 flex gap-4 items-center border border-border">
-                                            <div className="size-10 bg-card rounded-md shadow-sm border border-border flex items-center justify-center text-primary shrink-0">
-                                                <Timer size={20} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Topic</span>
-                                                <span className="text-sm font-bold truncate max-w-[180px]">
-                                                    {topics.find(t => t.id === topicId)?.name || "Not Selected"}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4 pt-2">
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-muted-foreground">Type</span>
-                                                <span className="font-semibold capitalize">
-                                                    {interviewType?.toLowerCase() || "—"}
-                                                </span>
-                                            </div>
-                                            <div className="h-px bg-border w-full"></div>
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-muted-foreground">Format</span>
-                                                <span className="font-semibold capitalize">
-                                                    {interviewMode ? interviewModes.find(m => m.id === interviewMode)?.title : "—"}
-                                                </span>
-                                            </div>
-                                            <div className="h-px bg-border w-full"></div>
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-muted-foreground">Difficulty</span>
-                                                <span className="font-semibold flex items-center gap-1.5">
-                                                    {difficulty ? (
-                                                        <>
-                                                            <span className={cn(
-                                                                "size-2 rounded-full",
-                                                                difficulty === Difficulty.EASY ? "bg-green-500" :
-                                                                    difficulty === Difficulty.MEDIUM ? "bg-yellow-500" : "bg-red-500"
-                                                            )}></span>
-                                                            <span className="capitalize">{difficulty.toLowerCase()}</span>
-                                                        </>
-                                                    ) : "—"}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2">
+                                    <div className="w-full pt-6">
                                         <button
+                                            type="button"
                                             onClick={handleStartSession}
-                                            disabled={!canStartSession}
-                                            className="w-full group relative h-12 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md shadow-primary/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden"
+                                            disabled={hasReachedSessionLimit || createSession.isPending}
+                                            className="w-full h-11 bg-primary text-white text-[13px] font-semibold rounded-lg hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-40 disabled:pointer-events-none"
                                         >
                                             {createSession.isPending ? (
-                                                <Loader2 className="animate-spin" size={20} />
+                                                <Loader2 className="animate-spin" size={16} />
                                             ) : (
                                                 <>
-                                                    <span className="relative z-10">{hasReachedSessionLimit ? "Session limit reached" : "Start Session"}</span>
-                                                    {!hasReachedSessionLimit ? <ArrowRight size={20} className="relative z-10 group-hover:translate-x-1 transition-transform" /> : null}
+                                                    <span>Ready when you are</span>
+                                                    <ArrowRight size={14} />
                                                 </>
                                             )}
                                         </button>
-                                        <p className="text-[10px] text-muted-foreground text-center leading-relaxed mt-3 uppercase font-bold tracking-widest">
-                                            {hasReachedSessionLimit
-                                                ? "Open settings to review plan limits and upgrade options."
-                                                : "Session recorded for AI analysis."}
-                                        </p>
                                     </div>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Navigation Buttons for Step 1-4 */}
+                        {step < 5 && (
+                            <div className="flex justify-between items-center pt-8 border-t border-border/40 mt-8">
+                                <button
+                                    type="button"
+                                    onClick={prevStep}
+                                    disabled={step === 1}
+                                    className="h-10 px-4 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-0 transition-all"
+                                >
+                                    Back
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={nextStep}
+                                    disabled={!canContinue()}
+                                    className="h-10 px-6 rounded-lg text-xs font-semibold bg-primary text-white hover:brightness-105 disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1.5"
+                                >
+                                    <span>Continue</span>
+                                    <ArrowRight size={12} />
+                                </button>
                             </div>
-                        </aside>
+                        )}
                     </div>
-                </main>
-            </div>
+                </div>
+            </main>
         </div>
     );
 }

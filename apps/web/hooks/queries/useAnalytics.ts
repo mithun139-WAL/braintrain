@@ -30,3 +30,12 @@ export const useProgression = () => {
         retry: 1,
     });
 };
+
+export const useCognitiveAnalytics = () => {
+    return useQuery({
+        queryKey: ["analytics", "cognitive"],
+        queryFn: () => analyticsApi.getCognitiveAnalytics(),
+        staleTime: 5 * 60 * 1000,
+        retry: 1,
+    });
+};

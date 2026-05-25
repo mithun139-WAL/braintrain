@@ -16,6 +16,7 @@ import { SessionEvaluationView } from "@/components/session/SessionEvaluationVie
 import { VoiceInterviewSession } from "@/components/session/VoiceInterviewSession";
 import { SessionBrand, SessionTimerPill, SessionEndButton } from "@/components/session/LiveSessionShared";
 import { ChevronRight } from "lucide-react";
+import { journeysApi } from "@/lib/api/journeys.api";
 
 export function SessionFlowPage({ sessionId }: { sessionId: string }) {
     const { data: sessionData, isLoading } = useSession(sessionId);
@@ -138,11 +139,22 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
         if (!session || isEnding) return;
 
         setIsEnding(true);
-        // Remove the persisted start timestamp so a future session isn't confused
         localStorage.removeItem(timerStorageKey);
 
         try {
             await completeSession.mutateAsync(session.id);
+
+            // If this session was created by a journey round, mark the round complete
+            const journeyCtx = session.personalityConfig?.journeyContext as
+                { journeyId: string; journeySessionId: string } | undefined;
+            if (journeyCtx) {
+                await journeysApi.completeRound(
+                    journeyCtx.journeyId,
+                    journeyCtx.journeySessionId,
+                    session.id,
+                );
+            }
+
             await analyzeSession.mutateAsync(session.id);
         } catch {
             // If analysis fails, the canonical session route still renders the retry state.

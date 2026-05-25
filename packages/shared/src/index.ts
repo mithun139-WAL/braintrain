@@ -12,6 +12,7 @@ export * from "./types/skill.types";
 export * from "./types/coaching.types";
 export * from "./types/training.types";
 export * from "./types/speech.types";
+export * from "./types/journey.types";
 
 export * from "./enums/difficulty.enum";
 export * from "./enums/interview-type.enum";

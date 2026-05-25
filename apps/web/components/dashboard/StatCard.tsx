@@ -27,52 +27,27 @@ export function StatCard({
     accentColor = "bg-primary",
 }: StatCardProps) {
     const isPositive = trend > 0;
-    const isNeutral  = trend === 0;
 
     return (
-        <div className="relative bg-card rounded-2xl border border-border shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden group">
-            {/* Left accent bar */}
-            <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", accentColor)} />
-
-            <div className="p-5 pl-6">
-                {/* Top row — icon + trend */}
-                <div className="flex items-start justify-between mb-4">
-                    <div className={cn("flex items-center justify-center size-9 rounded-xl", iconBg, iconColor)}>
-                        <Icon size={18} />
-                    </div>
-                    <span className={cn(
-                        "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full",
-                        isPositive
-                            ? "text-emerald bg-emerald/10"
-                            : isNeutral
-                            ? "text-muted-foreground bg-muted"
-                            : "text-ruby bg-ruby/10"
-                    )}>
-                        {isPositive
-                            ? <TrendingUp  size={10} />
-                            : isNeutral
-                            ? <Minus       size={10} />
-                            : <TrendingDown size={10} />
-                        }
-                        {isPositive ? "+" : ""}{trend}%
+        <div className="bg-card rounded-xl border border-border p-5 flex flex-col justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {label}
+            </span>
+            <div className="flex items-baseline gap-1 mt-2">
+                <span className="text-2xl font-bold text-foreground tracking-tight tabular">
+                    {value}
+                </span>
+                {unit && (
+                    <span className="text-xs text-muted-foreground font-medium">
+                        {unit}
                     </span>
-                </div>
-
-                {/* Metric */}
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
-                    {label}
-                </p>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-[2rem] font-black text-foreground leading-none tabular tracking-tight">
-                        {value}
-                    </span>
-                    {unit && (
-                        <span className="text-sm text-muted-foreground font-medium">
-                            {unit}
-                        </span>
-                    )}
-                </div>
+                )}
             </div>
+            {trend !== 0 && (
+                <div className={cn("text-[10px] font-medium mt-2", isPositive ? "text-emerald" : "text-ruby")}>
+                    {isPositive ? "▲" : "▼"} {Math.abs(trend)}% from baseline
+                </div>
+            )}
         </div>
     );
 }

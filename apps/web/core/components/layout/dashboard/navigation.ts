@@ -1,6 +1,7 @@
 import {
     BarChart3,
     Brain,
+    Briefcase,
     Dumbbell,
     LayoutDashboard,
     Layers,
@@ -40,7 +41,14 @@ export const dashboardNavigation: DashboardNavSection[] = [
                 href: "/dashboard/sessions",
                 icon: Brain,
                 description: "Run sessions, review attempts, and reopen reports.",
-                matches: (pathname) => pathname.startsWith("/dashboard/sessions"),
+                matches: (pathname) => pathname.startsWith("/dashboard/sessions") && !pathname.includes("/interview-journey"),
+            },
+            {
+                name: "Journeys",
+                href: "/dashboard/interview-journey",
+                icon: Briefcase,
+                description: "Simulate full hiring pipelines with dynamic rounds.",
+                matches: (pathname) => pathname.startsWith("/dashboard/interview-journey"),
             },
             {
                 name: "Insights",
@@ -193,6 +201,51 @@ const dashboardContexts: Array<{
             title: "Settings",
             description: "Profile controls, learning preferences, and subscription details.",
             activeHref: "/dashboard/settings",
+        },
+    },
+    {
+        matches: (pathname) => pathname.startsWith("/dashboard/interview-journey/new"),
+        context: {
+            eyebrow: "Hiring Simulation",
+            title: "New Journey",
+            description: "Upload a resume and paste a job description to start.",
+            activeHref: "/dashboard/interview-journey",
+        },
+    },
+    {
+        matches: (pathname) => pathname.startsWith("/dashboard/interview-journey") && pathname.includes("/analysis"),
+        context: {
+            eyebrow: "Hiring Simulation",
+            title: "Journey Analysis",
+            description: "AI-generated hiring plan based on your resume and job description.",
+            activeHref: "/dashboard/interview-journey",
+        },
+    },
+    {
+        matches: (pathname) => pathname.startsWith("/dashboard/interview-journey") && pathname.includes("/rounds"),
+        context: {
+            eyebrow: "Hiring Simulation",
+            title: "Interview Rounds",
+            description: "Select and launch each round of your interview journey.",
+            activeHref: "/dashboard/interview-journey",
+        },
+    },
+    {
+        matches: (pathname) => pathname.startsWith("/dashboard/interview-journey") && pathname.includes("/report"),
+        context: {
+            eyebrow: "Hiring Simulation",
+            title: "Final Report",
+            description: "Recruiter-style hiring report across all rounds.",
+            activeHref: "/dashboard/interview-journey",
+        },
+    },
+    {
+        matches: (pathname) => pathname.startsWith("/dashboard/interview-journey") && pathname !== "/dashboard/interview-journey/new",
+        context: {
+            eyebrow: "Hiring Simulation",
+            title: "Interview Journey",
+            description: "Full hiring pipeline simulation.",
+            activeHref: "/dashboard/interview-journey",
         },
     },
 ];

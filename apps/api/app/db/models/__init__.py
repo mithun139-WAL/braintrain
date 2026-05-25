@@ -48,6 +48,20 @@ from app.db.models.coaching_session import CoachingSession  # noqa: F401
 from app.db.models.coaching_message import CoachingMessage  # noqa: F401
 from app.db.models.training_plan import TrainingPlan  # noqa: F401
 from app.db.models.training_task import TrainingTask  # noqa: F401
+from app.db.models.interview_journey import InterviewJourney  # noqa: F401
+from app.db.models.interview_journey_session import InterviewJourneySession  # noqa: F401
+from app.db.models.candidate_memory import CandidateMemory  # noqa: F401
+from app.db.models.knowledge_document import KnowledgeDocument  # noqa: F401
+from app.db.models.knowledge_chunk import KnowledgeChunk  # noqa: F401
+from app.db.models.knowledge_tag import KnowledgeTag  # noqa: F401
+from app.db.models.candidate_mind_state import CandidateMindState  # noqa: F401
+from app.db.models.mind_state_history import MindStateHistory  # noqa: F401
+from app.db.models.turn import Turn  # noqa: F401
+from app.db.models.pressure_event import PressureEvent  # noqa: F401
+from app.db.models.recovery_record import RecoveryRecord  # noqa: F401
+from app.db.models.confidence_event import ConfidenceEvent  # noqa: F401
+from app.db.models.training_journey import TrainingJourney  # noqa: F401
+from app.db.models.learning_memory import LearningMemoryNode, LearningMemoryEdge  # noqa: F401
 
 __all__ = [
     "AudioProcessingStatus",
@@ -72,4 +86,20 @@ __all__ = [
     "CoachingMessage",
     "TrainingPlan",
     "TrainingTask",
+    "InterviewJourney",
+    "InterviewJourneySession",
+    "CandidateMemory",
+    "KnowledgeDocument",
+    "KnowledgeChunk",
+    "KnowledgeTag",
+    # Coaching system models
+    "CandidateMindState",
+    "MindStateHistory",
+    "PressureEvent",
+    "RecoveryRecord",
+    "ConfidenceEvent",
+    "TrainingJourney",
+    # Learning Memory models
+    "LearningMemoryNode",
+    "LearningMemoryEdge",
 ]

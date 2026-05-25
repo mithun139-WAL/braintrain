@@ -130,7 +130,7 @@ const MeetRoomContainer: React.FC<{
     const { localParticipant } = useLocalParticipant();
 
     const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
-    const [showTranscript, setShowTranscript] = useState(true);
+    const [showTranscript, setShowTranscript] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
     const [isUserSpeaking, setIsUserSpeaking] = useState(false);
@@ -217,20 +217,19 @@ const MeetRoomContainer: React.FC<{
 
     return (
         <div
-            className="flex flex-col w-full h-full min-h-0 rounded-2xl overflow-hidden border border-white/5 shadow-2xl"
-            style={{ background: "#18191b" }}
+            className="flex flex-col w-full h-full min-h-0 rounded-2xl overflow-hidden border border-border bg-background"
         >
             {/* ── Top bar ──────────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-black/10">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/45 backdrop-blur-md">
                 <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                        <BrainCircuit className="size-4 text-white" />
+                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <BrainCircuit className="size-4" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-white leading-tight">
+                        <p className="text-sm font-semibold text-foreground leading-tight">
                             Mock Interview
                         </p>
-                        <p className="text-[10px] text-gray-500 leading-tight">
+                        <p className="text-[10px] text-muted-foreground leading-tight">
                             AI-Powered Session
                         </p>
                     </div>
@@ -238,7 +237,7 @@ const MeetRoomContainer: React.FC<{
 
                 <div className="flex items-center gap-3">
                     {isConnected && (
-                        <span className="text-sm font-mono text-gray-300 tabular-nums">
+                        <span className="text-sm font-mono text-muted-foreground tabular-nums">
                             {formatElapsed(elapsedSeconds)}
                         </span>
                     )}
@@ -246,14 +245,14 @@ const MeetRoomContainer: React.FC<{
                         className={cn(
                             "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide border",
                             isConnected
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                                ? "bg-emerald/10 text-emerald border-emerald/20"
+                                : "bg-gold/10 text-gold border-gold/20"
                         )}
                     >
                         {isConnected ? (
                             <Wifi size={10} />
                         ) : (
-                            <WifiOff size={10} className="animate-pulse" />
+                            <WifiOff size={10} />
                         )}
                         {connectionState === ConnectionState.Connecting
                             ? "Connecting…"
@@ -427,23 +426,23 @@ const MeetRoomContainer: React.FC<{
 
                 {/* Right panel: live transcript (toggleable) */}
                 {showTranscript && (
-                    <div className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 flex flex-col min-h-0 bg-[#1e1f22] rounded-2xl overflow-hidden border border-white/5 shadow-lg">
+                    <div className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 flex flex-col min-h-0 bg-card rounded-2xl overflow-hidden border border-border shadow-sm">
                         <TranscriptPanel transcript={transcript} />
                     </div>
                 )}
             </div>
 
             {/* ── Bottom control bar ────────────────────────────────────── */}
-            <div className="flex items-center justify-center gap-5 py-4 px-6 border-t border-white/5">
+            <div className="flex items-center justify-center gap-4 py-4 px-6 border-t border-border">
                 {/* Mic toggle */}
                 <ControlButton
                     onClick={toggleMute}
                     disabled={!isConnected}
                     label={isMuted ? "Unmute" : "Mute"}
                     active={!isMuted}
-                    activeClass="bg-[#3c4043] hover:bg-[#4a4d50] text-white"
-                    inactiveClass="bg-red-500 hover:bg-red-400 text-white"
-                    icon={isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                    activeClass="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25"
+                    inactiveClass="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20"
+                    icon={isMuted ? <MicOff size={18} /> : <Mic size={18} />}
                 />
 
                 {/* Transcript toggle */}
@@ -451,9 +450,9 @@ const MeetRoomContainer: React.FC<{
                     onClick={() => setShowTranscript((v) => !v)}
                     label="Transcript"
                     active={showTranscript}
-                    activeClass="bg-white text-[#202124] hover:bg-gray-100"
-                    inactiveClass="bg-[#3c4043] text-white hover:bg-[#4a4d50]"
-                    icon={<MessageSquare size={20} />}
+                    activeClass="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25"
+                    inactiveClass="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border"
+                    icon={<MessageSquare size={18} />}
                     badge={
                         transcript.length > 0 && !showTranscript
                             ? String(Math.min(transcript.length, 99))
@@ -465,14 +464,11 @@ const MeetRoomContainer: React.FC<{
                 <button
                     onClick={onEndSession}
                     title="End interview"
-                    className="flex flex-col items-center gap-1.5 group"
+                    className="flex flex-col items-center flex-shrink-0"
                 >
-                    <div className="size-14 rounded-full bg-red-500 hover:bg-red-400 active:scale-95 text-white flex items-center justify-center transition-all shadow-lg shadow-red-500/20">
-                        <PhoneOff size={22} />
+                    <div className="size-11 rounded-full bg-ruby/10 hover:bg-ruby text-ruby hover:text-white flex items-center justify-center border border-ruby/25 transition-all">
+                        <PhoneOff size={18} />
                     </div>
-                    <span className="text-[10px] text-gray-500 group-hover:text-gray-400 transition-colors">
-                        End
-                    </span>
                 </button>
             </div>
         </div>
@@ -521,108 +517,63 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({
     return (
         <div
             className={cn(
-                "relative bg-gradient-to-b from-[#25272a] to-[#1e2022] border border-white/[0.04] rounded-2xl overflow-hidden",
+                "relative bg-card border border-border rounded-xl overflow-hidden",
                 "flex items-center justify-center",
-                "transition-all duration-300",
-                isSpeaking && `ring-2 ${ringColor} shadow-xl ${glowColor}`,
+                "transition-all duration-200",
+                isSpeaking ? "border-primary ring-1 ring-primary/20 bg-primary/[0.02]" : "border-border/60",
                 className
             )}
         >
-            {/* Subtle ambient glow behind avatar when speaking */}
-            {isSpeaking && (
-                <div
-                    className={cn(
-                        "absolute inset-0 opacity-[0.06] pointer-events-none",
-                        pulseColor,
-                        "animate-pulse"
-                    )}
-                />
-            )}
-
             {/* Centred content */}
-            <div className="relative z-10 flex flex-col items-center gap-4">
-                {/* Avatar with pulsing rings when speaking */}
+            <div className="relative z-10 flex flex-col items-center gap-3.5">
+                {/* Clean Flat Avatar */}
                 <div className="relative flex items-center justify-center">
-                    {isSpeaking && (
-                        <>
-                            <div
-                                className={cn(
-                                    "absolute rounded-full border-2 opacity-25 animate-ping",
-                                    ringColor
-                                )}
-                                style={{ width: "110px", height: "110px" }}
-                            />
-                            <div
-                                className={cn(
-                                    "absolute rounded-full border-2 opacity-50",
-                                    ringColor
-                                )}
-                                style={{ width: "96px", height: "96px" }}
-                            />
-                        </>
-                    )}
                     <div
                         className={cn(
-                            "size-20 rounded-full bg-gradient-to-br flex items-center justify-center",
-                            "shadow-2xl transition-transform duration-300 z-10 relative",
-                            avatarGradient,
-                            isSpeaking && "scale-110"
+                            "size-16 rounded-full bg-primary/10 text-primary flex items-center justify-center",
+                            "transition-all duration-200 z-10 relative"
                         )}
                     >
                         {avatarIcon}
                     </div>
                 </div>
 
-                {/* Audio waveform bars — visible only when speaking */}
-                {isSpeaking ? (
-                    <div className="flex items-end gap-[3px]" style={{ height: "20px" }}>
-                        {SPEAKING_BAR_HEIGHTS.map((pct, i) => (
-                            <div
-                                key={i}
-                                className={cn("w-[3px] rounded-full speaking-bar", barColor)}
-                                style={{
-                                    height: `${pct}%`,
-                                    animationDelay: `${i * 0.07}s`,
-                                }}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    /* Flat placeholder so height stays stable */
-                    <div style={{ height: "20px" }} />
-                )}
-            </div>
-
-            {/* Name + mute badge — bottom-left */}
-            <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg">
-                    <span className="text-xs font-medium text-white">{displayName}</span>
-                    {isMuted && <MicOff size={10} className="text-red-400 shrink-0" />}
-                    {isLocal && !isMuted && (
-                        <span className="text-[9px] text-gray-400">(You)</span>
+                {/* Extremely subtle speaking indicator */}
+                <div className="h-4 flex items-center justify-center">
+                    {isSpeaking ? (
+                        <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Speaking</span>
+                            <div className="flex items-end gap-[2px] h-2.5">
+                                {[1, 2, 3].map((i) => (
+                                    <div
+                                        key={i}
+                                        className="w-[2px] rounded-full bg-primary speaking-bar"
+                                        style={{
+                                            height: i === 2 ? "10px" : "6px",
+                                            animationDelay: `${i * 0.15}s`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                            {isMuted ? "Muted" : "Silent"}
+                        </span>
                     )}
                 </div>
             </div>
 
-            {/* Speaking status badge — top-right */}
-            {isSpeaking && (
-                <div className="absolute top-3 right-3">
-                    <div
-                        className={cn(
-                            "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border",
-                            badgeColor
-                        )}
-                    >
-                        <span
-                            className={cn(
-                                "size-1.5 rounded-full animate-pulse",
-                                dotColor
-                            )}
-                        />
-                        {statusLabel}
-                    </div>
+            {/* Name + role badge — bottom-left */}
+            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-background/80 backdrop-blur-sm border border-border/40 px-2 py-0.5 rounded-md">
+                    <span className="text-[11px] font-semibold text-foreground">{displayName}</span>
+                    {isMuted && <MicOff size={10} className="text-red-400 shrink-0" />}
+                    {isLocal && !isMuted && (
+                        <span className="text-[9px] text-muted-foreground">(You)</span>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 };

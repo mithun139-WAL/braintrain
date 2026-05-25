@@ -97,3 +97,67 @@ class ProgressionResponseSchema(BaseModel):
     last_session: Optional[SessionRefSchema]
     previous_session: Optional[SessionRefSchema]
     delta: Optional[float]
+
+
+# ── GET /analytics/cognitive ──────────────────────────────────────────────────
+
+class CognitiveMindStateSchema(BaseModel):
+    confidence_level: float
+    stress_tolerance: float
+    communication_clarity: float
+    response_structure: float
+    filler_word_control: float
+    speaking_consistency: float
+    executive_presence: float
+    memory_recall_strength: float
+    strategic_thinking: float
+    cognitive_load_tolerance: float
+    session_count: int
+
+
+class CognitiveNodeSchema(BaseModel):
+    id: uuid.UUID
+    concept_name: str
+    concept_type: str
+    familiarity_score: float
+    confidence_score: float
+    recall_latency: float
+    retention_strength: float
+    pressure_recall_stability: float
+    exposure_count: int
+    mastery_level: float
+    is_fragile: bool
+    is_weak_recall: bool
+    is_strong_recall: bool
+    next_review_at: Optional[str] = None
+
+
+class CognitiveEdgeSchema(BaseModel):
+    id: uuid.UUID
+    source_node_id: uuid.UUID
+    target_node_id: uuid.UUID
+    relationship_type: str
+    strength: float
+
+
+class DrillSchema(BaseModel):
+    concept_name: str
+    drill_type: str
+    recommended_difficulty: str
+    instruction: str
+
+
+class RecoveryExerciseSchema(BaseModel):
+    concept_name: str
+    anchors: list[str]
+    exercise: str
+
+
+class CognitiveAnalyticsResponseSchema(BaseModel):
+    mind_state: Optional[CognitiveMindStateSchema] = None
+    nodes: list[CognitiveNodeSchema]
+    edges: list[CognitiveEdgeSchema]
+    drills: list[DrillSchema]
+    recovery_exercises: list[RecoveryExerciseSchema]
+    trajectory: dict[str, list[float]]
+

@@ -158,6 +158,10 @@ def create_app() -> FastAPI:
     app.include_router(billing_router, prefix="/billing", tags=["billing"])
     app.include_router(billing_webhook_router, prefix="/billing", tags=["billing"])
 
+    # Phase 13 — Interview Journey
+    from app.interview_journey.routers.journey_router import router as journey_router
+    app.include_router(journey_router, prefix="/journeys", tags=["interview-journey"])
+
     return app
 
 

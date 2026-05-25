@@ -16,6 +16,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.db.models.coaching_session import CoachingSession
+    from app.db.models.interview_journey import InterviewJourney
     from app.db.models.interview_session import InterviewSession
     from app.db.models.otp_code import OtpCode
     from app.db.models.question_bank import QuestionBank
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
     from app.db.models.training_plan import TrainingPlan
     from app.db.models.user_context_input import UserContextInput
     from app.db.models.user_skill_preference import UserSkillPreference
+    from app.db.models.candidate_mind_state import CandidateMindState
 
 
 class User(Base):
@@ -97,6 +99,12 @@ class User(Base):
     )
     training_plans: Mapped[List["TrainingPlan"]] = relationship(
         "TrainingPlan", back_populates="user", lazy="raise"
+    )
+    journeys: Mapped[List["InterviewJourney"]] = relationship(
+        "InterviewJourney", back_populates="user", lazy="raise"
+    )
+    mind_state: Mapped[Optional["CandidateMindState"]] = relationship(
+        "CandidateMindState", back_populates="candidate", lazy="raise", uselist=False
     )
 
     # ── Indexes ────────────────────────────────────────────────────────────────

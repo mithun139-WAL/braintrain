@@ -43,22 +43,22 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
     return (
         <aside
             className={cn(
-                "flex h-full w-[18rem] flex-shrink-0 flex-col border-r border-border/80 bg-card/80 backdrop-blur-xl",
+                "flex h-full w-60 flex-shrink-0 flex-col border-r border-border/60 bg-card/45 backdrop-blur-md",
                 className
             )}
         >
-            <div className="flex items-center gap-3 border-b border-border/80 px-5 py-5 flex-shrink-0">
+            <div className="flex items-center gap-2.5 border-b border-border/60 px-4.5 py-4 flex-shrink-0">
                 <Logo
                     showText={false}
-                    iconWrapperClassName="size-10 rounded-2xl bg-primary text-primary-foreground shadow-primary-sm flex-shrink-0"
-                    iconSize={18}
+                    iconWrapperClassName="size-8 rounded-lg bg-primary/10 text-primary flex-shrink-0"
+                    iconSize={15}
                 />
                 <div className="min-w-0 flex-1">
-                    <h1 className="text-foreground text-sm font-bold leading-none tracking-tight">
+                    <h1 className="text-foreground text-sm font-semibold leading-none tracking-tight">
                         BrainTrain
                     </h1>
-                    <p className="mt-1 text-[11px] font-medium text-muted-foreground leading-relaxed">
-                        Your AI-native interview mentor.
+                    <p className="mt-1 text-[10px] text-muted-foreground leading-none">
+                        AI Interview Mentor
                     </p>
                 </div>
 
@@ -66,17 +66,17 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:hidden"
+                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:hidden"
                         aria-label="Close navigation"
                     >
-                        <X size={16} />
+                        <X size={15} />
                     </button>
                 ) : null}
             </div>
-            <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-6 custom-scrollbar">
+            <nav className="flex-1 overflow-y-auto px-2 py-4 flex flex-col gap-4 custom-scrollbar">
                 {filteredNavigation.map((section) => (
-                    <div key={section.label} className="flex flex-col gap-2">
-                        <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
+                    <div key={section.label} className="flex flex-col gap-0.5">
+                        <p className="px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/45">
                             {section.label}
                         </p>
                         {section.items.map((item) => {
@@ -86,66 +86,38 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
                                 <Link
                                     key={item.name}
                                     href={item.href}
-                                        onClick={onNavigate}
-                                        className={cn(
-                                            "group rounded-3xl border px-3.5 py-3 transition-all duration-200",
-                                            isActive
-                                            ? "border-primary/20 bg-primary/10 shadow-card"
-                                            : "border-transparent hover:border-border hover:bg-muted/40"
+                                    onClick={onNavigate}
+                                    className={cn(
+                                        "group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
+                                        isActive
+                                            ? "bg-primary/8 text-primary"
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                                     )}
                                 >
-                                    <div className="flex items-start gap-3">
-                                        <div
-                                            className={cn(
-                                                "flex size-9 flex-shrink-0 items-center justify-center rounded-2xl border transition-colors",
-                                                isActive
-                                                    ? "border-primary/20 bg-primary/10 text-primary"
-                                                    : "border-border bg-card text-muted-foreground group-hover:text-foreground"
-                                            )}
-                                        >
-                                            <item.icon size={17} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                                                {item.description}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <item.icon size={14} className={cn("shrink-0", isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground")} />
+                                    <span>{item.name}</span>
                                 </Link>
                             );
                         })}
                     </div>
                 ))}
             </nav>
-            <div className="border-t border-border/80 p-4">
-                <div className="rounded-3xl border border-primary/20 bg-primary/5 p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="mt-0.5 flex size-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                            <Sparkles size={16} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/80">
-                                Next Best Step
-                            </p>
-                            <p className="text-sm font-semibold text-foreground">
-                                Run a focused practice session
-                            </p>
-                            <p className="text-xs leading-relaxed text-muted-foreground">
-                                {planType === "PRO"
-                                    ? "Capture a fresh readiness signal, then let the coach adapt your plan."
-                                    : "Capture a fresh readiness signal and start building your scoring."}
-                            </p>
-                        </div>
-                    </div>
-                    <Link
-                        href={START_SESSION_HREF}
-                        onClick={onNavigate}
-                        className={cn(buttonStyles({ size: "md" }), "mt-4 w-full")}
-                    >
-                        Start Session
-                    </Link>
+            <div className="border-t border-border/60 p-3 space-y-2.5">
+                <div className="px-3 space-y-1">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/45">
+                        Next step
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-normal">
+                        Run a practice session to update your coaching signal.
+                    </p>
                 </div>
+                <Link
+                    href={START_SESSION_HREF}
+                    onClick={onNavigate}
+                    className={cn(buttonStyles({ variant: "primary", size: "sm" }), "w-full rounded-md shadow-none")}
+                >
+                    Start Practice
+                </Link>
             </div>
         </aside>
     );

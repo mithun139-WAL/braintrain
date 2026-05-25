@@ -78,3 +78,68 @@ export interface TrendPoint {
     date: string;
     averageScore: number;
 }
+
+
+// ─── Cognitive Analytics Types ────────────────────────────────────────────────
+
+export interface CognitiveMindState {
+    confidenceLevel: number;
+    stressTolerance: number;
+    communicationClarity: number;
+    responseStructure: number;
+    fillerWordControl: number;
+    speakingConsistency: number;
+    executivePresence: number;
+    memoryRecallStrength: number;
+    strategicThinking: number;
+    cognitiveLoadTolerance: number;
+    sessionCount: number;
+}
+
+export interface CognitiveNode {
+    id: string;
+    conceptName: string;
+    conceptType: string;
+    familiarityScore: number;
+    confidenceScore: number;
+    recallLatency: number;
+    retentionStrength: number;
+    pressureRecallStability: number;
+    exposureCount: number;
+    masteryLevel: number;
+    isFragile: boolean;
+    isWeakRecall: boolean;
+    isStrongRecall: boolean;
+    nextReviewAt?: string | null;
+}
+
+export interface CognitiveEdge {
+    id: string;
+    sourceNodeId: string;
+    targetNodeId: string;
+    relationshipType: string;
+    strength: number;
+}
+
+export interface Drill {
+    conceptName: string;
+    drillType: string;
+    recommendedDifficulty: string;
+    instruction: string;
+}
+
+export interface RecoveryExercise {
+    conceptName: string;
+    anchors: string[];
+    exercise: string;
+}
+
+export interface CognitiveAnalyticsResponse {
+    mindState?: CognitiveMindState | null;
+    nodes: CognitiveNode[];
+    edges: CognitiveEdge[];
+    drills: Drill[];
+    recoveryExercises: RecoveryExercise[];
+    trajectory: Record<string, number[]>;
+}
+

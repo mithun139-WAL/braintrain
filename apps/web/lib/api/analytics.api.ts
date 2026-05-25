@@ -4,6 +4,7 @@ import {
     AnalyticsResponse,
     ProgressionResponse,
     TopicAnalyticsResponse,
+    CognitiveAnalyticsResponse,
 } from "@braintrain/shared";
 
 export const analyticsApi = {
@@ -27,6 +28,11 @@ export const analyticsApi = {
 
     getTopicAnalytics: async (topicId: string): Promise<ApiResponse<TopicAnalyticsResponse>> => {
         const response = await apiClient.get<ApiResponse<TopicAnalyticsResponse>>(`/analytics/topics/${topicId}`);
+        return response.data;
+    },
+
+    getCognitiveAnalytics: async (): Promise<ApiResponse<CognitiveAnalyticsResponse>> => {
+        const response = await apiClient.get<ApiResponse<CognitiveAnalyticsResponse>>("/analytics/cognitive");
         return response.data;
     },
 };

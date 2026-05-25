@@ -258,218 +258,117 @@ export function SessionEvaluationView({ sessionId }: { sessionId: string }) {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 dark:bg-gray-950 dark:text-gray-100 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl space-y-8">
-                <header className="flex flex-col gap-6 border-b border-gray-200 pb-6 dark:border-gray-800 md:flex-row md:items-end md:justify-between">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-primary dark:text-indigo-400">
-                            <Calendar size={16} />
+        <div className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-4xl space-y-8">
+                <header className="flex flex-col gap-4 border-b border-border/60 pb-6 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
+                            <Calendar size={14} />
                             <span>{formatDate(evaluation.evaluatedAt)}</span>
                         </div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
+                        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
                             AI Evaluation Report
                         </h1>
-                        <p className="font-medium text-slate-500 dark:text-gray-400">
-                            {evaluation.summary.slice(0, 100)}
-                            {evaluation.summary.length > 100 ? "…" : ""}
+                        <p className="text-sm text-muted-foreground">
+                            Overall Score: <span className="font-semibold text-foreground">{overallRounded}/100</span>
                         </p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                         <Link href="/dashboard">
-                            <button className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-gray-800">
-                                <ArrowLeft size={18} />
-                                <span>Back to Dashboard</span>
+                            <button className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-4 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors">
+                                <ArrowLeft size={14} />
+                                <span>Dashboard</span>
                             </button>
                         </Link>
                         <Link href="/dashboard/sessions/start">
-                            <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-dark">
-                                <RotateCcw size={18} />
+                            <button className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold text-white hover:brightness-105 transition-all shadow-sm">
+                                <RotateCcw size={14} />
                                 <span>New Session</span>
                             </button>
                         </Link>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                    <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:col-span-4">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
-                        <h3 className="z-10 mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                            <Activity size={16} className="text-primary" />
-                            Overall Performance Score
-                        </h3>
-                        <div className="relative z-10 mb-6 flex h-40 w-40 items-center justify-center">
-                            <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    fill="none"
-                                    r="45"
-                                    stroke="currentColor"
-                                    strokeWidth="8"
-                                    className="text-slate-100 dark:text-gray-800"
-                                />
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    fill="none"
-                                    r="45"
-                                    stroke="currentColor"
-                                    strokeDasharray="283"
-                                    strokeDashoffset={circleOffset(overallRounded)}
-                                    strokeLinecap="round"
-                                    strokeWidth="8"
-                                    className="text-primary drop-shadow-[0_0_8px_rgba(79,70,229,0.4)]"
-                                />
-                            </svg>
-                            <div className="absolute flex flex-col items-center">
-                                <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white">
-                                    {overallRounded}
-                                </span>
-                                <span className="text-sm font-bold text-slate-500 dark:text-gray-400">/ 100</span>
-                            </div>
-                        </div>
-                        <div
-                            className={cn(
-                                "z-10 mb-3 flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold",
-                                overallRounded >= 80
-                                    ? "border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
-                                    : overallRounded >= 60
-                                    ? "border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400"
-                                    : "border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400"
-                            )}
-                        >
-                            <TrendingUp size={16} />
-                            <span>
-                                {overallRounded >= 80
-                                    ? "Excellent Performance"
-                                    : overallRounded >= 60
-                                    ? "Good Progress"
-                                    : "Needs Improvement"}
-                            </span>
-                        </div>
-                        <p className="z-10 max-w-[280px] text-sm font-medium text-slate-600 dark:text-gray-400">
-                            {evaluation.summary}
-                        </p>
+                {/* 1. Human-readable Summary */}
+                <div className="bg-card border border-border p-6 md:p-8 rounded-xl space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">Executive Summary</h3>
+                    <p className="text-base leading-relaxed text-foreground font-normal">
+                        {evaluation.summary}
+                    </p>
+                </div>
+
+                {/* 2 & 3. Strengths & Growth Areas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Strengths */}
+                    <div className="bg-card border border-border p-6 rounded-xl space-y-4">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key Strengths</h3>
+                        <ul className="space-y-3">
+                            {evaluation.strengths.map((str, idx) => (
+                                <li key={idx} className="flex items-start gap-2.5 text-xs text-foreground leading-relaxed">
+                                    <span className="size-1.5 rounded-full bg-emerald mt-1.5 shrink-0" />
+                                    <span>{str}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:col-span-8">
+                    {/* Growth Areas */}
+                    <div className="bg-card border border-border p-6 rounded-xl space-y-4">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Critical Focus Areas</h3>
+                        <ul className="space-y-3">
+                            {evaluation.improvements.map((imp, idx) => (
+                                <li key={idx} className="flex items-start gap-2.5 text-xs text-foreground leading-relaxed">
+                                    <span className="size-1.5 rounded-full bg-gold mt-1.5 shrink-0" />
+                                    <span>{imp}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+
+                {/* 4. Recommendations */}
+                <div className="bg-card border border-border p-6 rounded-xl space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next Suggested Steps</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        To build on this session's momentum, we recommend reviewing your response flow with the AI coach. Focus on structural completeness when detailing past technical decisions.
+                    </p>
+                    <div className="pt-2">
+                        <Link
+                            href="/dashboard/coach"
+                            className="inline-flex h-9 items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/15 px-4 text-xs font-semibold text-primary transition-colors"
+                        >
+                            Open AI Coaching Session
+                        </Link>
+                    </div>
+                </div>
+
+                {/* 5. Metrics & Subscores */}
+                <div className="bg-card border border-border p-6 rounded-xl space-y-6">
+                    <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performance Metrics</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Quantitative scoring of core communication components.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6 pt-2">
                         {dimensionCards.map((card) => (
-                            <DimCard key={card.label} {...card} />
+                            <div key={card.label} className="space-y-2 border-b sm:border-b-0 sm:border-r border-border last:border-none pb-4 sm:pb-0 sm:pr-4">
+                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+                                    {card.label}
+                                </span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-bold text-foreground">{Math.round(card.score)}</span>
+                                    <span className="text-xs text-muted-foreground">/100</span>
+                                </div>
+                                <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary" style={{ width: `${card.score}%` }} />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:col-span-2 sm:p-8">
-                        <h3 className="mb-6 flex items-center gap-2 text-xl font-black text-slate-900 dark:text-white">
-                            <Sparkles className="text-primary" />
-                            Executive AI Feedback
-                        </h3>
-                        <div className="grid h-full grid-cols-1 gap-8 md:grid-cols-2">
-                            <div className="space-y-4">
-                                <h4 className="mb-2 border-b border-gray-100 pb-2 text-sm font-bold uppercase tracking-wider text-slate-400 dark:border-gray-800 dark:text-gray-500">
-                                    Top Strengths
-                                </h4>
-                                {evaluation.strengths.slice(0, 3).map((strength, index) => (
-                                    <div key={index} className="flex items-start gap-3">
-                                        <div className="mt-1 min-w-[20px] text-emerald-500">
-                                            <CheckCircle2 size={20} />
-                                        </div>
-                                        <p className="text-sm leading-relaxed text-slate-700 dark:text-gray-300">
-                                            {strength}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-4">
-                                <h4 className="mb-2 border-b border-gray-100 pb-2 text-sm font-bold uppercase tracking-wider text-slate-400 dark:border-gray-800 dark:text-gray-500">
-                                    Critical Focus Areas
-                                </h4>
-                                {evaluation.improvements.slice(0, 3).map((improvement, index) => (
-                                    <div
-                                        key={index}
-                                        className={cn(
-                                            "relative overflow-hidden rounded-xl border p-4",
-                                            index === 0
-                                                ? "border-primary/20 bg-slate-50 dark:bg-gray-800/50"
-                                                : "border-amber-500/20 bg-slate-50 dark:bg-gray-800/50"
-                                        )}
-                                    >
-                                        <div
-                                            className={cn(
-                                                "absolute bottom-0 left-0 top-0 w-1",
-                                                index === 0 ? "bg-primary" : "bg-amber-500"
-                                            )}
-                                        />
-                                        <div className="flex items-start gap-3">
-                                            <div className={cn("min-w-[20px]", index === 0 ? "text-primary" : "text-amber-500")}>
-                                                {index === 0 ? <Target size={20} /> : <AlertTriangle size={20} />}
-                                            </div>
-                                            <p className="text-sm leading-relaxed text-slate-700 dark:text-gray-300">
-                                                {improvement}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                        <h3 className="mb-4 text-lg font-black text-slate-900 dark:text-white">Session Metrics</h3>
-                        <div className="flex-1 space-y-4">
-                            <div className="rounded-xl border border-gray-100 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
-                                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">
-                                    Difficulty Progression
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 dark:bg-gray-900 dark:text-gray-300">
-                                        {evaluation.difficultyProgression.startedAt}
-                                    </span>
-                                    <ArrowRight size={14} className="text-slate-400 dark:text-gray-600" />
-                                    <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 dark:bg-gray-900 dark:text-gray-300">
-                                        {evaluation.difficultyProgression.endedAt}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                {[
-                                    { label: "Confidence", value: Math.round(dims.confidence) },
-                                    { label: "Clarity", value: Math.round(dims.clarity) },
-                                    { label: "Structure", value: Math.round(dims.structure) },
-                                    { label: "Depth", value: Math.round(dims.depth) },
-                                    { label: "Communication", value: Math.round(dims.communication) },
-                                ].map(({ label, value }) => (
-                                    <div key={label} className="flex items-center gap-3">
-                                        <span className="w-24 flex-shrink-0 text-xs text-slate-500 dark:text-gray-400">
-                                            {label}
-                                        </span>
-                                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
-                                            <div className={cn("h-full rounded-full", barColor(value))} style={{ width: `${value}%` }} />
-                                        </div>
-                                        <span className={cn("w-8 text-right text-xs font-bold", scoreColor(value))}>
-                                            {value}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex justify-center pb-12 pt-4">
-                    <p className="flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-gray-400">
-                        Next suggested step:
-                        <Link
-                            href="/dashboard/coach"
-                            className="font-bold text-primary underline decoration-primary/30 underline-offset-4 transition-colors hover:text-primary-dark"
-                        >
-                            AI Coaching Session
-                        </Link>
-                    </p>
-                </div>
+                {/* Footer margin spacer */}
+                <div className="h-8" />
             </div>
         </div>
     );

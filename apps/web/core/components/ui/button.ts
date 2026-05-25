@@ -11,7 +11,7 @@ interface ButtonStylesOptions {
 
 const variantStyles: Record<ButtonVariant, string> = {
     primary:
-        "bg-primary text-primary-foreground shadow-[0_0_16px_rgba(var(--primary-rgb,99,102,241),0.35)] hover:brightness-110 active:translate-y-px active:shadow-none",
+        "bg-primary text-primary-foreground shadow-sm hover:brightness-105 active:translate-y-px",
     secondary:
         "border border-border/80 bg-muted/40 text-foreground shadow-sm hover:bg-muted hover:border-primary/40 hover:text-primary active:translate-y-px",
     ghost:

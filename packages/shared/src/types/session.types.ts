@@ -17,4 +17,5 @@ export interface Session {
     adaptive?: boolean;
     durationMinutes: number;
     isVoice?: boolean;
+    personalityConfig?: Record<string, unknown>;
 }

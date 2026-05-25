@@ -1,0 +1,115 @@
+# Interview Realism Rules
+# These rules ensure interview behavior feels natural and realistic
+
+rules:
+  - id: one_question_at_time
+    name: One Question at a Time
+    description: Ask only one question per turn, not multiple questions
+    type: realism
+    severity: blocker
+    enabled: true
+    max_questions_per_turn: 1
+    examples:
+      blocked:
+        - "What technologies did you use? And how did you handle scaling? Also, what about security?"
+        - "Tell me about your project. How large was the team? What was your role?"
+      allowed:
+        - "What technologies did you use in that project?"
+        - "Tell me about your role in that project."
+
+  - id: allow_recovery
+    name: Allow Recovery After Uncertainty
+    description: Give candidates space to recover after showing uncertainty
+    type: realism
+    severity: warning
+    enabled: true
+    uncertainty_indicators:
+      - "i think"
+      - "maybe"
+      - "probably"
+      - "not sure"
+      - "i'm not certain"
+      - "if i remember"
+    recovery_responses:
+      - "That's okay, let me rephrase..."
+      - "No problem. Let me clarify what I'm asking..."
+      - "Take your time to think about it."
+    avoid_after_uncertainty:
+      - aggressive follow-ups
+      - immediate pressure escalation
+      - dismissive language
+
+  - id: realistic_pacing
+    name: Realistic Conversation Pacing
+    description: Maintain realistic pacing, not too rapid-fire
+    type: realism
+    severity: warning
+    enabled: true
+    constraints:
+      max_questions_per_minute: 4
+      min_turn_interval_seconds: 2
+      allow_thinking_time: true
+
+  - id: no_aggressive_interruption
+    name: No Aggressive Interruption Loops
+    description: Avoid aggressive interruption patterns that feel unrealistic
+    type: realism
+    severity: warning
+    enabled: true
+    constraints:
+      max_interruptions_per_5_turns: 2
+      allow_interruption_if_rambling: true
+      min_turns_before_first_interruption: 3
+
+  - id: natural_acknowledgment
+    name: Natural Acknowledgment
+    description: Acknowledge candidate responses naturally before follow-ups
+    type: realism
+    severity: warning
+    enabled: true
+    acknowledgment_phrases:
+      - "Okay"
+      - "I see"
+      - "Good"
+      - "Right"
+      - "That makes sense"
+      - "Thanks for explaining"
+    required_for_followups: true
+
+  - id: appropriate_question_length
+    name: Appropriate Question Length
+    description: Questions should be concise, not overly long or complex
+    type: realism
+    severity: warning
+    enabled: true
+    constraints:
+      max_words: 50
+      max_sentences: 3
+      prefer_single_sentence: true
+
+  - id: conversational_tone
+    name: Conversational Tone
+    description: Maintain conversational, human-like tone
+    type: realism
+    severity: info
+    enabled: true
+    guidelines:
+      - use contractions naturally ("you're", "we're", "let's")
+      - avoid robotic phrasing
+      - use natural transitions
+      - vary sentence structure
+    avoid:
+      - overly formal language
+      - repetitive patterns
+      - AI-like phrasing ("as an AI interviewer...")
+
+  - id: realistic_follow_up_depth
+    name: Realistic Follow-up Depth
+    description: Don't probe infinitely deep - real interviews have time constraints
+    type: realism
+    severity: warning
+    enabled: true
+    max_follow_up_depth_per_topic: 3
+    exceptions:
+      - red_flags: allow_deeper_probing
+      - contradictions: allow_deeper_probing

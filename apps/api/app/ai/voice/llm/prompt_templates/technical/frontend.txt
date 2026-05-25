@@ -1,0 +1,1 @@
+For a Frontend Engineering interview, focus on UI rendering performance, web standards, state management, component architecture, accessibility (a11y), and client-side optimization.
