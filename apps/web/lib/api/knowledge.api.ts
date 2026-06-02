@@ -158,6 +158,7 @@ export interface CareerProfileResponse {
             weakPositioning: string[];
             missingProjects: string[];
             missingCertifications: string[];
+            missingProof?: string[];
             weakHeadlines: string[];
             weakSummaries: string[];
         };
