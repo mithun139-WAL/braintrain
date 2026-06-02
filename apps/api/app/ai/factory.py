@@ -1,16 +1,17 @@
 """
 AI provider factory — returns the correct provider implementations based on config.
 
-LLM task priority (evaluation, question gen, coaching):
-  1. NVIDIA NIM (NVIDIA_API_KEY starts with "nvapi-")  → NIM providers
-  2. OpenAI    (OPENAI_API_KEY starts with "sk-")       → OpenAI providers
-  3. Fallback                                           → Stub providers (zero-cost local dev)
+LLM task priority (evaluation, question gen, coaching, followup):
+  1. GitHub Models (GITHUB_TOKEN set)          → Azure AI Foundry-backed, free tier
+  2. NVIDIA NIM   (NVIDIA_API_KEY nvapi-...)   → NIM providers
+  3. OpenAI       (OPENAI_API_KEY sk-...)      → OpenAI providers
+  4. Stub                                      → zero-cost local dev
 
 Audio transcription priority:
-  1. Groq      (GROQ_API_KEY starts with "gsk_")        → whisper-large-v3 on Groq LPUs
-  2. OpenAI    (OPENAI_API_KEY starts with "sk-")        → Whisper-1
-  3. Fallback                                            → Stub provider
-  Note: NVIDIA NIM has no Whisper endpoint, so it is never used for transcription.
+  1. Groq      (GROQ_API_KEY starts with "gsk_")  → whisper-large-v3 on Groq LPUs
+  2. OpenAI    (OPENAI_API_KEY starts with "sk-")  → Whisper-1
+  3. Stub                                          → stub provider
+  Note: GitHub Models and NIM have no audio endpoint — never used for transcription.
 
 Usage:
     from app.ai.factory import get_question_gen_provider, get_evaluation_provider, get_transcription_provider
@@ -24,8 +25,16 @@ from app.core.config import get_settings
 
 @lru_cache(maxsize=1)
 def get_question_gen_provider():
-    """Return the question generation provider (NIM > OpenAI > Stub)."""
+    """Return the question generation provider (GitHub Models > NIM > OpenAI > Stub)."""
     settings = get_settings()
+
+    if settings.github_models_enabled:
+        from app.ai.providers.github_models_question_gen import GitHubModelsQuestionGenerationProvider
+        return GitHubModelsQuestionGenerationProvider(
+            token=settings.github_token,
+            model=settings.github_model,
+            base_url=settings.github_models_base_url,
+        )
 
     if settings.nim_enabled:
         from app.ai.providers.nim_question_gen import NIMQuestionGenerationProvider
@@ -45,8 +54,16 @@ def get_question_gen_provider():
 
 @lru_cache(maxsize=1)
 def get_evaluation_provider():
-    """Return the answer evaluation provider (NIM > OpenAI > Stub)."""
+    """Return the answer evaluation provider (GitHub Models > NIM > OpenAI > Stub)."""
     settings = get_settings()
+
+    if settings.github_models_enabled:
+        from app.ai.providers.github_models_evaluation import GitHubModelsEvaluationProvider
+        return GitHubModelsEvaluationProvider(
+            token=settings.github_token,
+            model=settings.github_model,
+            base_url=settings.github_models_base_url,
+        )
 
     if settings.nim_enabled:
         from app.ai.providers.nim_evaluation import NIMEvaluationProvider
@@ -70,7 +87,7 @@ def get_transcription_provider():
     Return the audio transcription provider.
 
     Priority: Groq (whisper-large-v3) → OpenAI (Whisper-1) → Stub.
-    NIM is never used for transcription — it has no audio endpoint.
+    GitHub Models and NIM have no audio endpoint — never used for transcription.
     """
     settings = get_settings()
 
@@ -92,8 +109,16 @@ def get_transcription_provider():
 
 @lru_cache(maxsize=1)
 def get_coach_provider():
-    """Return the AI coaching provider (NIM > OpenAI > Stub)."""
+    """Return the AI coaching provider (GitHub Models > NIM > OpenAI > Stub)."""
     settings = get_settings()
+
+    if settings.github_models_enabled:
+        from app.ai.providers.github_models_coach import GitHubModelsCoachProvider
+        return GitHubModelsCoachProvider(
+            token=settings.github_token,
+            model=settings.github_model,
+            base_url=settings.github_models_base_url,
+        )
 
     if settings.nim_enabled:
         from app.ai.providers.nim_coach import NIMCoachProvider
@@ -113,10 +138,17 @@ def get_coach_provider():
 
 @lru_cache(maxsize=1)
 def get_followup_provider():
-    """Return the real-time follow-up analysis provider (NIM > OpenAI > Stub)."""
+    """Return the real-time follow-up analysis provider (GitHub Models > NIM > OpenAI > Stub)."""
     settings = get_settings()
 
-    # NIM shares the same OpenAI-compatible interface; use OpenAI provider with NIM base_url
+    if settings.github_models_enabled:
+        from app.ai.providers.github_models_followup import GitHubModelsFollowupProvider
+        return GitHubModelsFollowupProvider(
+            token=settings.github_token,
+            model=settings.github_model,
+            base_url=settings.github_models_base_url,
+        )
+
     if settings.nim_enabled:
         from app.ai.providers.openai_followup import OpenAIFollowupProvider
         return OpenAIFollowupProvider(
