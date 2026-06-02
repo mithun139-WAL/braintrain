@@ -42,11 +42,11 @@ acknowledgment_patterns:
     print("\n[Test 2] Testing PersonalityRegistry...")
     registry = PersonalityRegistry(personas_dir="personas")
     
-    google_prof = registry.get_profile("google_system_design")
+    google_prof = await registry.get_profile("google_system_design")
     assert google_prof.name == "Google System Design Interviewer"
     assert google_prof.skepticism_level == 0.9
     
-    hr_prof = registry.get_profile("friendly_hr")
+    hr_prof = await registry.get_profile("friendly_hr")
     assert hr_prof.name == "Friendly HR Interviewer"
     assert hr_prof.conversational_warmth == 0.9
     print("✓ PersonalityRegistry loaded yaml profiles successfully.")
@@ -54,7 +54,7 @@ acknowledgment_patterns:
     # Test 3: Engine dynamics and dynamic adaptation
     print("\n[Test 3] Testing PersonalityEngine dynamics...")
     engine = PersonalityEngine(personas_dir="personas")
-    engine.select_persona("google_system_design")
+    await engine.select_persona("google_system_design")
     
     # Simulate a strong/evasive user answer turn (causing drift and verbosity)
     adapted_params, prompt_directive = engine.process_user_turn(topic_drift=75.0, hesitation=10.0, verbosity=80.0)

@@ -11,17 +11,17 @@ logger = logging.getLogger("personality_engine")
 class PersonalityEngine:
     def __init__(self, personas_dir: str = "personas"):
         self.registry = PersonalityRegistry(personas_dir)
-        self.active_profile: PersonalityProfile = self.registry.get_profile("standard_interviewer")
+        self.active_profile: PersonalityProfile = self.registry.profiles["standard_interviewer"]
         self.active_state = InterviewerState(
             initial_warmth=self.active_profile.conversational_warmth,
             initial_skepticism=self.active_profile.skepticism_level
         )
 
-    def select_persona(self, persona_name: str) -> None:
+    async def select_persona(self, persona_name: str) -> None:
         """
         Loads and activates a new persona profile. Resets current states.
         """
-        self.active_profile = self.registry.get_profile(persona_name)
+        self.active_profile = await self.registry.get_profile(persona_name)
         self.active_state = InterviewerState(
             initial_warmth=self.active_profile.conversational_warmth,
             initial_skepticism=self.active_profile.skepticism_level

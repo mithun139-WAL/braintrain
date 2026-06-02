@@ -7,6 +7,7 @@ import {
     Layers,
     MessageCircle,
     Settings,
+    Database,
     type LucideIcon,
 } from "lucide-react";
 
@@ -86,6 +87,13 @@ export const dashboardNavigation: DashboardNavSection[] = [
                 description: "Follow adaptive drills generated from your sessions.",
                 matches: (pathname) => pathname.startsWith("/dashboard/training"),
             },
+            {
+                name: "Knowledge",
+                href: "/dashboard/knowledge",
+                icon: Database,
+                description: "Manage interviewer personas, RAG documents, and profile optimizations.",
+                matches: (pathname) => pathname.startsWith("/dashboard/knowledge"),
+            },
         ],
     },
     {
@@ -99,6 +107,10 @@ export const dashboardNavigation: DashboardNavSection[] = [
                 matches: (pathname) => pathname.startsWith("/dashboard/settings"),
             },
         ],
+    },
+    {
+        label: "Admin",
+        items: [],
     },
 ];
 
@@ -246,6 +258,15 @@ const dashboardContexts: Array<{
             title: "Interview Journey",
             description: "Full hiring pipeline simulation.",
             activeHref: "/dashboard/interview-journey",
+        },
+    },
+    {
+        matches: (pathname) => pathname.startsWith("/dashboard/knowledge"),
+        context: {
+            eyebrow: "Knowledge Hub",
+            title: "Knowledge & Career Optimizer",
+            description: "Interviewer personas, RAG references, and profile transition optimization tools.",
+            activeHref: "/dashboard/knowledge",
         },
     },
 ];

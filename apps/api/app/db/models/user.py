@@ -26,10 +26,12 @@ if TYPE_CHECKING:
     from app.db.models.user_context_input import UserContextInput
     from app.db.models.user_skill_preference import UserSkillPreference
     from app.db.models.candidate_mind_state import CandidateMindState
+    from app.db.models.career_profile import CareerProfile
 
 
 class User(Base):
     __tablename__ = "users"
+
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -106,6 +108,10 @@ class User(Base):
     mind_state: Mapped[Optional["CandidateMindState"]] = relationship(
         "CandidateMindState", back_populates="candidate", lazy="raise", uselist=False
     )
+    career_profiles: Mapped[List["CareerProfile"]] = relationship(
+        "CareerProfile", back_populates="user", lazy="raise", cascade="all, delete-orphan"
+    )
+
 
     # ── Indexes ────────────────────────────────────────────────────────────────
     __table_args__ = (

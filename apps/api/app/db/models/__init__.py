@@ -54,6 +54,7 @@ from app.db.models.candidate_memory import CandidateMemory  # noqa: F401
 from app.db.models.knowledge_document import KnowledgeDocument  # noqa: F401
 from app.db.models.knowledge_chunk import KnowledgeChunk  # noqa: F401
 from app.db.models.knowledge_tag import KnowledgeTag  # noqa: F401
+from app.db.models.agent_persona import AgentPersona  # noqa: F401
 from app.db.models.candidate_mind_state import CandidateMindState  # noqa: F401
 from app.db.models.mind_state_history import MindStateHistory  # noqa: F401
 from app.db.models.turn import Turn  # noqa: F401
@@ -62,6 +63,8 @@ from app.db.models.recovery_record import RecoveryRecord  # noqa: F401
 from app.db.models.confidence_event import ConfidenceEvent  # noqa: F401
 from app.db.models.training_journey import TrainingJourney  # noqa: F401
 from app.db.models.learning_memory import LearningMemoryNode, LearningMemoryEdge  # noqa: F401
+from app.db.models.career_profile import CareerProfile  # noqa: F401
+
 
 __all__ = [
     "AudioProcessingStatus",
@@ -92,7 +95,9 @@ __all__ = [
     "KnowledgeDocument",
     "KnowledgeChunk",
     "KnowledgeTag",
+    "AgentPersona",
     # Coaching system models
+
     "CandidateMindState",
     "MindStateHistory",
     "PressureEvent",
@@ -102,4 +107,5 @@ __all__ = [
     # Learning Memory models
     "LearningMemoryNode",
     "LearningMemoryEdge",
+    "CareerProfile",
 ]

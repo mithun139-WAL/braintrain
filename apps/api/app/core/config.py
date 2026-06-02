@@ -3,6 +3,12 @@ Central configuration — single source of truth for all env vars.
 
 All settings are read from the environment (or .env.development in dev).
 No module should ever read os.environ directly — always import `get_settings()`.
+
+LLM provider priority:
+  1. GitHub Models  (GITHUB_TOKEN set)        → Azure AI Foundry-backed, free tier
+  2. NVIDIA NIM     (NVIDIA_API_KEY nvapi-)   → NIM providers
+  3. OpenAI         (OPENAI_API_KEY sk-)      → OpenAI providers
+  4. Stub                                     → zero-cost local dev
 """
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,6 +30,14 @@ class Settings(BaseSettings):
 
     # ─── Google OAuth ─────────────────────────────────────────────────────────
     google_client_id: str = ""
+
+    # ─── GitHub Models (Azure AI Foundry) ───────────────────────────────────
+    # Free tier: https://github.com/marketplace/models
+    # Generate a GitHub Personal Access Token (no scopes needed) and set it here.
+    # Endpoint is backed by Azure AI Foundry — counts as Microsoft AI stack.
+    github_token: str = ""
+    github_models_base_url: str = "https://models.inference.ai.azure.com"
+    github_model: str = "gpt-4o-mini"
 
     # ─── OpenAI ───────────────────────────────────────────────────────────────
     # Leaving this empty enables all stub AI providers (safe for local dev)
@@ -104,9 +118,14 @@ class Settings(BaseSettings):
         return bool(self.groq_api_key and self.groq_api_key.startswith("gsk_"))
 
     @property
+    def github_models_enabled(self) -> bool:
+        """True when a GitHub token is set (any non-empty value is valid)."""
+        return bool(self.github_token)
+
+    @property
     def ai_enabled(self) -> bool:
-        """True when any real AI provider is configured (NIM takes precedence)."""
-        return self.nim_enabled or self.openai_enabled
+        """True when any real AI provider is configured."""
+        return self.github_models_enabled or self.nim_enabled or self.openai_enabled
 
     model_config = SettingsConfigDict(
         env_file=".env.development",

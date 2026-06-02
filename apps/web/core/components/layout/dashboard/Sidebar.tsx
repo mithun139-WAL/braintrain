@@ -27,9 +27,19 @@ export function Sidebar({ className, onNavigate, onClose }: SidebarProps) {
 
     const filteredNavigation = dashboardNavigation
         .map((section) => {
+            const email = profileResponse?.data?.email || "";
+            const isAdmin = planType === "ADMIN" || email.toLowerCase().includes("admin") || email.endsWith("@braintrain.com");
+
+            if (section.label === "Admin" && !isAdmin) {
+                return {
+                    ...section,
+                    items: [],
+                };
+            }
+
             const filteredItems = section.items.filter((item) => {
                 if (planType === "FREE") {
-                    return !["Coach", "Topics", "Plan"].includes(item.name);
+                    return !["Coach", "Topics", "Plan", "Knowledge"].includes(item.name);
                 }
                 return true;
             });

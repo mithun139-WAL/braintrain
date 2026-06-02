@@ -55,6 +55,14 @@ async def lifespan(app: FastAPI):
     from app.workers.scheduler import start_scheduler
     start_scheduler()
 
+    # ── Phase 14: seed dynamic personas if empty ──────────────────────────────
+    try:
+        from app.ai.voice.simulation.personality_registry import PersonalityRegistry
+        registry = PersonalityRegistry(personas_dir="personas")
+        await registry.seed_db_from_files()
+    except Exception as exc:
+        logger.error("Failed to seed interviewer personas on startup: %s", exc)
+
     yield
 
     # ── Phase 8: stop scheduler cleanly on shutdown ───────────────────────────
@@ -161,6 +169,10 @@ def create_app() -> FastAPI:
     # Phase 13 — Interview Journey
     from app.interview_journey.routers.journey_router import router as journey_router
     app.include_router(journey_router, prefix="/journeys", tags=["interview-journey"])
+
+    # Phase 14 — Knowledge Base & Admin Dashboard
+    from app.modules.knowledge.router import router as knowledge_router
+    app.include_router(knowledge_router, prefix="/knowledge", tags=["knowledge"])
 
     return app
 

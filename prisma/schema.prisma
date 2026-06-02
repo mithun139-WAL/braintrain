@@ -443,6 +443,50 @@ model users {
   training_plans                training_plans[]
   user_context_inputs           user_context_inputs[]
   user_skill_preferences        user_skill_preferences[]
+  career_profiles               career_profiles[]
 
   @@index([deleted_at], map: "ix_users_deleted_at")
 }
+
+model agent_personas {
+  id                      String   @id @db.Uuid
+  name                    String   @unique @db.VarChar
+  archetype               String   @db.VarChar
+  pacing_speed            Float    @default(1.0)
+  interruption_frequency  Float    @default(0.5)
+  silence_tolerance       Float    @default(1.0)
+  skepticism_level        Float    @default(0.5)
+  technical_depth         Float    @default(0.5)
+  followup_aggressiveness Float    @default(0.5)
+  verbosity_tolerance     Float    @default(0.5)
+  ambiguity_tolerance     Float    @default(0.5)
+  pressure_intensity      Float    @default(0.5)
+  conversational_warmth   Float    @default(0.5)
+  challenge_escalation    String   @default("Standard") @db.VarChar
+  acknowledgment_patterns Json     @default("[]")
+  custom_prompts          Json     @default("{}")
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model career_profiles {
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id           String   @db.Uuid
+  current_role      String   @db.VarChar(256)
+  target_role       String   @db.VarChar(256)
+  resume_filename   String?  @db.VarChar(256)
+  resume_content    String?
+  linkedin_filename String?  @db.VarChar(256)
+  linkedin_content  String?
+  naukri_filename   String?  @db.VarChar(256)
+  naukri_content    String?
+  extracted_data    Json     @default("{}")
+  analysis_result   Json     @default("{}")
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+  users             users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+}
+
+

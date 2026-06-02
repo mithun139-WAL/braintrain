@@ -282,7 +282,7 @@ class VoiceAgent:
             }
             persona = persona_map.get(mode, "standard_interviewer")
             try:
-                self.personality_engine.select_persona(persona)
+                await self.personality_engine.select_persona(persona)
                 logger.info("[personality] Activated persona '%s' for mode '%s'", persona, mode)
             except Exception as exc:
                 logger.warning("[personality] Could not select persona '%s': %s", persona, exc)
