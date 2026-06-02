@@ -73,7 +73,52 @@ class Interviewer:
                 "content": msg.content
             })
 
-        interview_prompt = self.interview_prompt_builder.build(state, decision, tone)
+        # RAG Knowledge Retrieval
+        rag_context = ""
+        query_text = ""
+        for msg in reversed(state.conversation.messages):
+            if msg.role == "Candidate":
+                query_text = msg.content
+                break
+        if not query_text:
+            query_text = state.conversation.current_topic or "General"
+
+        try:
+            from app.db.session import SessionLocal
+            from app.ai.rag.retriever import InterviewKnowledgeRetriever
+            
+            if not hasattr(self, "knowledge_retriever"):
+                self.knowledge_retriever = InterviewKnowledgeRetriever()
+                
+            async with SessionLocal() as db:
+                domain_arg = None
+                topic_arg = None
+                
+                if state.conversation.current_topic:
+                    topic_lower = state.conversation.current_topic.lower()
+                    if "backend" in topic_lower:
+                        domain_arg = "backend"
+                    elif "frontend" in topic_lower or "react" in topic_lower:
+                        domain_arg = "frontend"
+                    elif "system design" in topic_lower or "distributed" in topic_lower:
+                        domain_arg = "system_design"
+                    elif "ai" in topic_lower or "ml" in topic_lower or "machine learning" in topic_lower:
+                        domain_arg = "ai_engineering"
+                    else:
+                        topic_arg = state.conversation.current_topic
+
+                rag_context = await self.knowledge_retriever.retrieve_context(
+                    db=db,
+                    query_text=query_text,
+                    domain=domain_arg,
+                    topic=topic_arg,
+                    difficulty=state.difficulty,
+                    top_k=2
+                )
+        except Exception as e:
+            logger.warning("Interviewer RAG retrieval failed (non-fatal): %s", e)
+
+        interview_prompt = self.interview_prompt_builder.build(state, decision, tone, rag_context=rag_context)
 
         followup_prompt = self.followup_prompt_builder.build_followup(state, decision)
         if followup_prompt:
