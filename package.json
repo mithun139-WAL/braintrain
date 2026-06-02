@@ -1,0 +1,22 @@
+{
+  "name": "braintrain",
+  "version": "1.0.0",
+  "engines": {
+    "node": "22.x"
+  },
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.30.1",
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "eslint": "^10.0.1",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  }
+}

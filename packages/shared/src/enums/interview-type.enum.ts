@@ -1,0 +1,7 @@
+export enum InterviewType {
+    TECHNICAL = "TECHNICAL",
+    BEHAVIORAL = "BEHAVIORAL",
+    MIXED = "MIXED",
+    GROUP_DISCUSSION = "GROUP_DISCUSSION",
+    RAPID_FIRE = "RAPID_FIRE",
+}

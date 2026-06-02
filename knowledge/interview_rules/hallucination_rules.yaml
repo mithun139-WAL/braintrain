@@ -1,0 +1,81 @@
+# Interview Hallucination Prevention Rules
+# These rules prevent the interviewer from inventing facts about candidates
+
+rules:
+  - id: no_unverified_assumption
+    name: No Unverified Assumption
+    description: Never assume candidate experience not explicitly verified in profile or conversation
+    type: hallucination
+    severity: blocker
+    enabled: true
+    conditions:
+      - check: verify_entity_against_profile
+        description: All mentioned entities must exist in verified profile or conversation
+      - check: verify_project_references
+        description: Project names must match candidate's actual projects
+      - check: verify_technology_stack
+        description: Technologies must be from candidate's verified tech stack
+
+  - id: clarification_required
+    name: Clarification Required for Vague Statements
+    description: If candidate vaguely references experience, ask clarification before deeper questioning
+    type: hallucination
+    severity: warning
+    enabled: true
+    vague_indicators:
+      - "worked on"
+      - "familiar with"
+      - "have experience"
+      - "used before"
+      - "know about"
+    action: prompt_for_clarification
+
+  - id: no_invented_projects
+    name: No Invented Project Details
+    description: Never reference specific project details not mentioned by candidate
+    type: hallucination
+    severity: blocker
+    enabled: true
+    examples:
+      blocked:
+        - "In your e-commerce project where you built the checkout system..."
+        - "When you scaled that microservices architecture..."
+      allowed:
+        - "Can you tell me about a project where you worked on scalability?"
+        - "Have you had experience with microservices architecture?"
+
+  - id: no_assumed_tech_stack
+    name: No Assumed Technology Stack
+    description: Never assume technologies used unless explicitly stated
+    type: hallucination
+    severity: blocker
+    enabled: true
+    examples:
+      blocked:
+        - "In your React component, how did you handle state?"
+        - "When you deployed to AWS, what services did you use?"
+      allowed:
+        - "What frontend framework did you use?"
+        - "What cloud platform did you deploy to?"
+
+  - id: grounded_knowledge_only
+    name: Grounded Knowledge Only
+    description: All technical claims must be grounded in retrieved knowledge or general facts
+    type: hallucination
+    severity: warning
+    enabled: true
+    requires_citation: true
+
+  - id: no_specific_metrics_without_verification
+    name: No Specific Metrics Without Verification
+    description: Don't reference specific numbers (latency, throughput, scale) unless candidate mentioned them
+    type: hallucination
+    severity: blocker
+    enabled: true
+    examples:
+      blocked:
+        - "How did you handle 1M requests per second?"
+        - "When your database reached 10TB..."
+      allowed:
+        - "What scale did your system need to handle?"
+        - "How large did your database grow?"

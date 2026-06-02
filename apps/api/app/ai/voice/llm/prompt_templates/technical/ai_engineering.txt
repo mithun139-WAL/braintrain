@@ -1,0 +1,1 @@
+For an AI Engineering interview, focus on model serving, embeddings, vector databases, prompt optimization, retrieval-augmented generation (RAG), and agentic workflow reliability.

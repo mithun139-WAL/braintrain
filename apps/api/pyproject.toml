@@ -1,0 +1,88 @@
+[project]
+name = "braintrain-api"
+version = "0.1.0"
+description = "BrainTrain FastAPI backend — confidence-first interview training platform"
+requires-python = ">=3.12"
+
+dependencies = [
+  # Web framework
+  "fastapi[standard]>=0.115",
+  "uvicorn[standard]>=0.30",
+  # Database — async SQLAlchemy + asyncpg driver
+  "sqlalchemy[asyncio]>=2.0",
+  "asyncpg>=0.29",
+  "alembic>=1.13",
+  # Auth
+  "python-jose[cryptography]>=3.3",
+  "bcrypt>=4.1",
+  "google-auth>=2.29",           # Google ID token verification
+  # Validation & Config
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  # Email — Resend API (transactional email)
+  "resend>=2.0",
+  "jinja2>=3.1",                 # email templates
+  # SMS (Twilio Python SDK — same API surface as Node)
+  "twilio>=9.0",
+  # AI — OpenAI SDK (same GPT-4o + Whisper APIs)
+  "openai>=1.30",
+  "httpx>=0.27",                 # async HTTP for audio download
+  # LangChain — AI coaching provider
+  "langchain>=0.2",
+  "langchain-openai>=0.1",
+  # Background jobs (replaces @nestjs/schedule)
+  "apscheduler>=3.10",
+  # Rate limiting (replaces @nestjs/throttler)
+  "slowapi>=0.1.9",
+  # Utilities
+  "python-multipart>=0.0.9",    # multipart/form-data support
+  "stripe>=11",
+  # Voice / WebRTC Agent Dependencies
+  "numpy>=2.0.0",
+  "livekit>=1.1.0",
+  # TTS — edge-tts uses Microsoft Edge neural voices (free, no API key)
+  # miniaudio decodes the MP3 output to raw PCM without requiring ffmpeg
+  "edge-tts>=6.1",
+  "miniaudio>=1.2",
+  "pymupdf>=1.24.0",
+  "python-docx>=1.1.0",
+  "pgvector>=0.2.0",
+  # OpenTelemetry — Distributed tracing and metrics
+  "opentelemetry-api>=1.20",
+  "opentelemetry-sdk>=1.20",
+  "opentelemetry-exporter-otlp>=1.20",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "httpx>=0.27",                 # test client
+  "ruff>=0.4",                   # linter + formatter
+  "mypy>=1.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.3.0",
+]

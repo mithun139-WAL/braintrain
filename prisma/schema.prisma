@@ -1,0 +1,492 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:password@localhost:5432/braintrain_api_dev"
+}
+
+model alembic_version {
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+}
+
+model candidate_memories {
+  id                 String                 @id @db.Uuid
+  candidate_id       String                 @db.Uuid
+  source_session_id  String?                @db.Uuid
+  memory_type        String                 @db.VarChar(32)
+  content            String                 @db.VarChar
+  embedding          Unsupported("vector")?
+  confidence_score   Float
+  relevance_score    Float
+  importance_score   Float
+  decay_factor       Float
+  access_count       Int
+  behavioral_tags    Json                   @default("[]")
+  created_at         DateTime               @default(now()) @db.Timestamptz(6)
+  last_accessed      DateTime               @default(now()) @db.Timestamptz(6)
+  users              users                  @relation(fields: [candidate_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  interview_sessions interview_sessions?    @relation(fields: [source_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([candidate_id], map: "ix_candidate_memories_candidate_id")
+  @@index([candidate_id, memory_type], map: "ix_candidate_memories_candidate_type")
+}
+
+model coaching_messages {
+  id                  String            @id @db.Uuid
+  coaching_session_id String            @db.Uuid
+  role                String            @db.VarChar(16)
+  content             String
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  coaching_sessions   coaching_sessions @relation(fields: [coaching_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([coaching_session_id, created_at], map: "ix_coaching_messages_coaching_session_id_created_at")
+}
+
+model coaching_sessions {
+  id                   String              @id @db.Uuid
+  user_id              String              @db.Uuid
+  interview_session_id String?             @db.Uuid
+  focus_area           String              @db.VarChar
+  status               String              @db.VarChar
+  started_at           DateTime            @default(now()) @db.Timestamptz(6)
+  ended_at             DateTime?           @db.Timestamptz(6)
+  created_at           DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime            @default(now()) @db.Timestamptz(6)
+  coaching_messages    coaching_messages[]
+  interview_sessions   interview_sessions? @relation(fields: [interview_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                users               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id, created_at], map: "ix_coaching_sessions_user_id_created_at")
+  @@index([user_id, status], map: "ix_coaching_sessions_user_id_status")
+}
+
+model evaluation_jobs {
+  id                      String             @id @db.Uuid
+  session_id              String             @unique(map: "uq_evaluation_job_session_id") @db.Uuid
+  status                  String             @db.VarChar
+  attempts                Int
+  last_error              String?            @db.VarChar
+  created_at              DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime           @default(now()) @db.Timestamptz(6)
+  next_retry_at           DateTime?          @db.Timestamptz(6)
+  evaluation_started_at   DateTime?          @db.Timestamptz(6)
+  evaluation_completed_at DateTime?          @db.Timestamptz(6)
+  interview_sessions      interview_sessions @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status, evaluation_started_at], map: "ix_evaluation_jobs_status_evaluation_started_at")
+  @@index([status, next_retry_at, created_at], map: "ix_evaluation_jobs_status_next_retry_at_created_at")
+}
+
+model evaluation_reports {
+  id                      String             @id @db.Uuid
+  session_id              String             @unique(map: "uq_evaluation_report_session_id") @db.Uuid
+  overall_score           Float
+  clarity_score           Float
+  structure_score         Float
+  depth_score             Float
+  confidence_score        Float
+  communication_score     Float
+  hesitation_score        Float
+  technical_score         Float?
+  pressure_score          Float?
+  thinking_depth_score    Float?
+  created_at              DateTime           @default(now()) @db.Timestamptz(6)
+  prompt_version          String?            @db.VarChar
+  model_used              String?            @db.VarChar
+  input_tokens            Int?
+  output_tokens           Int?
+  estimated_cost_usd      Float?
+  feedback_summary        String             @db.VarChar
+  improvement_suggestions Json
+  deleted_at              DateTime?          @db.Timestamptz(6)
+  interview_sessions      interview_sessions @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_at], map: "ix_evaluation_reports_created_at")
+  @@index([model_used, created_at], map: "ix_evaluation_reports_model_used_created_at")
+}
+
+model interview_journey_sessions {
+  id                  String             @id @db.Uuid
+  journey_id          String             @db.Uuid
+  round_name          String             @db.VarChar
+  round_type          String             @db.VarChar
+  interviewer_persona Json?
+  round_focus         Json?
+  difficulty          String             @db.VarChar
+  order_index         Int
+  session_id          String?            @db.Uuid
+  completed           Boolean
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  interview_journeys  interview_journeys @relation(fields: [journey_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([journey_id], map: "ix_interview_journey_sessions_journey_id")
+  @@index([journey_id, order_index], map: "ix_interview_journey_sessions_journey_order")
+}
+
+model interview_journeys {
+  id                         String                       @id @db.Uuid
+  user_id                    String                       @db.Uuid
+  company_name               String?                      @db.VarChar
+  role_title                 String                       @db.VarChar
+  job_description            String
+  resume_text                String
+  extracted_skills           Json?
+  extracted_signals          Json?
+  candidate_level            String?                      @db.VarChar
+  role_category              String?                      @db.VarChar
+  generated_plan             Json?
+  status                     String                       @db.VarChar
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  interview_journey_sessions interview_journey_sessions[]
+  users                      users                        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_interview_journeys_user_id")
+  @@index([user_id, status], map: "ix_interview_journeys_user_id_status")
+}
+
+model interview_sessions {
+  id                 String               @id @db.Uuid
+  user_id            String               @db.Uuid
+  topic_id           String               @db.Uuid
+  interview_mode     String?              @db.VarChar
+  interview_type     String?              @db.VarChar
+  difficulty         String               @db.VarChar
+  adaptive           Boolean
+  duration_minutes   Int
+  personality_config Json?
+  status             String               @db.VarChar
+  started_at         DateTime?            @db.Timestamptz(6)
+  ended_at           DateTime?            @db.Timestamptz(6)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?            @db.Timestamptz(6)
+  is_voice           Boolean
+  candidate_memories candidate_memories[]
+  coaching_sessions  coaching_sessions[]
+  evaluation_jobs    evaluation_jobs?
+  evaluation_reports evaluation_reports?
+  topics             topics               @relation(fields: [topic_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  question_instances question_instances[]
+  response_instances response_instances[]
+  training_plans     training_plans[]
+
+  @@index([topic_id, user_id], map: "ix_interview_sessions_topic_id_user_id")
+  @@index([user_id, created_at], map: "ix_interview_sessions_user_id_created_at")
+  @@index([user_id, status, deleted_at], map: "ix_interview_sessions_user_id_status_deleted_at")
+}
+
+model knowledge_chunks {
+  id                  String                 @id @db.Uuid
+  document_id         String                 @db.Uuid
+  chunk_text          String
+  chunk_index         Int
+  token_count         Int
+  embedding           Unsupported("vector")?
+  metadata            Json                   @default("{}")
+  retrieval_count     Int
+  usefulness_score    Float
+  created_at          DateTime               @default(now()) @db.Timestamptz(6)
+  knowledge_documents knowledge_documents    @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([document_id], map: "ix_knowledge_chunks_document_id")
+  @@index([document_id, chunk_index], map: "ix_knowledge_chunks_document_index")
+  @@index([embedding], map: "ix_knowledge_chunks_embedding_vector")
+}
+
+model knowledge_documents {
+  id               String             @id @db.Uuid
+  title            String             @db.VarChar(512)
+  source           String             @db.VarChar(512)
+  source_type      String             @db.VarChar(32)
+  domain           String             @db.VarChar(64)
+  topic            String             @db.VarChar(128)
+  difficulty       String             @db.VarChar(16)
+  content          String
+  metadata         Json               @default("{}")
+  chunk_count      Int
+  token_count      Int
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  knowledge_chunks knowledge_chunks[]
+  knowledge_tags   knowledge_tags[]
+
+  @@index([difficulty], map: "ix_knowledge_documents_difficulty")
+  @@index([domain], map: "ix_knowledge_documents_domain")
+  @@index([domain, topic], map: "ix_knowledge_documents_domain_topic")
+  @@index([topic], map: "ix_knowledge_documents_topic")
+}
+
+model knowledge_tags {
+  id                  String              @id @db.Uuid
+  document_id         String              @db.Uuid
+  tag_type            String              @db.VarChar(64)
+  tag_value           String              @db.VarChar(128)
+  created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  knowledge_documents knowledge_documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([document_id, tag_type, tag_value], map: "uq_knowledge_tags_document_type_value")
+  @@index([document_id], map: "ix_knowledge_tags_document_id")
+  @@index([tag_type], map: "ix_knowledge_tags_type")
+  @@index([tag_type, tag_value], map: "ix_knowledge_tags_type_value")
+}
+
+model otp_codes {
+  id            String   @id @db.Uuid
+  user_id       String?  @db.Uuid
+  code          String   @db.VarChar
+  expires_at    DateTime @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  identifier    String   @db.VarChar
+  is_used       Boolean
+  attempt_count Int
+  users         users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([identifier], map: "ix_otp_codes_identifier")
+  @@index([identifier, is_used, expires_at], map: "ix_otp_codes_identifier_is_used_expires_at")
+}
+
+model question_bank {
+  id                 String    @id @db.Uuid
+  topic_id           String    @db.Uuid
+  created_by_user_id String?   @db.Uuid
+  content            String    @db.VarChar
+  difficulty         String    @db.VarChar
+  interview_type     String?   @db.VarChar
+  is_global          Boolean
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime? @db.Timestamptz(6)
+  source             String    @db.VarChar
+  usage_count        Int
+  users              users?    @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  topics             topics    @relation(fields: [topic_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([source, topic_id], map: "ix_question_banks_source_topic_id")
+  @@index([topic_id, difficulty, deleted_at], map: "ix_question_banks_topic_difficulty_deleted_at")
+  @@index([topic_id, difficulty], map: "ix_question_banks_topic_id_difficulty")
+}
+
+model question_instances {
+  id                 String              @id @db.Uuid
+  session_id         String              @db.Uuid
+  content            String              @db.VarChar
+  difficulty         String              @db.VarChar
+  sequence_order     Int
+  generated_at       DateTime            @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?           @db.Timestamptz(6)
+  interview_sessions interview_sessions  @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  response_instances response_instances?
+
+  @@unique([session_id, sequence_order], map: "uq_question_instance_session_order")
+  @@index([session_id, sequence_order, deleted_at], map: "ix_question_instances_session_id_sequence_order_deleted_at")
+}
+
+model response_instances {
+  id                      String             @id @db.Uuid
+  question_id             String             @unique(map: "uq_response_instance_question_id") @db.Uuid
+  session_id              String             @db.Uuid
+  answer_text             String?            @db.VarChar
+  audio_url               String?            @db.VarChar
+  transcribed_text        String?            @db.VarChar
+  audio_processing_status String             @db.VarChar
+  response_time_ms        Int
+  thinking_time_ms        Int
+  overall_score           Float?
+  clarity_score           Float?
+  structure_score         Float?
+  depth_score             Float?
+  confidence_score        Float?
+  communication_score     Float?
+  hesitation_score        Float?
+  technical_score         Float?
+  created_at              DateTime           @default(now()) @db.Timestamptz(6)
+  answer_length           Int
+  audio_duration_seconds  Float?
+  pressure_score          Float?
+  thinking_depth_score    Float?
+  evaluation_explanation  String?            @db.VarChar
+  deleted_at              DateTime?          @db.Timestamptz(6)
+  question_instances      question_instances @relation(fields: [question_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  interview_sessions      interview_sessions @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([audio_processing_status, created_at], map: "ix_response_instances_audio_processing_status_created_at")
+  @@index([question_id, overall_score], map: "ix_response_instances_question_id_overall_score")
+}
+
+model skill_tags {
+  id                     String                   @id @db.Uuid
+  name                   String                   @unique @db.VarChar
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  is_global              Boolean
+  created_by_user_id     String?                  @db.Uuid
+  user_skill_preferences user_skill_preferences[]
+}
+
+model topics {
+  id                 String               @id @db.Uuid
+  name               String               @db.VarChar
+  description        String?              @db.VarChar
+  is_global          Boolean
+  created_by_user_id String?              @db.Uuid
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?            @db.Timestamptz(6)
+  parent_topic_id    String?              @db.Uuid
+  interview_sessions interview_sessions[]
+  question_bank      question_bank[]
+  topics             topics?              @relation("topicsTotopics", fields: [parent_topic_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_topics_parent_topic_id")
+  other_topics       topics[]             @relation("topicsTotopics")
+  users              users?               @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([name, is_global], map: "uq_topic_name_is_global")
+  @@index([created_by_user_id, deleted_at], map: "ix_topics_created_by_user_id_deleted_at")
+  @@index([is_global, deleted_at], map: "ix_topics_is_global_deleted_at")
+}
+
+model training_plans {
+  id                 String              @id @db.Uuid
+  user_id            String              @db.Uuid
+  source_session_id  String?             @db.Uuid
+  status             String              @db.VarChar
+  focus_dimension    String              @db.VarChar
+  summary            String
+  duration_days      Int
+  start_date         DateTime            @db.Date
+  end_date           DateTime            @db.Date
+  created_at         DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime            @default(now()) @db.Timestamptz(6)
+  interview_sessions interview_sessions? @relation(fields: [source_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  training_tasks     training_tasks[]
+
+  @@index([user_id, created_at], map: "ix_training_plans_user_id_created_at")
+  @@index([user_id, status], map: "ix_training_plans_user_id_status")
+}
+
+model training_tasks {
+  id                String         @id @db.Uuid
+  training_plan_id  String         @db.Uuid
+  day_number        Int
+  sequence_order    Int
+  title             String         @db.VarChar
+  description       String
+  exercise_type     String         @db.VarChar
+  estimated_minutes Int
+  is_completed      Boolean
+  completed_at      DateTime?      @db.Timestamptz(6)
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+  training_plans    training_plans @relation(fields: [training_plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([training_plan_id, day_number, sequence_order], map: "ix_training_tasks_plan_id_day_order")
+}
+
+model user_context_inputs {
+  id                  String    @id @db.Uuid
+  user_id             String    @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  raw_input           String    @db.VarChar
+  parsed_intent       String?   @db.VarChar
+  extracted_topics    Json?
+  extracted_questions Json?
+  deleted_at          DateTime? @db.Timestamptz(6)
+  users               users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id, created_at], map: "ix_user_context_inputs_user_id_created_at")
+}
+
+model user_skill_preferences {
+  id           String     @id @db.Uuid
+  user_id      String     @db.Uuid
+  skill_tag_id String     @db.Uuid
+  level        String     @db.VarChar
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime   @default(now()) @db.Timestamptz(6)
+  skill_tags   skill_tags @relation(fields: [skill_tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, skill_tag_id], map: "uq_user_skill_preference")
+}
+
+model users {
+  id                            String                   @id @db.Uuid
+  email                         String?                  @unique @db.VarChar
+  phone_number                  String?                  @unique @db.VarChar
+  google_id                     String?                  @unique @db.VarChar
+  password_hash                 String?                  @db.VarChar
+  display_name                  String?                  @db.VarChar
+  bio                           String?                  @db.VarChar
+  avatar_url                    String?                  @db.VarChar
+  created_at                    DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                    DateTime                 @default(now()) @db.Timestamptz(6)
+  deleted_at                    DateTime?                @db.Timestamptz(6)
+  plan_type                     String                   @db.VarChar
+  monthly_session_count         Int
+  monthly_evaluation_credits    Int
+  usage_period_start            DateTime                 @default(now()) @db.Timestamptz(6)
+  stripe_customer_id            String?                  @unique(map: "uq_users_stripe_customer_id") @db.VarChar
+  stripe_subscription_id        String?                  @unique(map: "uq_users_stripe_subscription_id") @db.VarChar
+  stripe_subscription_status    String?                  @db.VarChar
+  email_verified                Boolean                  @default(false)
+  email_confirmation_token      String?                  @unique(map: "uq_users_email_confirmation_token") @db.VarChar
+  email_confirmation_expires_at DateTime?                @db.Timestamptz(6)
+  candidate_memories            candidate_memories[]
+  coaching_sessions             coaching_sessions[]
+  interview_journeys            interview_journeys[]
+  interview_sessions            interview_sessions[]
+  otp_codes                     otp_codes[]
+  question_bank                 question_bank[]
+  topics                        topics[]
+  training_plans                training_plans[]
+  user_context_inputs           user_context_inputs[]
+  user_skill_preferences        user_skill_preferences[]
+  career_profiles               career_profiles[]
+
+  @@index([deleted_at], map: "ix_users_deleted_at")
+}
+
+model agent_personas {
+  id                      String   @id @db.Uuid
+  name                    String   @unique @db.VarChar
+  archetype               String   @db.VarChar
+  pacing_speed            Float    @default(1.0)
+  interruption_frequency  Float    @default(0.5)
+  silence_tolerance       Float    @default(1.0)
+  skepticism_level        Float    @default(0.5)
+  technical_depth         Float    @default(0.5)
+  followup_aggressiveness Float    @default(0.5)
+  verbosity_tolerance     Float    @default(0.5)
+  ambiguity_tolerance     Float    @default(0.5)
+  pressure_intensity      Float    @default(0.5)
+  conversational_warmth   Float    @default(0.5)
+  challenge_escalation    String   @default("Standard") @db.VarChar
+  acknowledgment_patterns Json     @default("[]")
+  custom_prompts          Json     @default("{}")
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model career_profiles {
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id           String   @db.Uuid
+  current_role      String   @db.VarChar(256)
+  target_role       String   @db.VarChar(256)
+  resume_filename   String?  @db.VarChar(256)
+  resume_content    String?
+  linkedin_filename String?  @db.VarChar(256)
+  linkedin_content  String?
+  naukri_filename   String?  @db.VarChar(256)
+  naukri_content    String?
+  extracted_data    Json     @default("{}")
+  analysis_result   Json     @default("{}")
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+  users             users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+}
+
+

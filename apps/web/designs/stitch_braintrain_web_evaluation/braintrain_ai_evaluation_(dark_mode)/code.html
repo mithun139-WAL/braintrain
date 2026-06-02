@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain AI Evaluation (Dark Mode)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366f1", // Deep Amethyst/Violet as requested
+                        "primary-glow": "#818cf8",
+                        "background-dark": "#0f1115", // Deep Charcoal
+                        "surface-dark": "#181b21", // Slightly lighter charcoal for cards
+                        "surface-highlight": "#232730", // Hover state
+                        "text-main": "#f3f4f6",
+                        "text-muted": "#9ca3af",
+                        "success": "#10b981",
+                        "warning": "#f59e0b",
+                        "danger": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px -5px rgba(99, 102, 241, 0.4)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(24, 27, 33, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .radar-gradient {
+            background: radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0) 70%);
+        }
+        /* Custom Scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563; 
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-text-main min-h-screen flex flex-col font-display selection:bg-primary selection:text-white">
+<!-- Navbar -->
+<nav class="sticky top-0 z-50 w-full glass-panel border-b border-white/5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<span class="text-lg font-bold tracking-tight text-white">BrainTrain</span>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium text-text-muted hover:text-white transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-white border-b-2 border-primary pb-0.5" href="#">Evaluations</a>
+<a class="text-sm font-medium text-text-muted hover:text-white transition-colors" href="#">Practice</a>
+<a class="text-sm font-medium text-text-muted hover:text-white transition-colors" href="#">Community</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 p-[1px]">
+<img alt="User profile picture" class="h-full w-full rounded-full object-cover border-2 border-background-dark" data-alt="User profile picture of a young professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7PwG5T-Q8kHoQCXDJ0dY5y-7dXPInVws8vuafBlU4R_HFk3noeoILOxtaXXlDFTqGgSuFyZJXeqEV_HhCzYaypEmIKwnM4vTisu66B7ws5fQ_vIJnUSoLmkX7l5_erzUP_eiCIE6dcOvIbXY3QirjlAFBI4oA7I214eIVLbSGuQc7D77zUT1wODrmrfPPZyVRMgNowjHR3fgTDNNQxtZ5xULpnNz4Sl5HzcenV0fh7sMRr8Z2c-v34AbmFSoVrsQe66lAnj2Gv4"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/5">
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-primary font-medium text-sm">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>Software Engineering Role</span>
+</div>
+<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">AI Interview Evaluation</h1>
+<p class="text-text-muted">Assessment completed on October 24, 2023 • Duration: 45m</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-dark border border-white/10 hover:bg-surface-highlight hover:border-white/20 transition-all text-sm font-medium text-text-main shadow-lg">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Download Report</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary hover:bg-primary-glow text-white transition-all text-sm font-bold shadow-glow">
+<span class="material-symbols-outlined text-[20px]">replay</span>
+<span>Retake Interview</span>
+</button>
+</div>
+</header>
+<!-- KPI Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Hero Score Card -->
+<div class="glass-panel rounded-2xl p-6 lg:col-span-1 flex flex-col items-center justify-center relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<h3 class="text-text-muted font-medium mb-4 uppercase tracking-wider text-xs z-10">Overall Score</h3>
+<div class="relative flex items-center justify-center w-40 h-40 mb-4 z-10">
+<!-- Custom circular progress representation -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="45" stroke="#232730" stroke-width="8"></circle>
+<circle class="drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]" cx="50" cy="50" fill="none" r="45" stroke="#6366f1" stroke-dasharray="283" stroke-dashoffset="42" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-4xl font-black text-white">85</span>
+<span class="text-xs text-text-muted font-medium">/ 100</span>
+</div>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 border border-success/20 text-success text-sm font-bold mb-2 z-10">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>Top 15%</span>
+</div>
+<p class="text-center text-sm text-text-muted max-w-[240px] z-10">You performed better than 85% of candidates for this role.</p>
+</div>
+<!-- Detailed Metrics Grid -->
+<div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Card 1 -->
+<div class="glass-panel rounded-xl p-5 flex flex-col justify-between hover:border-primary/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="p-2 rounded bg-surface-highlight text-primary">
+<span class="material-symbols-outlined">code</span>
+</div>
+<span class="font-semibold text-white">Technical Depth</span>
+</div>
+<span class="text-xl font-bold text-white">92%</span>
+</div>
+<div class="w-full bg-surface-highlight rounded-full h-2 mb-2 overflow-hidden">
+<div class="bg-primary h-2 rounded-full" style="width: 92%"></div>
+</div>
+<p class="text-xs text-text-muted">Excellent grasp of core algorithms.</p>
+</div>
+<!-- Card 2 -->
+<div class="glass-panel rounded-xl p-5 flex flex-col justify-between hover:border-warning/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="p-2 rounded bg-surface-highlight text-warning">
+<span class="material-symbols-outlined">record_voice_over</span>
+</div>
+<span class="font-semibold text-white">Communication</span>
+</div>
+<span class="text-xl font-bold text-white">78%</span>
+</div>
+<div class="w-full bg-surface-highlight rounded-full h-2 mb-2 overflow-hidden">
+<div class="bg-warning h-2 rounded-full" style="width: 78%"></div>
+</div>
+<p class="text-xs text-text-muted">Clarity could be improved in complex explanations.</p>
+</div>
+<!-- Card 3 -->
+<div class="glass-panel rounded-xl p-5 flex flex-col justify-between hover:border-success/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="p-2 rounded bg-surface-highlight text-success">
+<span class="material-symbols-outlined">lightbulb</span>
+</div>
+<span class="font-semibold text-white">Problem Solving</span>
+</div>
+<span class="text-xl font-bold text-white">88%</span>
+</div>
+<div class="w-full bg-surface-highlight rounded-full h-2 mb-2 overflow-hidden">
+<div class="bg-success h-2 rounded-full" style="width: 88%"></div>
+</div>
+<p class="text-xs text-text-muted">Strong analytical approach to edge cases.</p>
+</div>
+<!-- Card 4 -->
+<div class="glass-panel rounded-xl p-5 flex flex-col justify-between hover:border-primary/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="p-2 rounded bg-surface-highlight text-primary">
+<span class="material-symbols-outlined">architecture</span>
+</div>
+<span class="font-semibold text-white">System Design</span>
+</div>
+<span class="text-xl font-bold text-white">85%</span>
+</div>
+<div class="w-full bg-surface-highlight rounded-full h-2 mb-2 overflow-hidden">
+<div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+</div>
+<p class="text-xs text-text-muted">Good scalability considerations.</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Radar Chart Section -->
+<div class="glass-panel rounded-2xl p-6 lg:col-span-1 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-white">Skill Distribution</h3>
+<div class="flex items-center gap-2 text-xs">
+<span class="w-3 h-3 rounded-full bg-primary"></span> You
+                        <span class="w-3 h-3 rounded-full bg-gray-600 ml-2"></span> Avg
+                    </div>
+</div>
+<div class="flex-grow flex items-center justify-center relative py-4 radar-gradient rounded-xl">
+<!-- Abstract Radar Chart using SVG -->
+<svg class="w-full h-64" viewbox="0 0 200 200">
+<!-- Grid lines -->
+<polygon fill="none" points="100,20 180,65 180,145 100,190 20,145 20,65" stroke="#374151" stroke-width="1"></polygon>
+<polygon fill="none" points="100,40 160,75 160,135 100,170 40,135 40,75" stroke="#374151" stroke-width="1"></polygon>
+<polygon fill="none" points="100,60 140,82 140,128 100,150 60,128 60,82" stroke="#374151" stroke-width="1"></polygon>
+<!-- Benchmark Data -->
+<polygon fill="rgba(75, 85, 99, 0.3)" points="100,50 150,80 150,130 100,160 50,130 50,80" stroke="#6b7280" stroke-dasharray="4" stroke-width="2"></polygon>
+<!-- User Data (Violet) -->
+<polygon fill="rgba(99, 102, 241, 0.25)" points="100,30 170,70 160,140 100,180 30,140 35,70" stroke="#6366f1" stroke-width="3"></polygon>
+<!-- Labels -->
+<text fill="#9ca3af" font-size="10" text-anchor="middle" x="100" y="15">Coding</text>
+<text fill="#9ca3af" font-size="10" text-anchor="start" x="190" y="65">System</text>
+<text fill="#9ca3af" font-size="10" text-anchor="start" x="190" y="155">Soft Skills</text>
+<text fill="#9ca3af" font-size="10" text-anchor="middle" x="100" y="200">Testing</text>
+<text fill="#9ca3af" font-size="10" text-anchor="end" x="10" y="155">DB</text>
+<text fill="#9ca3af" font-size="10" text-anchor="end" x="10" y="65">Arch</text>
+</svg>
+</div>
+</div>
+<!-- AI Feedback Summary -->
+<div class="glass-panel rounded-2xl p-6 lg:col-span-2 flex flex-col">
+<h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">auto_awesome</span>
+                    AI Feedback Summary
+                </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+<!-- Strengths -->
+<div class="space-y-4">
+<h4 class="text-sm font-bold text-text-muted uppercase tracking-wider mb-2 border-b border-white/10 pb-2">Top Strengths</h4>
+<div class="flex gap-3 items-start">
+<div class="mt-1 min-w-[20px] text-success">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div>
+<p class="text-white font-medium text-sm">Deep Technical Knowledge</p>
+<p class="text-text-muted text-xs leading-relaxed">Demonstrated advanced understanding of distributed systems and CAP theorem nuances.</p>
+</div>
+</div>
+<div class="flex gap-3 items-start">
+<div class="mt-1 min-w-[20px] text-success">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div>
+<p class="text-white font-medium text-sm">Structured Problem Solving</p>
+<p class="text-text-muted text-xs leading-relaxed">Consistently broke down complex requirements into manageable components before coding.</p>
+</div>
+</div>
+</div>
+<!-- Weaknesses/Improvements -->
+<div class="space-y-4">
+<h4 class="text-sm font-bold text-text-muted uppercase tracking-wider mb-2 border-b border-white/10 pb-2">Areas for Improvement</h4>
+<div class="bg-surface-highlight/50 border border-primary/20 rounded-lg p-3 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex gap-3 items-start">
+<div class="mt-0.5 min-w-[20px] text-primary">
+<span class="material-symbols-outlined text-[20px]">fitness_center</span>
+</div>
+<div>
+<p class="text-white font-medium text-sm">Communication Pacing</p>
+<p class="text-text-muted text-xs leading-relaxed">Tendency to rush through initial explanations. Pause to check for interviewer understanding.</p>
+</div>
+</div>
+</div>
+<div class="bg-surface-highlight/50 border border-warning/20 rounded-lg p-3 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-warning"></div>
+<div class="flex gap-3 items-start">
+<div class="mt-0.5 min-w-[20px] text-warning">
+<span class="material-symbols-outlined text-[20px]">school</span>
+</div>
+<div>
+<p class="text-white font-medium text-sm">Edge Case Coverage</p>
+<p class="text-text-muted text-xs leading-relaxed">Missed 2 potential race conditions in the database locking mechanism discussion.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Question Review Accordion -->
+<div class="space-y-4">
+<h3 class="text-xl font-bold text-white px-1">Transcript &amp; Analysis</h3>
+<!-- Question 1 -->
+<div class="glass-panel rounded-xl overflow-hidden border border-white/5 transition-all hover:border-white/10 group">
+<div class="p-5 cursor-pointer flex justify-between items-center bg-surface-dark group-hover:bg-surface-highlight transition-colors">
+<div class="flex gap-4 items-center">
+<div class="h-8 w-8 rounded-full bg-success/20 flex items-center justify-center text-success font-bold text-sm">Q1</div>
+<div>
+<h4 class="font-semibold text-white">Explain the difference between REST and GraphQL.</h4>
+<div class="flex gap-2 mt-1">
+<span class="text-xs px-2 py-0.5 rounded bg-white/5 text-text-muted border border-white/5">System Design</span>
+<span class="text-xs px-2 py-0.5 rounded bg-white/5 text-text-muted border border-white/5">02:15m</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-success font-bold">95/100</span>
+<span class="material-symbols-outlined text-text-muted group-hover:text-white transition-colors">expand_more</span>
+</div>
+</div>
+<!-- Expanded Content (Simulated open state) -->
+<div class="p-5 border-t border-white/5 bg-[#13161c]">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<p class="text-xs font-bold text-text-muted uppercase mb-2">Your Answer Summary</p>
+<p class="text-sm text-gray-300 leading-relaxed">
+                                You correctly identified that REST is an architectural style based on resources, while GraphQL is a query language for APIs. You highlighted the over-fetching/under-fetching problem that GraphQL solves.
+                            </p>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">smart_toy</span> AI Suggestion
+                            </p>
+<p class="text-sm text-gray-300 leading-relaxed bg-primary/5 p-3 rounded-lg border border-primary/10">
+                                Excellent answer. To reach 100%, you could have mentioned caching strategies, as REST leverages HTTP caching natively, which is more complex to implement in GraphQL.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Question 2 -->
+<div class="glass-panel rounded-xl overflow-hidden border border-white/5 transition-all hover:border-white/10 group">
+<div class="p-5 cursor-pointer flex justify-between items-center bg-surface-dark group-hover:bg-surface-highlight transition-colors">
+<div class="flex gap-4 items-center">
+<div class="h-8 w-8 rounded-full bg-warning/20 flex items-center justify-center text-warning font-bold text-sm">Q2</div>
+<div>
+<h4 class="font-semibold text-white">How would you handle database sharding for a global user base?</h4>
+<div class="flex gap-2 mt-1">
+<span class="text-xs px-2 py-0.5 rounded bg-white/5 text-text-muted border border-white/5">Database</span>
+<span class="text-xs px-2 py-0.5 rounded bg-white/5 text-text-muted border border-white/5">04:30m</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-warning font-bold">72/100</span>
+<span class="material-symbols-outlined text-text-muted group-hover:text-white transition-colors">expand_more</span>
+</div>
+</div>
+<!-- Not expanded content would be hidden normally -->
+</div>
+<!-- Question 3 -->
+<div class="glass-panel rounded-xl overflow-hidden border border-white/5 transition-all hover:border-white/10 group">
+<div class="p-5 cursor-pointer flex justify-between items-center bg-surface-dark group-hover:bg-surface-highlight transition-colors">
+<div class="flex gap-4 items-center">
+<div class="h-8 w-8 rounded-full bg-success/20 flex items-center justify-center text-success font-bold text-sm">Q3</div>
+<div>
+<h4 class="font-semibold text-white">Write a function to reverse a linked list.</h4>
+<div class="flex gap-2 mt-1">
+<span class="text-xs px-2 py-0.5 rounded bg-white/5 text-text-muted border border-white/5">Coding</span>
+<span class="text-xs px-2 py-0.5 rounded bg-white/5 text-text-muted border border-white/5">10:05m</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-success font-bold">100/100</span>
+<span class="material-symbols-outlined text-text-muted group-hover:text-white transition-colors">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="flex justify-center pt-8 pb-12">
+<p class="text-text-muted text-sm">Next suggested step: <a class="text-primary hover:text-primary-glow font-medium underline decoration-primary/30 underline-offset-4" href="#">Advanced System Design Interview Practice</a></p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,157 @@
+# Google Interview Style Profile
+
+company:
+  name: Google
+  tier: FAANG
+  size: large
+  culture: collaborative_innovation
+
+interview_style:
+  overall_approach: collaborative_problem_solving
+  intensity: medium_high
+  pressure_level: medium
+  follow_up_depth: high
+  interruption_frequency: low
+
+behavior:
+  personality: collaborative
+  supportiveness: 0.6  # 0-1 scale
+  pacing_speed: moderate
+  question_style: exploratory_probing
+  interruption_enabled: false
+  follow_up_depth: 4  # 1-5 scale
+
+core_values:
+  primary_focus:
+    - Technical Excellence
+    - Innovation
+    - Collaboration
+    - User Focus
+    - Growth Mindset
+    - Intellectual Curiosity
+  
+  interview_integration:
+    behavioral:
+      teamwork_emphasis: high
+      innovation_stories: encouraged
+      learning_mindset: required
+    
+    technical:
+      algorithm_fundamentals: high_priority
+      system_design_creativity: high
+      scalability_thinking: required
+
+evaluation:
+  values:
+    - technical_depth: 0.35
+    - problem_solving_approach: 0.25
+    - collaboration_signals: 0.20
+    - communication: 0.15
+    - growth_mindset: 0.05
+  
+  scoring_weights:
+    correctness: 0.30
+    approach: 0.25
+    optimization: 0.20
+    communication: 0.15
+    adaptability: 0.10
+
+  green_flags:
+    - asks_clarifying_questions
+    - thinks_out_loud
+    - considers_edge_cases
+    - discusses_tradeoffs
+    - collaborative_approach
+    - eager_to_learn
+
+  red_flags:
+    - refuses_to_collaborate
+    - defensive_about_mistakes
+    - no_questions_asked
+    - rigid_thinking
+    - poor_communication
+
+behavioral_interview:
+  star_method: encouraged_not_required
+  follow_up_strategy: explore_thought_process
+  approach: conversational
+  
+  focus_areas:
+    - teamwork_and_collaboration
+    - handling_ambiguity
+    - learning_from_failure
+    - innovation_and_creativity
+  
+  example_questions:
+    - "Tell me about a time you worked with a difficult team member"
+    - "Describe a project where you had to learn something completely new"
+    - "Give me an example of when you had to make a decision with ambiguous requirements"
+
+technical_interview:
+  coding:
+    difficulty_range: medium_to_hard
+    algorithm_focus: high
+    data_structures: fundamental_required
+    expect_optimal_solution: strongly_preferred
+    time_pressure: medium
+    collaboration: encouraged
+    hints_provided: yes_if_stuck
+  
+  system_design:
+    scale_focus: very_high
+    creativity_valued: high
+    multiple_solutions: encouraged
+    tradeoff_discussion: required
+    user_impact: high_priority
+    
+  approach:
+    - start_with_clarifying_questions
+    - think_out_loud
+    - discuss_approaches_before_coding
+    - test_cases_important
+    - optimization_discussion
+
+communication_style:
+  tone: friendly_professional
+  patience: high
+  encouragement: moderate_to_high
+  clarification_style: frequent
+  thinking_time_allowed: yes
+  
+phrases_to_use:
+  - "That's an interesting approach. Walk me through your thinking."
+  - "What other approaches did you consider?"
+  - "How would this scale to millions of users?"
+  - "Let's think about edge cases together."
+  - "Great! Now let's optimize this."
+
+phrases_to_avoid:
+  - harsh_criticism
+  - dismissive_language
+  - rushing_without_thinking_time
+
+interview_duration:
+  behavioral: 45  # minutes
+  technical_coding: 45
+  system_design: 45
+  googleyness: 30  # culture fit
+  total_typical: 4-5  # number of rounds
+
+special_characteristics:
+  googleyness_culture_fit:
+    description: "Assesses alignment with Google's values and culture"
+    focus:
+      - intellectual_curiosity
+      - comfort_with_ambiguity
+      - collaborative_mindset
+      - ethical_considerations
+      - growth_mindset
+  
+  brain_teasers: legacy_deprecated  # No longer used
+  
+  whiteboard_coding:
+    encouraged: true
+    virtual_whiteboard: google_docs_or_coderpad
+    testing_expected: yes
+
+candidate_experience_priority: high  # Google values positive candidate experience

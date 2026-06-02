@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain Active Interview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4877ad",
+                        "background-light": "#f6f7f7",
+                        "background-dark": "#15191d",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="h-16 bg-white dark:bg-[#1a2026] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 lg:px-10 shrink-0 z-10">
+<div class="flex items-center gap-3 w-1/4">
+<div class="p-1.5 bg-primary/10 rounded text-primary">
+<span class="material-symbols-outlined text-2xl">graphic_eq</span>
+</div>
+<h1 class="font-semibold text-lg text-slate-900 dark:text-white leading-tight">Live Interview Session</h1>
+</div>
+<div class="flex flex-col items-center justify-center w-1/2">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Question 2 of 8</span>
+</div>
+<div class="w-64 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-1/4 rounded-full"></div>
+</div>
+</div>
+<div class="flex items-center justify-end gap-6 w-1/4">
+<div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-xl">timer</span>
+<span class="font-mono text-base font-medium">14:30</span>
+</div>
+<button class="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                End Session
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 flex justify-center">
+<div class="w-full max-w-6xl flex flex-col lg:flex-row gap-8 h-full">
+<!-- Left Column: Question & Response (65%) -->
+<div class="flex-1 flex flex-col gap-6">
+<!-- Question Card -->
+<div class="bg-white dark:bg-[#1a2026] rounded-xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-wide rounded-full">Behavioral</span>
+<span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Leadership &amp; Conflict</span>
+</div>
+<h2 class="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
+                        Tell me about a time you had to manage a conflict within your team. How did you handle it?
+                    </h2>
+<p class="text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Reflect on a specific situation where differing opinions or personalities caused friction. Describe your role in mediating the situation and the outcome.
+                    </p>
+</div>
+<!-- Response Area -->
+<div class="flex-1 bg-white dark:bg-[#1a2026] rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col shadow-sm overflow-hidden min-h-[400px]">
+<!-- Tabs -->
+<div class="flex border-b border-slate-200 dark:border-slate-800">
+<button class="flex-1 px-6 py-4 text-sm font-semibold text-primary border-b-2 border-primary bg-primary/5 dark:bg-primary/10 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">edit_note</span>
+                            Text Response
+                        </button>
+<button class="flex-1 px-6 py-4 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg">mic</span>
+                            Audio Response
+                        </button>
+</div>
+<!-- Input Area -->
+<div class="flex-1 p-6 flex flex-col relative">
+<textarea class="w-full h-full flex-1 resize-none bg-transparent border-none focus:ring-0 p-0 text-slate-800 dark:text-slate-200 text-lg leading-relaxed placeholder:text-slate-300 dark:placeholder:text-slate-600" placeholder="Type your response here. Focus on the STAR method..."></textarea>
+<div class="absolute bottom-6 right-6 flex items-center gap-4 bg-white dark:bg-[#1a2026] pl-4 pt-2">
+<div class="text-xs font-medium text-slate-400 uppercase tracking-wide">
+<span class="text-primary font-bold">0</span> words
+                            </div>
+<div class="h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
+<div class="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                                Saving...
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Context & Tips (35%) -->
+<div class="w-full lg:w-[360px] flex flex-col gap-6 shrink-0">
+<!-- Session Context -->
+<div class="bg-white dark:bg-[#1a2026] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg text-primary">info</span>
+                        Context
+                    </h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<span class="text-sm text-slate-500 dark:text-slate-400">Difficulty</span>
+<span class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                High
+                            </span>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<span class="text-sm text-slate-500 dark:text-slate-400">Target Role</span>
+<span class="text-sm font-semibold text-slate-900 dark:text-white">Senior Manager</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<span class="text-sm text-slate-500 dark:text-slate-400">Key Competency</span>
+<span class="text-sm font-semibold text-slate-900 dark:text-white">Conflict Resolution</span>
+</div>
+</div>
+</div>
+<!-- Live Tips (Accordion style) -->
+<div class="bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 p-6 shadow-sm flex-1">
+<h3 class="text-sm font-bold text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">lightbulb</span>
+                        AI Coach Tips
+                    </h3>
+<div class="space-y-4">
+<div class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+<div>
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">Use the STAR Method</h4>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">Structure your answer: <span class="font-medium">S</span>ituation, <span class="font-medium">T</span>ask, <span class="font-medium">A</span>ction, <span class="font-medium">R</span>esult.</p>
+</div>
+</div>
+<div class="w-full h-px bg-primary/10 my-2"></div>
+<div class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+<div>
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">Be Specific with "I"</h4>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">Focus on <em>your</em> specific actions, not just what "we" or "the team" did.</p>
+</div>
+</div>
+<div class="w-full h-px bg-primary/10 my-2"></div>
+<div class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+<div>
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">Quantify Results</h4>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">If possible, mention the positive outcome (e.g., "Retained the client," "Improved morale").</p>
+</div>
+</div>
+</div>
+<div class="mt-8 p-4 bg-white dark:bg-[#1a2026] rounded-lg border border-primary/10">
+<div class="flex gap-2 items-center mb-2">
+<span class="material-symbols-outlined text-primary text-base">psychology</span>
+<span class="text-xs font-bold text-primary uppercase">Deep Insight</span>
+</div>
+<p class="text-xs text-slate-600 dark:text-slate-300 italic">"Conflict isn't bad. The interviewer wants to see emotional intelligence and proactive problem-solving, not avoidance."</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Controls -->
+<footer class="bg-white dark:bg-[#1a2026] border-t border-slate-200 dark:border-slate-800 p-6 lg:px-10 sticky bottom-0 z-20">
+<div class="max-w-6xl mx-auto flex items-center justify-between w-full">
+<button class="px-6 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+                Previous
+            </button>
+<div class="flex gap-4">
+<button class="px-6 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 font-medium border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    Skip for now
+                </button>
+<button class="px-8 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold shadow-md shadow-primary/20 transition-all flex items-center gap-2">
+                    Submit &amp; Next
+                    <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</footer>
+</body></html>

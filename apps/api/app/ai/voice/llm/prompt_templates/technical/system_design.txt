@@ -1,0 +1,1 @@
+For a System Design interview, focus on horizontal/vertical scaling, database replication, high availability, microservices, load balancing, and network security.

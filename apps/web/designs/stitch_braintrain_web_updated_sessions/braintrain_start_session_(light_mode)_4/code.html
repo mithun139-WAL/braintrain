@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrainTrain - Start Session</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6b21a8", // Deep Amethyst (Purple-800)
+                        "primary-hover": "#581c87", // Purple-900
+                        "primary-light": "#f3e8ff", // Purple-100
+                        "background-light": "#fcfcfc", // Near white
+                        "background-dark": "#171717", // Neutral-900
+                        "surface": "#ffffff",
+                        "surface-dark": "#262626", // Neutral-800
+                        "neutral-50": "#fafafa",
+                        "neutral-100": "#f5f5f5",
+                        "neutral-200": "#e5e5e5",
+                        "neutral-300": "#d4d4d4",
+                        "neutral-800": "#262626",
+                        "neutral-900": "#171717",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "1rem", // 16px as requested
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 10px rgba(0, 0, 0, 0.03)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4d4d4;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a3a3a3;
+        }.step-line-container {
+            position: absolute;
+            left: 15px;
+            top: 40px;
+            bottom: -20px;
+            width: 2px;
+            background-color: #e5e5e5;
+            z-index: 0;
+        }
+        .last-step .step-line-container {
+            display: none;
+        }input:checked + div {
+            border-color: #6b21a8;
+            background-color: #fafafa;
+            box-shadow: 0 0 0 1px #6b21a8;
+        }
+        input:checked + div .check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
+        input:checked + span {
+            background-color: #6b21a8;
+            color: white;
+            border-color: #6b21a8;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-neutral-900 font-display antialiased selection:bg-primary/20 selection:text-primary">
+<div class="min-h-screen flex flex-col">
+<header class="flex items-center justify-between border-b border-neutral-200 bg-surface px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center size-8 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="h-5 w-px bg-neutral-200"></div>
+<div class="flex items-center gap-2.5">
+<div class="size-7 bg-neutral-900 rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-lg">psychology</span>
+</div>
+<h2 class="text-lg font-bold tracking-tight text-neutral-900">BrainTrain</h2>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 border border-neutral-200 text-neutral-600 text-xs font-semibold uppercase tracking-wider">
+<span class="size-2 rounded-full bg-primary animate-pulse"></span>
+                Configuring Session
+            </div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 ring-2 ring-neutral-100" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAkz1wRznJ3Q12KY6ScqqEbeNHFx0X9H4BsgS4bGupxCF4vFA8PFwfAQZuaR54vBczdB1Fhc8bd5wEtYRXvzYovTPTUSc8Ws2k1RM6GPa153dOV788P-NHGTcelm-YBDygDDlwWSAx2fZTu4HZnSy5mpHC31hcwSCxC3uqyHv2ZZjNrZosGi8Zua1jA0lB7MdoIxxlE_0p203-Qx11RzuumPnyNmK2MMTuXdzaqHlg8f02Sk-AS7q6GUcMOq-B1N-HKAsnon1X5yYw");'></div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-[1200px] mx-auto p-6 md:p-10">
+<div class="flex flex-col xl:flex-row gap-10 relative">
+<div class="flex-1 flex flex-col gap-12">
+<div class="flex flex-col gap-2">
+<h1 class="text-3xl font-bold text-neutral-900 tracking-tight">New Practice Session</h1>
+<p class="text-neutral-500 text-base">Configure your AI interview parameters to simulate real-world scenarios.</p>
+</div>
+<section class="relative pl-12">
+<div class="step-line-container"></div>
+<div class="absolute left-0 top-0 size-8 rounded-full bg-neutral-900 text-white flex items-center justify-center text-sm font-bold shadow-md z-10">1</div>
+<div class="flex flex-col gap-5">
+<div class="flex justify-between items-end">
+<h3 class="text-lg font-bold text-neutral-900">Select Topic</h3>
+<span class="text-xs font-medium text-neutral-400 uppercase tracking-wide">Required</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<label class="cursor-pointer group relative">
+<input checked="" class="peer sr-only" name="topic" type="radio" value="react_arch"/>
+<div class="h-full flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 transition-all hover:border-primary/50 hover:shadow-soft">
+<div class="flex justify-between items-start">
+<div class="size-10 rounded-lg bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-700 shadow-sm">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<div class="check-icon opacity-0 text-primary transition-all transform scale-75 duration-200">
+<span class="material-symbols-outlined filled">check_circle</span>
+</div>
+</div>
+<div>
+<h4 class="text-base font-bold text-neutral-900">React Architecture</h4>
+<p class="text-xs text-neutral-500 mt-1 line-clamp-2">Patterns, state, hooks &amp; optimization.</p>
+</div>
+<div class="mt-auto pt-3 border-t border-neutral-100 flex items-center justify-between text-xs font-medium text-neutral-500">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">history</span> 12</span>
+<span class="flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-0.5 rounded-md"><span class="material-symbols-outlined text-[16px]">trending_up</span> 8.5</span>
+</div>
+</div>
+</label>
+<label class="cursor-pointer group relative">
+<input class="peer sr-only" name="topic" type="radio" value="sys_design"/>
+<div class="h-full flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 transition-all hover:border-primary/50 hover:shadow-soft">
+<div class="flex justify-between items-start">
+<div class="size-10 rounded-lg bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-700 shadow-sm">
+<span class="material-symbols-outlined">dns</span>
+</div>
+<div class="check-icon opacity-0 text-primary transition-all transform scale-75 duration-200">
+<span class="material-symbols-outlined filled">check_circle</span>
+</div>
+</div>
+<div>
+<h4 class="text-base font-bold text-neutral-900">System Design</h4>
+<p class="text-xs text-neutral-500 mt-1 line-clamp-2">Scalability, sharding &amp; caching.</p>
+</div>
+<div class="mt-auto pt-3 border-t border-neutral-100 flex items-center justify-between text-xs font-medium text-neutral-500">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">history</span> 5</span>
+<span class="flex items-center gap-1.5 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-md"><span class="material-symbols-outlined text-[16px]">trending_flat</span> 7.2</span>
+</div>
+</div>
+</label>
+<button class="h-full min-h-[180px] flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50/50 p-5 hover:border-primary hover:bg-primary-light/10 hover:text-primary transition-all group text-neutral-400" type="button">
+<div class="size-10 rounded-full bg-white border border-neutral-200 flex items-center justify-center shadow-sm group-hover:border-primary/30 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</div>
+<span class="font-semibold text-sm">Create New Topic</span>
+</button>
+</div>
+</div>
+</section>
+<section class="relative pl-12">
+<div class="step-line-container"></div>
+<div class="absolute left-0 top-0 size-8 rounded-full bg-white border-2 border-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-bold z-10">2</div>
+<div class="flex flex-col gap-5">
+<h3 class="text-lg font-bold text-neutral-900">Select Interview Type</h3>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="type" type="radio" value="technical"/>
+<div class="h-full flex flex-col justify-between p-4 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all text-center gap-3 min-h-[140px]">
+<div class="mx-auto size-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 peer-checked:text-primary peer-checked:bg-primary-light/20">
+<span class="material-symbols-outlined">terminal</span>
+</div>
+<div>
+<h4 class="font-bold text-neutral-900 text-sm">Technical</h4>
+<p class="text-[11px] text-neutral-500 mt-1 leading-tight">Hard skills &amp; Code</p>
+</div>
+<div class="check-icon opacity-0 mx-auto text-primary scale-0 transition-transform duration-200 absolute top-2 right-2">
+<span class="material-symbols-outlined text-[18px] filled">check_circle</span>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="type" type="radio" value="behavioral"/>
+<div class="h-full flex flex-col justify-between p-4 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all text-center gap-3 min-h-[140px]">
+<div class="mx-auto size-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 peer-checked:text-primary peer-checked:bg-primary-light/20">
+<span class="material-symbols-outlined">forum</span>
+</div>
+<div>
+<h4 class="font-bold text-neutral-900 text-sm">Behavioral</h4>
+<p class="text-[11px] text-neutral-500 mt-1 leading-tight">STAR Method</p>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="type" type="radio" value="mixed"/>
+<div class="h-full flex flex-col justify-between p-4 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all text-center gap-3 min-h-[140px]">
+<div class="mx-auto size-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 peer-checked:text-primary peer-checked:bg-primary-light/20">
+<span class="material-symbols-outlined">alt_route</span>
+</div>
+<div>
+<h4 class="font-bold text-neutral-900 text-sm">Mixed</h4>
+<p class="text-[11px] text-neutral-500 mt-1 leading-tight">Tech + Soft Skills</p>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="type" type="radio" value="group"/>
+<div class="h-full flex flex-col justify-between p-4 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all text-center gap-3 min-h-[140px]">
+<div class="mx-auto size-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 peer-checked:text-primary peer-checked:bg-primary-light/20">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div>
+<h4 class="font-bold text-neutral-900 text-sm">Group Disc.</h4>
+<p class="text-[11px] text-neutral-500 mt-1 leading-tight">Team Dynamics</p>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="type" type="radio" value="rapid"/>
+<div class="h-full flex flex-col justify-between p-4 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all text-center gap-3 min-h-[140px]">
+<div class="mx-auto size-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 peer-checked:text-primary peer-checked:bg-primary-light/20">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<div>
+<h4 class="font-bold text-neutral-900 text-sm">Rapid Fire</h4>
+<p class="text-[11px] text-neutral-500 mt-1 leading-tight">Speed &amp; Accuracy</p>
+</div>
+</div>
+</label>
+</div>
+</div>
+</section>
+<section class="relative pl-12">
+<div class="step-line-container"></div>
+<div class="absolute left-0 top-0 size-8 rounded-full bg-white border-2 border-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-bold z-10">3</div>
+<div class="flex flex-col gap-5">
+<h3 class="text-lg font-bold text-neutral-900">Select Interview Format</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<label class="cursor-pointer group">
+<input checked="" class="peer sr-only" name="format" type="radio" value="one_on_one"/>
+<div class="h-full p-5 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all flex flex-col gap-4">
+<div class="flex justify-between">
+<span class="text-sm font-bold text-neutral-900">1:1 AI Interview</span>
+<div class="size-4 rounded-full border border-neutral-300 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="size-1.5 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 pl-1">
+<div class="size-8 rounded-full bg-neutral-100 border border-white ring-2 ring-neutral-50 flex items-center justify-center text-neutral-600">
+<span class="material-symbols-outlined text-lg">smart_toy</span>
+</div>
+</div>
+<p class="text-xs text-neutral-500">Standard single interviewer format focused on deep dive.</p>
+</div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only" name="format" type="radio" value="panel"/>
+<div class="h-full p-5 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all flex flex-col gap-4">
+<div class="flex justify-between">
+<span class="text-sm font-bold text-neutral-900">Panel AI</span>
+<div class="size-4 rounded-full border border-neutral-300 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="size-1.5 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+</div>
+</div>
+<div class="flex items-center -space-x-2 pl-1">
+<div class="size-8 rounded-full bg-neutral-100 border border-white ring-2 ring-neutral-50 flex items-center justify-center text-neutral-600 relative z-30">
+<span class="material-symbols-outlined text-lg">smart_toy</span>
+</div>
+<div class="size-8 rounded-full bg-neutral-200 border border-white ring-2 ring-neutral-50 flex items-center justify-center text-neutral-600 relative z-20">
+<span class="material-symbols-outlined text-lg">smart_toy</span>
+</div>
+<div class="size-8 rounded-full bg-neutral-300 border border-white ring-2 ring-neutral-50 flex items-center justify-center text-neutral-600 relative z-10">
+<span class="material-symbols-outlined text-lg">smart_toy</span>
+</div>
+</div>
+<p class="text-xs text-neutral-500">Multiple AI personas with different evaluation criteria.</p>
+</div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only" name="format" type="radio" value="hybrid"/>
+<div class="h-full p-5 rounded-xl border border-neutral-200 bg-white hover:border-primary/40 transition-all flex flex-col gap-4">
+<div class="flex justify-between">
+<span class="text-sm font-bold text-neutral-900">Hybrid</span>
+<div class="size-4 rounded-full border border-neutral-300 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="size-1.5 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+</div>
+</div>
+<div class="flex items-center -space-x-2 pl-1">
+<div class="size-8 rounded-full bg-neutral-100 border border-white ring-2 ring-neutral-50 flex items-center justify-center text-neutral-600 relative z-20">
+<span class="material-symbols-outlined text-lg">person</span>
+</div>
+<div class="size-8 rounded-full bg-primary/10 border border-white ring-2 ring-neutral-50 flex items-center justify-center text-primary relative z-10">
+<span class="material-symbols-outlined text-lg">smart_toy</span>
+</div>
+</div>
+<p class="text-xs text-neutral-500">Human supervision with AI-driven questions and analysis.</p>
+</div>
+</label>
+</div>
+</div>
+</section>
+<section class="relative pl-12">
+<div class="step-line-container"></div>
+<div class="absolute left-0 top-0 size-8 rounded-full bg-white border-2 border-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-bold z-10">4</div>
+<div class="flex flex-col gap-5">
+<h3 class="text-lg font-bold text-neutral-900">Select Difficulty</h3>
+<div class="inline-flex rounded-xl p-1 bg-neutral-100 border border-neutral-200 w-full md:w-auto self-start">
+<label class="cursor-pointer flex-1 md:flex-none">
+<input class="peer sr-only" name="difficulty" type="radio" value="beginner"/>
+<span class="flex items-center justify-center px-8 py-2.5 rounded-lg text-sm font-medium text-neutral-500 hover:text-neutral-800 transition-all peer-checked:bg-white peer-checked:text-neutral-900 peer-checked:shadow-sm">
+                                    Beginner
+                                </span>
+</label>
+<label class="cursor-pointer flex-1 md:flex-none">
+<input checked="" class="peer sr-only" name="difficulty" type="radio" value="intermediate"/>
+<span class="flex items-center justify-center px-8 py-2.5 rounded-lg text-sm font-medium text-neutral-500 hover:text-neutral-800 transition-all peer-checked:bg-white peer-checked:text-neutral-900 peer-checked:shadow-sm">
+                                    Intermediate
+                                </span>
+</label>
+<label class="cursor-pointer flex-1 md:flex-none">
+<input class="peer sr-only" name="difficulty" type="radio" value="advanced"/>
+<span class="flex items-center justify-center px-8 py-2.5 rounded-lg text-sm font-medium text-neutral-500 hover:text-neutral-800 transition-all peer-checked:bg-white peer-checked:text-neutral-900 peer-checked:shadow-sm">
+                                    Advanced
+                                </span>
+</label>
+</div>
+</div>
+</section>
+<section class="relative pl-12 last-step pb-20">
+<div class="absolute left-0 top-0 size-8 rounded-full bg-white border-2 border-neutral-200 text-neutral-400 flex items-center justify-center text-sm font-bold z-10">5</div>
+<div class="flex flex-col gap-5">
+<details class="group bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+<summary class="flex cursor-pointer items-center justify-between px-6 py-4 hover:bg-neutral-50 transition-colors list-none select-none">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</div>
+<div>
+<span class="block font-bold text-neutral-800">Advanced Settings</span>
+<span class="text-xs text-neutral-500 font-normal">Adaptive mode, role level</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-neutral-400 group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="px-6 pb-6 pt-2 flex flex-col gap-6 border-t border-neutral-100">
+<div class="flex items-center justify-between">
+<div class="flex flex-col gap-0.5">
+<span class="text-sm font-semibold text-neutral-700">Adaptive Difficulty</span>
+<span class="text-xs text-neutral-500">AI adjusts difficulty based on your performance</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-neutral-700">Target Role Level</label>
+<div class="relative">
+<select class="w-full appearance-none bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary block p-2.5 outline-none">
+<option>Junior Engineer</option>
+<option selected="">Mid-Level Engineer</option>
+<option>Senior Engineer</option>
+<option>Staff Engineer</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+</section>
+</div>
+<aside class="w-full xl:w-[360px] shrink-0">
+<div class="sticky top-28 flex flex-col gap-4">
+<div class="bg-white rounded-xl shadow-lg shadow-neutral-200/50 ring-1 ring-neutral-200 p-6 flex flex-col gap-6">
+<div class="flex items-center justify-between border-b border-neutral-100 pb-4">
+<h3 class="text-sm font-bold text-neutral-400 uppercase tracking-wider">Session Preview</h3>
+<div class="flex items-center gap-2 text-xs font-medium text-primary bg-primary-light/30 px-2 py-1 rounded">
+<span class="size-1.5 rounded-full bg-primary animate-pulse"></span>
+                                Live Config
+                            </div>
+</div>
+<div class="flex flex-col gap-5">
+<div class="bg-neutral-50 rounded-lg p-4 flex gap-4 items-center border border-neutral-100">
+<div class="size-10 bg-white rounded-md shadow-sm border border-neutral-100 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs text-neutral-500 font-medium">Topic</span>
+<span class="text-sm font-bold text-neutral-900">React Architecture</span>
+</div>
+</div>
+<div class="space-y-4 pt-2">
+<div class="flex justify-between items-center text-sm">
+<span class="text-neutral-500">Type</span>
+<span class="font-semibold text-neutral-900 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-neutral-400">terminal</span>
+                                        Technical
+                                    </span>
+</div>
+<div class="h-px bg-neutral-100 w-full"></div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-neutral-500">Format</span>
+<span class="font-semibold text-neutral-900 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-neutral-400">smart_toy</span>
+                                        1:1 AI
+                                    </span>
+</div>
+<div class="h-px bg-neutral-100 w-full"></div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-neutral-500">Difficulty</span>
+<span class="font-semibold text-neutral-900 flex items-center gap-1.5">
+<span class="size-2 rounded-full bg-yellow-500"></span>
+                                        Intermediate
+                                    </span>
+</div>
+<div class="h-px bg-neutral-100 w-full"></div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-neutral-500">Role Level</span>
+<span class="font-semibold text-neutral-900">Mid-Level</span>
+</div>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full group relative h-12 bg-primary hover:bg-primary-hover disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden">
+<span class="relative z-10">Start Session</span>
+<span class="relative z-10 material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+</button>
+<p class="text-[11px] text-neutral-400 text-center leading-relaxed mt-3">
+                                Estimated duration: ~25 mins. <br/>Session will be recorded for AI analysis.
+                            </p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</div>
+
+</body></html>

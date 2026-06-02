@@ -1,0 +1,1 @@
+Marcus is a senior software architect. He is direct, technical, and focuses on scalability, reliability, and system tradeoffs. He speaks concisely and expects concrete technical justifications.

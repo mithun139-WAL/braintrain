@@ -1,0 +1,430 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  RENDER_API_BASE_URL: https://api.render.com/v1
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # ── Detect which workspaces changed ──────────────────────────────────────────
+  # Every downstream job reads these outputs via `needs.changes.outputs.*`.
+  # On workflow_dispatch (manual trigger) we always deploy everything.
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.set-output.outputs.api }}
+      web: ${{ steps.set-output.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/shared/**'
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+
+      - name: Set changed outputs
+        id: set-output
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual dispatch: always deploy everything
+            echo "api=true" >> "$GITHUB_OUTPUT"
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
+            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Validate ──────────────────────────────────────────────────────────────────
+
+  validate-web:
+    name: Validate Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    needs: [changes]
+    if: needs.changes.outputs.web == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @braintrain/shared build
+
+      - name: Verify web env
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
+        run: |
+          test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+          test -n "$NEXT_PUBLIC_LIVEKIT_URL" || { echo "Missing NEXT_PUBLIC_LIVEKIT_URL"; exit 1; }
+
+      - name: Build web app
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
+        run: pnpm --filter web build
+
+  validate-api:
+    name: Validate API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install API dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Compile API source
+        run: uv run python -m compileall app
+
+      - name: Smoke import FastAPI app
+        env:
+          APP_ENV: production
+          DATABASE_URL: postgresql+asyncpg://postgres:password@127.0.0.1:5432/braintrain_api_ci
+          JWT_SECRET: ci-secret
+          FRONTEND_URL: http://localhost:3000
+        run: uv run python -c "from app.main import app"
+
+  # ── Deploy ────────────────────────────────────────────────────────────────────
+
+  deploy-api:
+    name: Deploy API to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    # validate-api is skipped when only web changed → deploy-api is also skipped.
+    # validate-api failing → deploy-api is skipped automatically (no always() needed).
+    needs: [changes, validate-api]
+    if: needs.changes.outputs.api == 'true'
+
+    steps:
+      - name: Trigger Render deploy for current commit
+        id: render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${RENDER_API_KEY:?Missing RENDER_API_KEY}"
+          : "${RENDER_SERVICE_ID:?Missing RENDER_SERVICE_ID}"
+
+          trigger_deploy() {
+            local data="$1"
+            local body_file status
+
+            body_file="$(mktemp)"
+            status="$(
+              curl --silent --show-error \
+                --output "${body_file}" \
+                --write-out "%{http_code}" \
+                --request POST \
+                --url "${RENDER_API_BASE_URL}/services/${RENDER_SERVICE_ID}/deploys" \
+                --header "Accept: application/json" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                --header "Content-Type: application/json" \
+                --data "${data}"
+            )"
+
+            echo "HTTP ${status}" >&2
+            cat "${body_file}" >&2
+
+            if [[ "${status}" =~ ^2[0-9][0-9]$ ]]; then
+              cat "${body_file}"
+              return 0
+            fi
+
+            return 1
+          }
+
+          response=""
+          for attempt in 1 2 3; do
+            echo "Render deploy attempt ${attempt} with commit ${GITHUB_SHA}"
+            if response="$(trigger_deploy "{\"commitId\":\"${GITHUB_SHA}\"}")"; then
+              break
+            fi
+
+            if [ "${attempt}" -lt 3 ]; then
+              sleep 10
+            fi
+          done
+
+          if [ -z "${response}" ]; then
+            echo "Retrying Render deploy without commitId fallback"
+            response="$(trigger_deploy "{}")"
+          fi
+
+          deploy_id="$(jq -r '.id // empty' <<<"${response}")"
+          status="$(jq -r '.status // empty' <<<"${response}")"
+
+          if [ -z "${deploy_id}" ]; then
+            echo "Render did not return a deploy id"
+            echo "${response}"
+            exit 1
+          fi
+
+          echo "Render deploy ${deploy_id} started with status ${status}"
+          echo "deploy_id=${deploy_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Wait for Render deploy to finish
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${RENDER_API_KEY:?Missing RENDER_API_KEY}"
+          : "${RENDER_SERVICE_ID:?Missing RENDER_SERVICE_ID}"
+
+          deploy_id="${{ steps.render.outputs.deploy_id }}"
+
+          for attempt in $(seq 1 60); do
+            response="$(
+              curl --silent --show-error --fail \
+                --request GET \
+                --url "${RENDER_API_BASE_URL}/services/${RENDER_SERVICE_ID}/deploys/${deploy_id}" \
+                --header "Accept: application/json" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}"
+            )"
+
+            status="$(jq -r '.status' <<<"${response}")"
+            echo "Render deploy status: ${status}"
+
+            case "${status}" in
+              live|deactivated)
+                exit 0
+                ;;
+              build_failed|update_failed|canceled|pre_deploy_failed)
+                echo "Render deploy failed"
+                echo "${response}"
+                exit 1
+                ;;
+            esac
+
+            sleep 15
+          done
+
+          echo "Timed out waiting for Render deploy ${deploy_id}"
+          exit 1
+
+  deploy-web:
+    name: Deploy Web to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    # always() is required: deploy-api may be *skipped* (only web changed) but
+    # deploy-web should still run. The explicit result checks below handle both cases:
+    #   - API also changed: deploy-api must have succeeded.
+    #   - Only web changed: deploy-api is skipped, which is fine.
+    needs: [changes, validate-web, deploy-api]
+    if: |
+      always() &&
+      needs.changes.outputs.web == 'true' &&
+      needs.validate-web.result == 'success' &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
+    outputs:
+      deployment_url: ${{ steps.vercel.outputs.deployment_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @braintrain/shared build
+
+      - name: Verify web env
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
+        run: |
+          test -n "$NEXT_PUBLIC_API_URL" || { echo "Missing NEXT_PUBLIC_API_URL"; exit 1; }
+          test -n "$NEXT_PUBLIC_LIVEKIT_URL" || { echo "Missing NEXT_PUBLIC_LIVEKIT_URL"; exit 1; }
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@48.4.1
+
+      - name: Pull Vercel production settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
+          : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
+          vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
+
+      - name: Verify Node version
+        run: node -v
+
+      - name: Build Vercel artifacts
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
+          : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
+          vercel build --prod --yes --token="${VERCEL_TOKEN}"
+
+      - name: Deploy to Vercel
+        id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ vars.NEXT_PUBLIC_LIVEKIT_URL }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN}"
+          : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL}"
+          : "${NEXT_PUBLIC_LIVEKIT_URL:?Missing NEXT_PUBLIC_LIVEKIT_URL}"
+
+          for attempt in 1 2 3; do
+            echo "Vercel deploy attempt ${attempt}..."
+            if deployment_url="$(vercel deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}" | tr -d '\r\n')"; then
+              break
+            fi
+            if [ "${attempt}" -eq 3 ]; then
+              echo "Vercel deploy failed after 3 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          case "${deployment_url}" in
+            http://*|https://*) ;;
+            *) deployment_url="https://${deployment_url}" ;;
+          esac
+
+          echo "deployment_url=${deployment_url}" >> "${GITHUB_OUTPUT}"
+          echo "Production deployment: ${deployment_url}"
+
+  # ── Smoke test ────────────────────────────────────────────────────────────────
+
+  smoke-test:
+    name: Smoke Test Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    needs: [deploy-api, deploy-web]
+    # Run if at least one deployment succeeded; individual steps are gated below.
+    if: |
+      always() &&
+      (needs.deploy-api.result == 'success' || needs.deploy-web.result == 'success')
+
+    steps:
+      - name: Check API health
+        # Only run when the API was actually (re)deployed this pipeline run.
+        if: needs.deploy-api.result == 'success'
+        env:
+          API_HEALTHCHECK_URL: ${{ vars.API_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+
+          : "${API_HEALTHCHECK_URL:?Set production variable API_HEALTHCHECK_URL}"
+
+          response="$(curl --silent --show-error --fail --location "${API_HEALTHCHECK_URL}")"
+          status="$(jq -r '.data.status // .status' <<<"${response}")"
+
+          if [ "${status}" != "ok" ]; then
+            echo "Unexpected API health response"
+            echo "${response}"
+            exit 1
+          fi
+
+      - name: Check Vercel deployment URL
+        # Only run when the web was actually (re)deployed this pipeline run.
+        if: needs.deploy-web.result == 'success'
+        env:
+          WEB_URL: ${{ needs.deploy-web.outputs.deployment_url }}
+        run: |
+          set -euo pipefail
+
+          : "${WEB_URL:?Missing Vercel deployment URL}"
+          status_code="$(
+            curl --silent --show-error --location \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              "${WEB_URL}"
+          )"
+
+          case "${status_code}" in
+            200|401)
+              echo "Web deployment responded with expected status ${status_code}"
+              ;;
+            *)
+              echo "Unexpected status from web deployment: ${status_code}"
+              exit 1
+              ;;
+          esac
