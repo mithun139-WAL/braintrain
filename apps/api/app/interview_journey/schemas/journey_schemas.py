@@ -46,6 +46,12 @@ class JourneyRoundResponse(BaseModel):
     created_at: datetime
 
 
+class JourneyPrerequisites(BaseModel):
+    topics: list[str]
+    issues: list[str]
+    minimum_criteria: list[str]
+
+
 class JourneyResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -57,6 +63,7 @@ class JourneyResponse(BaseModel):
     extracted_skills: dict | None = None
     extracted_signals: dict | None = None
     generated_plan: dict | None = None
+    prerequisites: JourneyPrerequisites | None = None
     created_at: datetime
     updated_at: datetime
     sessions: list[JourneyRoundResponse] = []
@@ -78,6 +85,8 @@ class AnalyzeResponse(BaseModel):
     weaknesses: list[str]
     rounds: list[dict]
     verified_profile: dict
+    prerequisites: JourneyPrerequisites | None = None
+
 
 
 class StartRoundResponse(BaseModel):

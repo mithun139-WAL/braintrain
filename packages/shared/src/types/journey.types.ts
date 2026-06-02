@@ -9,6 +9,7 @@ export interface InterviewJourney {
     extractedSkills?: Record<string, unknown> | null;
     extractedSignals?: Record<string, unknown> | null;
     generatedPlan?: Record<string, unknown> | null;
+    prerequisites?: JourneyPrerequisites | null;
     createdAt: string;
     updatedAt: string;
     sessions: InterviewJourneySession[];
@@ -36,6 +37,13 @@ export interface JourneyAnalysis {
     weaknesses: string[];
     rounds: JourneyRound[];
     verifiedProfile: Record<string, unknown>;
+    prerequisites?: JourneyPrerequisites | null;
+}
+
+export interface JourneyPrerequisites {
+    topics: string[];
+    issues: string[];
+    minimumCriteria: string[];
 }
 
 export interface JourneyRound {

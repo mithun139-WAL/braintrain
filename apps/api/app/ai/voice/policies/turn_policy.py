@@ -16,7 +16,7 @@ class TurnPolicy:
         difficulty_policy: DifficultyPolicy,
         response_policy: ResponsePolicy,
         min_words: int = 3,
-        max_topic_turns: int = 6,
+        max_topic_turns: int = 3,  # Max consecutive turns on one topic before forcing breadth
     ):
         """
         Coordinates Turn-taking behavior rules.
@@ -103,6 +103,9 @@ class TurnPolicy:
             is_inconfident = state.candidate.confidence_score < 40.0
 
         if is_hesitant or is_inconfident:
+            # Still count this as a "followup" turn — candidate stayed on same topic
+            if hasattr(state.conversation, "topic_followup_count"):
+                state.conversation.topic_followup_count += 1
             decision = ConversationDecision(
                 action=InterviewAction.ENCOURAGE,
                 reason="confidence_drop_detected",
@@ -112,7 +115,8 @@ class TurnPolicy:
             return decision
 
         # Rule 4: Topic Exhaustion / Strict Followup Cap
-        if getattr(state.conversation, "topic_followup_count", 0) >= 3:
+        # Cap is 2 to match FollowupPolicy._MAX_FOLLOWUPS_PER_TOPIC
+        if getattr(state.conversation, "topic_followup_count", 0) >= 2:
             state.conversation.topic_followup_count = 0  # Reset for next topic
             decision = ConversationDecision(
                 action=InterviewAction.MOVE_TOPIC,

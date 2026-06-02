@@ -15,7 +15,7 @@ class InterviewPromptBuilder:
     def set_fact_grounding_policy(self, policy: FactGroundingPolicy) -> None:
         self.fact_grounding_policy = policy
 
-    def build(self, state: InterviewState, decision: ConversationDecision, tone: str) -> str:
+    def build(self, state: InterviewState, decision: ConversationDecision, tone: str, rag_context: str = "") -> str:
         parts = []
 
         # 1. State details (Layer 2)
@@ -69,6 +69,10 @@ class InterviewPromptBuilder:
             grounding_directives = self.fact_grounding_policy.get_grounding_directives()
             if grounding_directives:
                 parts.append(f"\n{grounding_directives}")
+
+        # 6. RAG Grounding Context (Layer 6)
+        if rag_context:
+            parts.append(f"\n[KNOWLEDGE BASE GROUNDING CONTEXT:\n{rag_context}\n]")
 
         full_prompt = "\n".join(parts)
         logger.debug("interview_prompt_built | tone: %s | pressure: %s", tone, pressure_level)

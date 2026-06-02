@@ -782,7 +782,7 @@ export default function KnowledgeBaseDashboard() {
                                     </div>
                                     <button
                                         onClick={() => setSelectedOptId(null)}
-                                        className={cn(buttonStyles({ variant: "outline", size: "sm" }))}
+                                        className={cn(buttonStyles({ variant: "secondary", size: "sm" }))}
                                     >
                                         New Analysis
                                     </button>

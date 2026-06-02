@@ -23,6 +23,7 @@ from app.interview_journey.personas.persona_generator import generate_persona
 from app.interview_journey.planners.difficulty_mapper import map_difficulty
 from app.interview_journey.planners.interview_strategy_generator import generate_strategy
 from app.interview_journey.planners.round_generator import generate_rounds
+from app.interview_journey.planners.prerequisites_generator import generate_prerequisites
 from app.interview_journey.repository import journey_repository as journey_repo
 from app.interview_journey.repository import journey_session_repository as jr_session_repo
 from app.modules.sessions.repository import create_session as create_interview_session
@@ -58,6 +59,8 @@ async def analyze_and_plan(
 
     rounds = generate_rounds(resume_analysis, jd_analysis, company_signals)
 
+    prerequisites = await generate_prerequisites(resume_analysis, jd_analysis, company_signals)
+
     # Delete existing sessions for this journey to prevent duplicates
     await jr_session_repo.delete_journey_sessions(db, journey_id)
 
@@ -68,6 +71,7 @@ async def analyze_and_plan(
         "strengths": resume_analysis["strengths"],
         "weaknesses": resume_analysis["weaknesses"],
         "rounds": [],
+        "prerequisites": prerequisites,
     }
 
     for idx, round_data in enumerate(rounds):
@@ -139,6 +143,7 @@ async def analyze_and_plan(
         "weaknesses": resume_analysis["weaknesses"],
         "rounds": generated_plan["rounds"],
         "verified_profile": verified_profile,
+        "prerequisites": prerequisites,
     }
 
 

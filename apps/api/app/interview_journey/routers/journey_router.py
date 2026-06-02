@@ -33,6 +33,7 @@ from app.interview_journey.schemas.journey_schemas import (
     JourneyListResponse,
     JourneyResponse,
     JourneyRoundResponse,
+    JourneyPrerequisites,
     StartRoundRequest,
     StartRoundResponse,
 )
@@ -69,6 +70,7 @@ async def create_journey(
         extracted_skills=journey.extracted_skills,
         extracted_signals=journey.extracted_signals,
         generated_plan=journey.generated_plan,
+        prerequisites=journey.generated_plan.get("prerequisites") if journey.generated_plan else None,
         created_at=journey.created_at,
         updated_at=journey.updated_at,
         sessions=[],
@@ -118,6 +120,7 @@ async def list_journeys(
                 extracted_skills=j.extracted_skills,
                 extracted_signals=j.extracted_signals,
                 generated_plan=j.generated_plan,
+                prerequisites=j.generated_plan.get("prerequisites") if j.generated_plan else None,
                 created_at=j.created_at,
                 updated_at=j.updated_at,
                 sessions=[
@@ -165,6 +168,7 @@ async def get_journey(
         extracted_skills=journey.extracted_skills,
         extracted_signals=journey.extracted_signals,
         generated_plan=journey.generated_plan,
+        prerequisites=journey.generated_plan.get("prerequisites") if journey.generated_plan else None,
         created_at=journey.created_at,
         updated_at=journey.updated_at,
         sessions=[
@@ -280,6 +284,7 @@ async def edit_journey(
         extracted_skills=journey.extracted_skills,
         extracted_signals=journey.extracted_signals,
         generated_plan=journey.generated_plan,
+        prerequisites=journey.generated_plan.get("prerequisites") if journey.generated_plan else None,
         created_at=journey.created_at,
         updated_at=journey.updated_at,
         sessions=[
