@@ -165,6 +165,72 @@ export default function JourneyAnalysisPage({ params }: { params: Promise<{ id: 
                         </Surface>
                     </div>
 
+                    {/* Pre-practice Checklist */}
+                    {analysis.prerequisites && (
+                        <Surface variant="default" padding="lg" className="space-y-4">
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Target size={14} />
+                                Pre-practice Checklist (What You Should Know)
+                            </div>
+                            <p className="text-xs text-muted-foreground -mt-2">
+                                Review these core requirements, potential issues, and minimum criteria before starting your practice sessions.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                                        <Lightbulb className="size-4 text-emerald-500 shrink-0" />
+                                        Core Topics to Master
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {analysis.prerequisites.topics.map((t, i) => (
+                                            <li key={i} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+                                                <span className="text-emerald-500 font-medium shrink-0">•</span>
+                                                <span>{t}</span>
+                                            </li>
+                                        ))}
+                                        {analysis.prerequisites.topics.length === 0 && (
+                                            <li className="text-xs text-muted-foreground">No specific topics listed</li>
+                                        )}
+                                    </ul>
+                                </div>
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                                        <AlertTriangle className="size-4 text-amber-500 shrink-0" />
+                                        Key Issues / Profile Gaps
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {analysis.prerequisites.issues.map((issue, i) => (
+                                            <li key={i} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+                                                <span className="text-amber-500 font-medium shrink-0">•</span>
+                                                <span>{issue}</span>
+                                            </li>
+                                        ))}
+                                        {analysis.prerequisites.issues.length === 0 && (
+                                            <li className="text-xs text-muted-foreground">No specific issues listed</li>
+                                        )}
+                                    </ul>
+                                </div>
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                                        <Target className="size-4 text-primary shrink-0" />
+                                        Minimum Criteria
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {analysis.prerequisites.minimumCriteria.map((mc, i) => (
+                                            <li key={i} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+                                                <span className="text-primary font-medium shrink-0">•</span>
+                                                <span>{mc}</span>
+                                            </li>
+                                        ))}
+                                        {analysis.prerequisites.minimumCriteria.length === 0 && (
+                                            <li className="text-xs text-muted-foreground">No specific criteria listed</li>
+                                        )}
+                                    </ul>
+                                </div>
+                            </div>
+                        </Surface>
+                    )}
+
                     {/* Plan Summary & Rounds */}
                     <Surface variant="default" padding="lg" className="space-y-4">
                         <div className="flex items-center justify-between">
