@@ -73,7 +73,8 @@ class LiveKitTransport:
     def register_handlers(
         self,
         on_track_subscribed: Callable[[rtc.RemoteTrack, rtc.RemoteTrackPublication, rtc.RemoteParticipant], None],
-        on_participant_disconnected: Callable[[rtc.RemoteParticipant], None]
+        on_participant_disconnected: Callable[[rtc.RemoteParticipant], None],
+        on_data_received: Callable = None
     ) -> None:
         """Registers callback handlers for room events."""
         @self.room.on("track_subscribed")
@@ -83,6 +84,11 @@ class LiveKitTransport:
         @self.room.on("participant_disconnected")
         def _on_participant_disconnected(participant):
             on_participant_disconnected(participant)
+
+        if on_data_received:
+            @self.room.on("data_received")
+            def _on_data_received(data: bytes, participant, kind):
+                on_data_received(data, participant, kind)
 
     def get_remote_participants(self) -> dict:
         """Returns the dictionary of remote participants connected to the room."""

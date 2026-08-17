@@ -10,6 +10,7 @@ export interface CreateSessionDto {
     adaptive: boolean;
     durationMinutes: number;
     isVoice?: boolean;
+    interviewCategory?: "GENERAL" | "CODING" | "DSA" | "SYSTEM_DESIGN";
 }
 
 export interface SubmitAnswerDto {

@@ -5,7 +5,11 @@ NVIDIA NIM exposes an OpenAI-compatible API, so we reuse the openai SDK
 with a custom base_url pointing to NVIDIA's inference endpoint.
 
 Design:
-  - LLM scores 6 content dimensions (JSON mode, temp=0.1)
+  - LLM scores 6 content dimensions + enumerates factual contradictions (JSON mode, temp=0.1)
+  - RAG reference_facts injected when available; LLM must enumerate contradictions or
+    explicitly confirm "no contradictions found".
+  - Conditional second call: dimensions scoring < EVIDENCE_SCORE_THRESHOLD trigger a
+    single batched follow-up for per-dimension evidence quotes.
   - pressure_score + thinking_depth_score computed SERVER-SIDE from timing
   - overall_score computed SERVER-SIDE with weighted formula (BEHAVIORAL vs TECHNICAL)
   - Difficulty boost +4 for HARD applied to content scores (not timing)
@@ -22,15 +26,22 @@ from typing import Optional
 
 from app.ai.prompts.evaluation import (
     EVALUATION_SYSTEM_PROMPT,
+    EVIDENCE_SCORE_THRESHOLD,
+    EVIDENCE_SYSTEM_PROMPT,
     PROMPT_VERSION,
     build_evaluation_user_prompt,
+    build_evidence_user_prompt,
+    find_low_score_dimensions,
 )
 from app.ai.protocols import EvaluationCostMeta, EvaluationInput, PerformanceSignal
 
 logger = logging.getLogger(__name__)
 
-# Hard cap — we only need a small JSON blob back
-MAX_OUTPUT_TOKENS = 256
+# Increased to accommodate RAG accuracy fields in primary scoring response
+MAX_OUTPUT_TOKENS = 400
+
+# Conditional evidence call
+MAX_EVIDENCE_OUTPUT_TOKENS = 300
 
 # Difficulty boost applied to content scores before clamping (spec §7)
 DIFFICULTY_BOOST: dict[str, int] = {
@@ -39,8 +50,8 @@ DIFFICULTY_BOOST: dict[str, int] = {
     "HARD": 4,
 }
 
-# Fields the LLM must return (5 required + 1 optional)
-LLM_REQUIRED_FIELDS = [
+# Fields the LLM must return (5 required scores)
+LLM_REQUIRED_SCORE_FIELDS = [
     "clarityScore",
     "structureScore",
     "depthScore",
@@ -91,6 +102,7 @@ class NIMEvaluationProvider:
             answer=input.answer_text,
             interview_type=input.interview_type,
             difficulty=input.difficulty,
+            reference_facts=input.reference_facts,
         )
 
         result = await self._call_with_retry(user_prompt, input.difficulty)
@@ -129,6 +141,25 @@ class NIMEvaluationProvider:
             interview_type=input.interview_type,
         )
 
+        # ── Conditional evidence call for low-scoring dimensions ──────────────
+        low_score_dims = find_low_score_dimensions(scores)
+        evidence_map: dict[str, str] = {}
+        if low_score_dims:
+            evidence_map = await self._fetch_evidence(
+                question=input.question_text,
+                answer=input.answer_text,
+                low_score_dimensions=low_score_dims,
+            )
+
+        def _evidence(key: str, fallback: str) -> str:
+            return evidence_map.get(key) or scores.get(f"{key}Evidence") or fallback
+
+        explanation_parts: list[str] = []
+        if evidence_map:
+            explanation_parts.append(
+                " | ".join(f"{k}: {v}" for k, v in evidence_map.items())
+            )
+
         logger.debug(
             "NIM Evaluated | Overall: %.1f | Tokens: %din/%dout | Model: %s | Prompt: %s",
             overall_score,
@@ -140,16 +171,23 @@ class NIMEvaluationProvider:
 
         return PerformanceSignal(
             clarity_score=scores["clarityScore"],
+            clarity_evidence=_evidence("clarity", scores.get("clarityEvidence", "")),
             structure_score=scores["structureScore"],
+            structure_evidence=_evidence("structure", scores.get("structureEvidence", "")),
             depth_score=scores["depthScore"],
+            depth_evidence=_evidence("depth", scores.get("depthEvidence", "")),
             confidence_score=scores["confidenceScore"],
+            confidence_evidence=_evidence("confidence", scores.get("confidenceEvidence", "")),
             communication_score=scores["communicationScore"],
-            hesitation_score=0.0,
+            communication_evidence=_evidence("communication", scores.get("communicationEvidence", "")),
             technical_score=scores.get("technicalScore"),
+            technical_evidence=scores.get("technicalEvidence"),
+            evaluation_explanation=" | ".join(explanation_parts),
+            technical_accuracy_issues=scores.get("technicalAccuracyIssues") or [],
+            technical_accuracy_evidence=scores.get("technicalAccuracyEvidence"),
             pressure_score=pressure_score,
             thinking_depth_score=thinking_depth_score,
             overall_score=overall_score,
-            evaluation_explanation="",
             cost_meta=meta,
         )
 
@@ -197,7 +235,41 @@ class NIMEvaluationProvider:
 
         return None
 
-    # ── Parse + validate 6-field LLM response ─────────────────────────────────
+    # ── Conditional evidence call ──────────────────────────────────────────────
+
+    async def _fetch_evidence(
+        self,
+        *,
+        question: str,
+        answer: str,
+        low_score_dimensions: dict[str, float],
+    ) -> dict[str, str]:
+        prompt = build_evidence_user_prompt(
+            question=question,
+            answer=answer,
+            low_score_dimensions=low_score_dimensions,
+        )
+        try:
+            completion = await asyncio.to_thread(
+                self._client.chat.completions.create,
+                model=self._model,
+                response_format={"type": "json_object"},
+                temperature=0.0,
+                max_tokens=MAX_EVIDENCE_OUTPUT_TOKENS,
+                messages=[
+                    {"role": "system", "content": EVIDENCE_SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            raw = completion.choices[0].message.content or ""
+            cleaned = _extract_json(raw)
+            parsed = json.loads(cleaned)
+            return {k: v for k, v in parsed.items() if isinstance(v, str)}
+        except Exception as exc:
+            logger.warning("NIM evidence call failed (non-fatal, skipping): %s", exc)
+            return {}
+
+    # ── Parse + validate LLM response ─────────────────────────────────────────
 
     def _parse_and_validate(self, raw: str, difficulty: str) -> Optional[dict]:
         try:
@@ -205,10 +277,10 @@ class NIMEvaluationProvider:
         except (json.JSONDecodeError, ValueError):
             return None
 
-        for field in LLM_REQUIRED_FIELDS:
-            value = parsed.get(field)
+        for f in LLM_REQUIRED_SCORE_FIELDS:
+            value = parsed.get(f)
             if not isinstance(value, (int, float)) or math.isnan(value):
-                logger.warning("NIM validation failed: %s = %s", field, value)
+                logger.warning("NIM validation failed: %s = %s", f, value)
                 return None
 
         tech = parsed.get("technicalScore")
@@ -216,15 +288,27 @@ class NIMEvaluationProvider:
             logger.warning("Invalid NIM technicalScore: %s", tech)
             return None
 
+        accuracy_issues = parsed.get("technicalAccuracyIssues")
+        if accuracy_issues is not None and not isinstance(accuracy_issues, list):
+            accuracy_issues = []
+
         boost = DIFFICULTY_BOOST.get(difficulty.upper(), 0)
 
         return {
-            "clarityScore":       _clamp(parsed["clarityScore"] + boost),
-            "structureScore":     _clamp(parsed["structureScore"] + boost),
-            "depthScore":         _clamp(parsed["depthScore"] + boost),
-            "confidenceScore":    _clamp(parsed["confidenceScore"]),
-            "communicationScore": _clamp(parsed["communicationScore"]),
-            "technicalScore":     _clamp(tech + boost) if tech is not None else None,
+            "clarityScore":              _clamp(parsed["clarityScore"] + boost),
+            "clarityEvidence":           parsed.get("clarityEvidence", ""),
+            "structureScore":            _clamp(parsed["structureScore"] + boost),
+            "structureEvidence":         parsed.get("structureEvidence", ""),
+            "depthScore":                _clamp(parsed["depthScore"] + boost),
+            "depthEvidence":             parsed.get("depthEvidence", ""),
+            "confidenceScore":           _clamp(parsed["confidenceScore"]),
+            "confidenceEvidence":        parsed.get("confidenceEvidence", ""),
+            "communicationScore":        _clamp(parsed["communicationScore"]),
+            "communicationEvidence":     parsed.get("communicationEvidence", ""),
+            "technicalScore":            _clamp(tech + boost) if tech is not None else None,
+            "technicalEvidence":         parsed.get("technicalEvidence"),
+            "technicalAccuracyIssues":   [i for i in (accuracy_issues or []) if isinstance(i, str)],
+            "technicalAccuracyEvidence": parsed.get("technicalAccuracyEvidence"),
         }
 
     # ── Server-side timing scores ──────────────────────────────────────────────

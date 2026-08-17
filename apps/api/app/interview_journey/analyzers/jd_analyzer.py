@@ -169,22 +169,52 @@ def _determine_role_level(text: str) -> str:
             return level
     return "MID"
 
+_CATEGORY_KEYWORDS = {
+    "FRONTEND": [
+        "frontend", "front-end", "front end", "react", "angular", "vue",
+        "css", "html", "dom", "ui engineer", "ui development",
+        "web application", "spa", "responsive design",
+    ],
+    "BACKEND": [
+        "backend", "back-end", "back end", "server-side", "api development",
+        "microservice", "database design", "rest api", "grpc",
+    ],
+    "FULLSTACK": [
+        "full stack", "fullstack", "full-stack",
+    ],
+    "DATA": [
+        "data engineer", "data engineering", "machine learning",
+        "data science", "ml engineer", "etl", "data pipeline",
+        "data scientist", "analytics engineer",
+    ],
+    "MOBILE": [
+        "mobile", "ios", "android", "swift", "kotlin", "react native",
+        "flutter",
+    ],
+    "DEVOPS": [
+        "devops", "platform engineer", "infrastructure", "sre",
+        "site reliability", "kubernetes", "ci/cd", "cloud infrastructure",
+    ],
+}
+
 
 def _determine_role_category(text: str) -> str:
     lower = text.lower()
-    if any(w in lower for w in ["frontend", "front-end", "front end", "ui", "web"]):
-        return "FRONTEND"
-    if any(w in lower for w in ["backend", "back-end", "back end", "server"]):
-        return "BACKEND"
-    if any(w in lower for w in ["full stack", "fullstack", "full-stack"]):
-        return "FULLSTACK"
-    if any(w in lower for w in ["data", "ml", "machine learning", "data science"]):
-        return "DATA"
-    if any(w in lower for w in ["mobile", "ios", "android"]):
-        return "MOBILE"
-    if any(w in lower for w in ["devops", "platform", "infrastructure", "sre"]):
-        return "DEVOPS"
-    return "GENERAL"
+
+    scores: dict[str, int] = {}
+    for category, keywords in _CATEGORY_KEYWORDS.items():
+        count = 0
+        for kw in keywords:
+            # \b works fine even for multi-word phrases like "front end"
+            pattern = rf"\b{re.escape(kw)}\b"
+            count += len(re.findall(pattern, lower))
+        scores[category] = count
+
+    best_category = max(scores, key=scores.get)
+    if scores[best_category] == 0:
+        return "GENERAL"
+
+    return best_category
 
 
 def _determine_culture_style(text: str) -> str:

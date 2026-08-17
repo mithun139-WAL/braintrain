@@ -36,6 +36,7 @@ from app.ai.voice.llm import (
     Interviewer,
 )
 from app.ai.voice.events import EventType, Event, EventBus
+from app.ai.voice.events.chat_events import emit_chat_message
 from app.ai.voice.events.handlers import (
     ConversationHandler,
     PolicyHandler,
@@ -182,16 +183,87 @@ class VoiceAgent:
                     self.interview_mode = session.interview_mode or "ONE_ON_ONE_AI"
                     self.state.adaptive_enabled = session.adaptive or False
                     self.state.target_duration_minutes = session.duration_minutes or 15
+                    self.state.interview_category = session.interview_category or "GENERAL"
+                    self.state.minutes_remaining = float(self.state.target_duration_minutes)
                     
-                    if session.topic and session.topic.name:
+                    if session.personality_config and "journey_context" in session.personality_config:
+                        journey_context = session.personality_config["journey_context"]
+                        self.state.conversation.current_topic = journey_context.get("round_name") or "Technical Screen"
+                    elif session.topic and session.topic.name:
                         self.state.conversation.current_topic = session.topic.name
                     else:
                         self.state.conversation.current_topic = str(session.topic_id)
-                        
+
                     if session.user and session.user.display_name:
                         self.state.candidate.candidate_name = session.user.display_name.split()[0]
                     self.state.candidate.candidate_id = str(session.user_id)
-                        
+
+                    # ── Interview plan (topic coverage) ─────────────────────
+                    from app.ai.voice.planning.plan import InterviewPlan
+
+                    if session.interview_plan:
+                        self.state.conversation.plan = InterviewPlan.from_dict(session.interview_plan)
+                    else:
+                        plan = None
+                        if session.personality_config and "journey_context" in session.personality_config:
+                            try:
+                                from app.ai.voice.planning.plan import PlanTopic, TopicStatus
+                                journey_context = session.personality_config["journey_context"]
+                                round_focus = journey_context.get("round_focus", {})
+                                focus = round_focus.get("focus", {}) if isinstance(round_focus, dict) else {}
+                                areas = focus.get("areas", []) if isinstance(focus, dict) else []
+                                if not areas and isinstance(round_focus, dict):
+                                    areas = round_focus.get("areas", [])
+                                
+                                if areas:
+                                    topics = []
+                                    for idx, area in enumerate(areas):
+                                        topics.append(PlanTopic(
+                                            topic_id=f"journey-topic-{idx}-{uuid.uuid4().hex[:6]}",
+                                            label=area,
+                                            target_depth=2,
+                                            time_budget_turns=4,
+                                            status=TopicStatus.NOT_STARTED
+                                        ))
+                                    if topics:
+                                        topics[0].status = TopicStatus.IN_PROGRESS
+                                    
+                                    plan = InterviewPlan(topics=topics, max_angles_per_topic=1)
+                                    self.state.conversation.plan = plan
+                                    session.interview_plan = plan.to_dict()
+                                    await db.commit()
+                                    logger.info("Generated InterviewPlan from journey focus areas: %s", areas)
+                            except Exception as exc:
+                                logger.error("Failed to construct plan from journey context: %s", exc)
+
+                        if plan is None:
+                            try:
+                                from app.ai.voice.planning.plan_generator import InterviewPlanGenerator
+                                plan = await InterviewPlanGenerator().generate(
+                                    topic_name=self.state.conversation.current_topic or "General",
+                                    interview_category=self.state.interview_category,
+                                    difficulty=self.session_difficulty,
+                                    duration_minutes=self.state.target_duration_minutes,
+                                )
+                                self.state.conversation.plan = plan
+                                session.interview_plan = plan.to_dict()
+                                await db.commit()
+                            except Exception as exc:
+                                logger.error("Failed to generate interview plan (continuing without one): %s", exc)
+
+                    if self.state.conversation.plan:
+                        import json
+                        plan_details = [
+                            {
+                                "topic_id": t.topic_id,
+                                "label": t.label,
+                                "target_depth": t.target_depth,
+                                "status": t.status.value if hasattr(t.status, "value") else str(t.status)
+                            }
+                            for t in self.state.conversation.plan.topics
+                        ]
+                        logger.info("INTERVIEW_PLAN_AT_START: %s", json.dumps(plan_details))
+
                     logger.info(
                         "Loaded session info for room %s: diff=%s, mode=%s, adaptive=%s, topic=%s, candidate=%s",
                         self.room_name,
@@ -309,6 +381,7 @@ class VoiceAgent:
         self.transport.register_handlers(
             on_track_subscribed=self.on_track_subscribed,
             on_participant_disconnected=self.on_participant_disconnected,
+            on_data_received=self.handle_data_message,
         )
 
         logger.info("Connecting voice agent to room: %s", self.room_name)
@@ -486,6 +559,18 @@ class VoiceAgent:
 
         logger.info("[%s] speaking: %s", speaker_name, clean_text[:120])
 
+        # Publish chat message to data channel
+        content_type = self._detect_content_type(clean_text)
+        language = self._detect_language(clean_text)
+        asyncio.create_task(
+            emit_chat_message(self.transport, {
+                "role": "interviewer",
+                "content": clean_text,
+                "content_type": content_type,
+                "language": language,
+            })
+        )
+
         question_id = await self._save_question_to_db(clean_text)
         if question_id:
             self.current_question_id = question_id
@@ -516,7 +601,14 @@ class VoiceAgent:
             )
         )
 
-        mp3_bytes = await self.tts_service.synthesize(clean_text, voice_name)
+        # Clean text from any markdown code blocks or triple-backtick segments for clean speech synthesis
+        import re
+        spoken_text = re.sub(r"```[\s\S]*?```", "", clean_text)
+        spoken_text = re.sub(r"\s+", " ", spoken_text).strip()
+        if not spoken_text:
+            spoken_text = "Please take a look at the challenge on your screen."
+
+        mp3_bytes = await self.tts_service.synthesize(spoken_text, voice_name)
         self.latency_tracker.track_stage_end("tts")
         tts_latency_ms = int((time.perf_counter() - tts_start) * 1000)
 
@@ -576,6 +668,58 @@ class VoiceAgent:
                 type=EventType.QUESTION_ASKED,
                 session_id=self.room_name,
                 payload={"text": clean_text, "speaker": speaker_name}
+            )
+        )
+
+    def _detect_content_type(self, text: str) -> str:
+        if "```" in text:
+            return "code"
+        lower = text.lower()
+        if any(k in lower for k in ["design a system", "design the", "draw", "architecture"]):
+            return "system_design"
+        if any(k in lower for k in ["given an array", "return the", "time complexity", "space complexity", "input:", "output:"]):
+            return "dsa"
+        return "text"
+
+    def _detect_language(self, text: str) -> str | None:
+        import re
+        m = re.search(r"```(\w+)", text)
+        return m.group(1) if m else None
+
+    async def handle_data_message(self, data: bytes, participant, kind) -> None:
+        import json
+        try:
+            msg = json.loads(data.decode("utf-8"))
+        except Exception:
+            return
+
+        if msg.get("type") != "CANDIDATE_MESSAGE":
+            return
+
+        content = msg.get("content", "").strip()
+        image_b64 = msg.get("image_b64")
+
+        candidate_answer = content
+        if image_b64:
+            candidate_answer += "\n\n[Candidate also submitted a system design diagram.]"
+
+        if self.current_question_id and candidate_answer:
+            response_time_ms = int((time.time() - (self.question_asked_at or time.time())) * 1000)
+            await self._save_response_to_db(self.current_question_id, candidate_answer, response_time_ms)
+
+        await self.event_bus.emit(
+            Event(
+                type=EventType.TRANSCRIPT_RECEIVED,
+                session_id=self.room_name,
+                payload={
+                    "text": candidate_answer,
+                    "transcript": candidate_answer,
+                    "turn_number": self.state.conversation.turn_count,
+                },
+                metadata={
+                    "response_time_ms": 0,
+                    "stt_latency_ms": 0,
+                }
             )
         )
 
@@ -703,6 +847,15 @@ class VoiceAgent:
                     "stt_latency_ms": stt_latency_ms,
                 }
             )
+        )
+
+        # Publish user chat message to data channel (for voice transcription)
+        asyncio.create_task(
+            emit_chat_message(self.transport, {
+                "role": "candidate",
+                "content": transcription,
+                "content_type": "text",
+            })
         )
 
         # ── Step 10: Adapt personality based on candidate turn ───────────────

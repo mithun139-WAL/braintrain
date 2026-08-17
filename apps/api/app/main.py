@@ -91,9 +91,14 @@ def create_app() -> FastAPI:
     app.add_middleware(SlowAPIMiddleware)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
+    # Allow Next.js web app + Vite diagram-studio dev server
+    allowed_origins = [
+        settings.frontend_url,
+        "http://localhost:5173",
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_url],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -169,6 +174,10 @@ def create_app() -> FastAPI:
     # Phase 13 — Interview Journey
     from app.interview_journey.routers.journey_router import router as journey_router
     app.include_router(journey_router, prefix="/journeys", tags=["interview-journey"])
+
+    # Phase 14.5 — Diagram Studio (voice-to-architecture-diagram)
+    from app.modules.diagram.router import router as diagram_router
+    app.include_router(diagram_router, prefix="/api", tags=["diagram"])
 
     # Phase 14 — Knowledge Base & Admin Dashboard
     from app.modules.knowledge.router import router as knowledge_router

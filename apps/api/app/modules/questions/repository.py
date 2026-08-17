@@ -69,12 +69,14 @@ async def create_question(
     content: str,
     difficulty: str,
     sequence_order: int,
+    reference_facts: str | None = None,
 ) -> QuestionInstance:
     question = QuestionInstance(
         session_id=session_id,
         content=content,
         difficulty=difficulty,
         sequence_order=sequence_order,
+        reference_facts=reference_facts,
     )
     db.add(question)
     await db.flush()

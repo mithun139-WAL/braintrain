@@ -51,6 +51,21 @@ async def generate_next_question(
     else:
         difficulty = session.difficulty
 
+    # 3.5 Fetch RAG facts if TECHNICAL
+    reference_facts = None
+    if session.interview_type == "TECHNICAL":
+        from app.ai.intelligence.retrieval.retrieval_pipeline import RetrievalPipeline, RetrievalQuery
+        pipeline = RetrievalPipeline(db)
+        query = RetrievalQuery(
+            query_text=session.topic.name,
+            interview_type="TECHNICAL",
+            top_k=3,
+        )
+        chunks = await pipeline.retrieve_knowledge(query)
+        if chunks:
+            # Combine the chunks into a single facts string
+            reference_facts = "\n\n".join([f"- {c.text}" for c in chunks])
+
     # 4. Bank-first selection
     bank_content = await bank_repo.pick_random_question(
         db,
@@ -62,6 +77,8 @@ async def generate_next_question(
 
     if bank_content:
         question_content = bank_content.content
+        # Use bank's reference facts if it has them, else fallback to whatever we just fetched
+        reference_facts = bank_content.reference_facts or reference_facts
         logger.debug("Session %s Q%d: served from bank", session_id, sequence_order)
     else:
         # 5. LLM generation path
@@ -75,6 +92,7 @@ async def generate_next_question(
             difficulty=difficulty,
             interview_type=session.interview_type or "TECHNICAL",
             existing_questions=existing_questions,
+            reference_facts=reference_facts,
         )
 
         provider = get_question_gen_provider()
@@ -86,6 +104,7 @@ async def generate_next_question(
             generated = await provider.generate(gen_input)
 
         question_content = generated.question_text
+        reference_facts = generated.reference_facts
 
     # 6. Persist QuestionInstance
     question = await repo.create_question(
@@ -94,6 +113,7 @@ async def generate_next_question(
         content=question_content,
         difficulty=difficulty,
         sequence_order=sequence_order,
+        reference_facts=reference_facts,
     )
     await db.commit()
     await db.refresh(question)

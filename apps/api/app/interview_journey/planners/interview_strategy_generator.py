@@ -47,8 +47,7 @@ def _compute_pressure(
     style = company_signals.get("company_style", "STANDARD")
     if style == "BIG_TECH":
         base += 1
-    elif style == "STARTUP":
-        base += 0
+    # STARTUP: no pressure adjustment — role/candidate delta drives it.
 
     if base >= 4:
         return "HIGH"
@@ -83,8 +82,10 @@ def _compute_interruption_likelihood(
 def _compute_recovery_allowance(pressure_level: str, company_signals: dict) -> str:
     if pressure_level == "HIGH":
         return "LOW"
-    style = company_signals.get("culture_style", "STANDARD")
-    if style in ("COLLABORATIVE", "REMOTE_FIRST"):
+    # Reads company_style (company_signal_extractor). ENTERPRISE tends to have
+    # more structured, forgiving processes; STARTUP is leaner.
+    style = company_signals.get("company_style", "STANDARD")
+    if style == "ENTERPRISE":
         return "HIGH"
     return "MEDIUM"
 
@@ -92,8 +93,9 @@ def _compute_recovery_allowance(pressure_level: str, company_signals: dict) -> s
 def _compute_encouragement(pressure_level: str, company_signals: dict) -> str:
     if pressure_level == "HIGH":
         return "LOW"
-    style = company_signals.get("culture_style", "STANDARD")
-    if style == "COLLABORATIVE":
+    # Reads company_style (company_signal_extractor).
+    style = company_signals.get("company_style", "STANDARD")
+    if style in ("ENTERPRISE", "STANDARD"):
         return "HIGH"
     return "MEDIUM"
 

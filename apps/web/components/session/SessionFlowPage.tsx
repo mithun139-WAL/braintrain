@@ -41,7 +41,9 @@ export function SessionFlowPage({ sessionId }: { sessionId: string }) {
     // Initialize voice mode once session is loaded
     useEffect(() => {
         if (session && isVoiceMode === null) {
-            const initialMode = session.isVoice ?? true;
+            const initialMode = (session.interviewCategory && session.interviewCategory !== "GENERAL")
+                ? true
+                : (session.isVoice ?? true);
             setIsVoiceMode(initialMode);
             isVoiceModeRef.current = initialMode;
         }

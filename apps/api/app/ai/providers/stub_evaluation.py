@@ -31,7 +31,6 @@ class StubEvaluationProvider:
         depth_score = self._score_depth(word_count)
         confidence_score = self._score_confidence(text)
         communication_score = self._score_communication(text, word_count)
-        hesitation_score = self._score_hesitation(text)
         technical_score = (
             self._score_technical(text)
             if input.interview_type.upper() == "TECHNICAL"
@@ -47,7 +46,6 @@ class StubEvaluationProvider:
             depth_score=depth_score,
             confidence_score=confidence_score,
             communication_score=communication_score,
-            hesitation_score=hesitation_score,
             technical_score=technical_score,
             pressure_score=pressure_score,
             thinking_depth_score=thinking_depth_score,
@@ -62,12 +60,17 @@ class StubEvaluationProvider:
 
         return PerformanceSignal(
             clarity_score=clarity_score,
+            clarity_evidence="[Stub] Clarity was assessed via heuristic.",
             structure_score=structure_score,
+            structure_evidence="[Stub] Structure was assessed via heuristic.",
             depth_score=depth_score,
+            depth_evidence="[Stub] Depth was assessed via heuristic.",
             confidence_score=confidence_score,
+            confidence_evidence="[Stub] Confidence was assessed via heuristic.",
             communication_score=communication_score,
-            hesitation_score=hesitation_score,
+            communication_evidence="[Stub] Communication was assessed via heuristic.",
             technical_score=technical_score,
+            technical_evidence="[Stub] Technical accuracy was assessed via heuristic." if technical_score is not None else None,
             pressure_score=pressure_score,
             thinking_depth_score=thinking_depth_score,
             overall_score=overall_score,
@@ -120,16 +123,9 @@ class StubEvaluationProvider:
             filler_count += len(re.findall(r"\b" + re.escape(f) + r"\b", lc))
         density = filler_count / word_count if word_count > 0 else 0.0
         return max(90.0 - density * 200.0, 20.0)
-
-    def _score_hesitation(self, text: str) -> float:
-        """Filler words + ellipsis patterns. Lower is better."""
-        fillers = ["um", "uh", "er", "hmm"]
-        lc = text.lower()
-        filler_count = 0
-        for f in fillers:
-            filler_count += len(re.findall(r"\b" + re.escape(f) + r"\b", lc))
-        ellipsis_count = text.count("...")
-        return min((filler_count + ellipsis_count) * 15.0, 100.0)
+        # Note: _score_hesitation removed in v1.1.0 — see PerformanceSignal comment
+        # in protocols.py. Text-based hesitation scoring is now dead code in the
+        # post-session path. HesitationDetector in the real-time voice pipeline is unaffected.
 
     def _score_technical(self, text: str) -> float:
         """Presence of domain-specific vocabulary (naive proxy)."""
@@ -191,36 +187,32 @@ class StubEvaluationProvider:
         depth_score: float,
         confidence_score: float,
         communication_score: float,
-        hesitation_score: float,
         technical_score: float | None,
         pressure_score: float,
         thinking_depth_score: float,
         interview_type: str,
     ) -> float:
-        hesitation_penalty = hesitation_score * 0.08
-        behavioral_bonus = (pressure_score * 0.05) + (thinking_depth_score * 0.05)
+        # Matches production formula in openai_evaluation.py / nim_evaluation.py.
+        # hesitation_penalty removed — see PerformanceSignal comment in protocols.py.
+        timing_score = (pressure_score + thinking_depth_score) / 2.0
 
         if interview_type.upper() == "TECHNICAL" and technical_score is not None:
+            content_avg = (clarity_score + structure_score + depth_score) / 3.0
             score = (
-                0.18 * clarity_score
-                + 0.13 * structure_score
-                + 0.18 * depth_score
-                + 0.13 * confidence_score
-                + 0.08 * communication_score
-                + 0.18 * technical_score
-                - hesitation_penalty
-                + behavioral_bonus
+                content_avg * 0.45
+                + technical_score * 0.30
+                + communication_score * 0.10
+                + confidence_score * 0.05
+                + timing_score * 0.10
             )
         else:
-            # Behavioral weighting — confidence and structure matter more
+            content_avg = (clarity_score + structure_score + depth_score) / 3.0
             score = (
-                0.18 * clarity_score
-                + 0.18 * structure_score
-                + 0.18 * depth_score
-                + 0.18 * confidence_score
-                + 0.08 * communication_score
-                + 0.08 * (100.0 - hesitation_score)
-                + behavioral_bonus
+                content_avg * 0.45
+                + confidence_score * 0.20
+                + communication_score * 0.15
+                + timing_score * 0.10
+                + (technical_score if technical_score is not None else 50.0) * 0.10
             )
 
         return max(round(score, 1), 0.0)

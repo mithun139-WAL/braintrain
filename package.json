@@ -14,9 +14,14 @@
   "license": "ISC",
   "packageManager": "pnpm@10.30.1",
   "devDependencies": {
+    "@dietrichgebert/ponytail": "^4.8.4",
     "@types/node": "^25.3.0",
     "eslint": "^10.0.1",
     "prettier": "^3.8.1",
+    "prisma": "5.15.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@prisma/client": "5.15.0"
   }
 }

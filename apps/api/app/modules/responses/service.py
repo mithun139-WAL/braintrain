@@ -54,10 +54,15 @@ async def submit_response(
     if question.session.status != "ACTIVE":
         raise BadRequestException("Responses can only be submitted for ACTIVE sessions")
 
-    # 3. Prevent duplicate
-    existing = await repo.get_existing_response(db, question_id)
-    if existing:
+    # 3. Prevent duplicate for the same type (first vs followup)
+    existing_responses = await repo.get_existing_responses(db, question_id)
+    has_initial = any(not r.is_followup for r in existing_responses)
+    has_followup = any(r.is_followup for r in existing_responses)
+
+    if not dto.is_followup and has_initial:
         raise BadRequestException("A response has already been submitted for this question")
+    if dto.is_followup and has_followup:
+        raise BadRequestException("A follow-up response has already been submitted for this question")
 
     # 4. Compute lightweight metrics
     answer_length = len(dto.answer_text) if dto.answer_text else 0
@@ -76,6 +81,7 @@ async def submit_response(
         thinking_time_ms=dto.thinking_time_ms,
         answer_length=answer_length,
         audio_processing_status=audio_processing_status,
+        is_followup=dto.is_followup,
     )
     await db.commit()
     await db.refresh(response)

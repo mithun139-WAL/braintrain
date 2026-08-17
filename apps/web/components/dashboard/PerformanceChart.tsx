@@ -20,9 +20,26 @@ function formatTrendDate(iso: string) {
 
 export function PerformanceChart({ trend }: { trend?: TrendItem[] }) {
     const [activePeriod, setActivePeriod] = useState<typeof PERIODS[number]>("Month");
+    
+    let cutoffDate = new Date();
+    let periodLabel = "last 30 days";
+    
+    if (activePeriod === "Week") {
+        cutoffDate.setDate(cutoffDate.getDate() - 7);
+        periodLabel = "last 7 days";
+    } else if (activePeriod === "Month") {
+        cutoffDate.setDate(cutoffDate.getDate() - 30);
+        periodLabel = "last 30 days";
+    } else if (activePeriod === "Year") {
+        cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+        periodLabel = "last 12 months";
+    }
+
+    const filteredTrend = trend?.filter(item => new Date(item.analyzedAt) >= cutoffDate) || [];
+
     const chartData =
-        trend && trend.length > 0
-            ? trend.map((item) => ({
+        filteredTrend.length > 0
+            ? filteredTrend.map((item) => ({
                   name: formatTrendDate(item.analyzedAt),
                   score: Math.round(item.overallScore),
               }))
@@ -31,11 +48,28 @@ export function PerformanceChart({ trend }: { trend?: TrendItem[] }) {
     if (chartData.length === 0) {
         return (
             <div className="flex h-full min-h-[320px] flex-col rounded-2xl border border-border bg-card p-6 shadow-card">
-                <div>
-                    <h3 className="text-base font-bold text-foreground">Score Progression</h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">Performance trajectory appears after your first analyzed session.</p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h3 className="text-base font-bold text-foreground">Score Progression</h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Performance trajectory · {periodLabel}</p>
+                    </div>
+                    <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
+                        {PERIODS.map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => setActivePeriod(p)}
+                                className={
+                                    p === activePeriod
+                                        ? "px-3 py-1.5 text-xs font-semibold rounded-md bg-card text-foreground shadow-card"
+                                        : "px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md"
+                                }
+                            >
+                                {p}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-border bg-muted/20 px-6 text-center">
+                <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-border bg-muted/20 px-6 text-center mt-6">
                     <div className="space-y-1">
                         <p className="text-sm font-semibold text-foreground">No score progression yet</p>
                         <p className="text-body-sm text-muted-foreground">
@@ -54,7 +88,7 @@ export function PerformanceChart({ trend }: { trend?: TrendItem[] }) {
                 <div>
                     <h3 className="text-base font-bold text-foreground">Score Progression</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        Performance trajectory · last 30 days
+                        Performance trajectory · {periodLabel}
                     </p>
                 </div>
                 <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">

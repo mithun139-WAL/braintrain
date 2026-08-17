@@ -42,7 +42,7 @@ Hidden Expectations: {", ".join(jd_analysis.get("hidden_expectations", []))}
 
 ## Company Context
 Company Style: {company_signals.get("company_style", "STANDARD")}
-Culture Style: {company_signals.get("culture_style", "STANDARD")}
+Culture Style: {jd_analysis.get("culture_style", "STANDARD")}
 """
 
 
@@ -82,7 +82,7 @@ def generate_prerequisites_fallback(
         topics.append("Algorithmic Complexity & Problem Solving")
         topics.append("Software Engineering Best Practices & Code Maintainability")
 
-    culture = company_signals.get("culture_style", "STANDARD")
+    culture = jd_analysis.get("culture_style", "STANDARD")   # was company_signals.get — bug fixed
     if culture == "STARTUP":
         topics.append("Rapid Prototyping & Dealing with Ambiguity")
     elif culture == "COLLABORATIVE":

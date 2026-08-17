@@ -5,8 +5,10 @@ Company Signal Extractor — infers company context from the job description and
 
 def extract_company_signals(company_name: str | None, jd_text: str) -> dict:
     lower = jd_text.lower()
+    company_style = _detect_company_style(company_name, lower)
     signals = {
-        "company_style": _detect_company_style(company_name, lower),
+        "company_style": company_style,
+        "startup_stage": _detect_startup_stage(lower) if company_style == "STARTUP" else None,
         "speed_expectation": _detect_speed_expectation(lower),
         "collaboration_style": _detect_collaboration_style(lower),
         "system_scale": _detect_system_scale(lower),
@@ -26,6 +28,17 @@ def _detect_company_style(company_name: str | None, lower: str) -> str:
     if any(w in lower for w in ["faang", "big tech", "top tech", "unicorn"]):
         return "BIG_TECH"
     return "STANDARD"
+
+
+def _detect_startup_stage(lower: str) -> str:
+    """Distinguish early-stage from growth-stage startups. Only called when company_style == STARTUP."""
+    early_signals = ["seed", "pre-seed", "early-stage", "just launched", "series a", "pre-launch"]
+    growth_signals = ["series c", "series d", "series e", "scale-up", "growth-stage", "late-stage"]
+    if any(s in lower for s in early_signals):
+        return "EARLY"
+    if any(s in lower for s in growth_signals):
+        return "GROWTH"
+    return "GROWTH"  # series b and unspecified default to growth
 
 
 def _detect_speed_expectation(lower: str) -> str:

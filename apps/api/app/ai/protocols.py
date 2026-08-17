@@ -22,6 +22,7 @@ class QuestionGenerationInput:
     difficulty: str           # "EASY" | "MEDIUM" | "HARD"
     interview_type: str       # "TECHNICAL" | "BEHAVIORAL" | ...
     existing_questions: list[str]  # already-asked questions in this session
+    reference_facts: Optional[str] = None
 
 
 @dataclass
@@ -29,6 +30,7 @@ class GeneratedQuestion:
     question_text: str
     expected_answer_traits: list[str]
     estimated_difficulty: str
+    reference_facts: Optional[str] = None
 
 
 @runtime_checkable
@@ -48,6 +50,12 @@ class EvaluationInput:
     difficulty: str           # "EASY" | "MEDIUM" | "HARD"
     response_time_ms: int
     thinking_time_ms: int
+    reference_facts: Optional[str] = None
+    # RAG-retrieved knowledge base context for this question.
+    # Injected by the evaluation service at runtime; None when the KB returns no
+    # relevant chunks (e.g. behavioral sessions, empty KB).
+    # Used by LLM providers to cross-check technical claims against authoritative
+    # reference material and enumerate factual contradictions.
 
 
 @dataclass
@@ -64,17 +72,36 @@ class EvaluationCostMeta:
 @dataclass
 class PerformanceSignal:
     clarity_score: float
+    clarity_evidence: str
     structure_score: float
+    structure_evidence: str
     depth_score: float
+    depth_evidence: str
     confidence_score: float
+    confidence_evidence: str
     communication_score: float
-    hesitation_score: float
+    communication_evidence: str
+    # hesitation_score intentionally removed from post-session evaluation (v1.1.0).
+    # The underlying concern (punishing thinking-out-loud) is better handled by
+    # pressure_score (response timing) and thinking_depth_score (deliberateness).
+    # Text-based filler detection on voice transcripts produces false positives on
+    # natural speech disfluencies. The DB column is preserved for historical data
+    # but is no longer written or surfaced in the API response.
+    # Real-time voice hesitation detection (HesitationDetector) is unaffected.
     technical_score: Optional[float]   # None for BEHAVIORAL
+    technical_evidence: Optional[str]
     evaluation_explanation: str
+    technical_accuracy_issues: list[str] = field(default_factory=list)
+    # Contradictions enumerated by LLM against reference_facts.
+    # Empty list = no contradictions found (confirmed clear, not skipped).
+    technical_accuracy_evidence: Optional[str] = None
+    # Summary string: "Reference facts confirm answer" or "Reference facts
+    # contradict: <detail>". None when no reference_facts were available.
     # Server-computed (not LLM):
     pressure_score: Optional[float] = None
     thinking_depth_score: Optional[float] = None
     overall_score: Optional[float] = None
+    is_followup: bool = False
     # Cost metadata (None for stub providers)
     cost_meta: Optional[EvaluationCostMeta] = field(default=None)
 

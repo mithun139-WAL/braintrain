@@ -17,5 +17,6 @@ export interface Session {
     adaptive?: boolean;
     durationMinutes: number;
     isVoice?: boolean;
+    interviewCategory?: "GENERAL" | "CODING" | "DSA" | "SYSTEM_DESIGN";
     personalityConfig?: Record<string, unknown>;
 }

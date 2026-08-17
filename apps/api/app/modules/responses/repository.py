@@ -42,17 +42,17 @@ async def get_question_with_session(
     return question
 
 
-async def get_existing_response(
+async def get_existing_responses(
     db: AsyncSession, question_id: uuid.UUID
-) -> Optional[ResponseInstance]:
-    """Return an existing non-deleted response for this question, if any."""
+) -> list[ResponseInstance]:
+    """Return existing non-deleted responses for this question."""
     result = await db.execute(
         select(ResponseInstance).where(
             ResponseInstance.question_id == question_id,
             ResponseInstance.deleted_at.is_(None),
         )
     )
-    return result.scalar_one_or_none()
+    return list(result.scalars().all())
 
 
 async def create_response(
@@ -66,6 +66,7 @@ async def create_response(
     thinking_time_ms: int,
     answer_length: int,
     audio_processing_status: str,
+    is_followup: bool = False,
 ) -> ResponseInstance:
     response = ResponseInstance(
         question_id=question_id,
@@ -76,6 +77,7 @@ async def create_response(
         thinking_time_ms=thinking_time_ms,
         answer_length=answer_length,
         audio_processing_status=audio_processing_status,
+        is_followup=is_followup,
     )
     db.add(response)
     await db.flush()

@@ -25,6 +25,8 @@ import {
 import { sessionsApi } from "@/lib/api/sessions.api";
 import { cn } from "@/lib/utils";
 import { InterviewMode } from "@braintrain/shared";
+import { useSessionDataChannel } from "@/hooks/useSessionDataChannel";
+import { ChatPanel } from "./ChatPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -128,6 +130,7 @@ const MeetRoomContainer: React.FC<{
     const room = useRoomContext();
     const connectionState = useConnectionState();
     const { localParticipant } = useLocalParticipant();
+    const { messages, sendMessage } = useSessionDataChannel(room);
 
     const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
     const [showTranscript, setShowTranscript] = useState(false);
@@ -216,260 +219,246 @@ const MeetRoomContainer: React.FC<{
     const isDavidSpeaking = isAgentSpeaking && currentSpeaker === "David";
 
     return (
-        <div
-            className="flex flex-col w-full h-full min-h-0 rounded-2xl overflow-hidden border border-border bg-background"
-        >
-            {/* ── Top bar ──────────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/45 backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <BrainCircuit className="size-4" />
+        <div className="flex w-full h-full min-h-0 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950">
+            <div className="flex-1 flex flex-col min-h-0 bg-slate-900 border-r border-slate-800">
+                {/* ── Top bar ──────────────────────────────────────────────────── */}
+                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <BrainCircuit className="size-4" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-100 leading-tight">
+                                Mock Interview
+                            </p>
+                            <p className="text-[10px] text-slate-400 leading-tight">
+                                AI-Powered Practice
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm font-semibold text-foreground leading-tight">
-                            Mock Interview
-                        </p>
-                        <p className="text-[10px] text-muted-foreground leading-tight">
-                            AI-Powered Session
-                        </p>
-                    </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                    {isConnected && (
-                        <span className="text-sm font-mono text-muted-foreground tabular-nums">
+                    <div className="flex items-center gap-2">
+                        {/* Time count */}
+                        <div className="text-xs font-mono bg-slate-800 text-slate-300 px-2.5 py-1 rounded border border-slate-750 font-semibold tracking-wider">
                             {formatElapsed(elapsedSeconds)}
-                        </span>
-                    )}
-                    <div
-                        className={cn(
-                            "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide border",
-                            isConnected
-                                ? "bg-emerald/10 text-emerald border-emerald/20"
-                                : "bg-gold/10 text-gold border-gold/20"
-                        )}
-                    >
-                        {isConnected ? (
-                            <Wifi size={10} />
-                        ) : (
-                            <WifiOff size={10} />
-                        )}
-                        {connectionState === ConnectionState.Connecting
-                            ? "Connecting…"
-                            : isConnected
-                            ? "Live"
-                            : "Disconnected"}
+                        </div>
+
+                        {/* Connection status */}
+                        <div
+                            className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border",
+                                isConnected
+                                    ? "bg-green-500/10 text-green-500 border-green-500/25"
+                                    : "bg-amber-500/10 text-amber-500 border-amber-500/25"
+                            )}
+                        >
+                            {isConnected ? (
+                                <Wifi size={10} />
+                            ) : (
+                                <WifiOff size={10} />
+                            )}
+                            {connectionState === ConnectionState.Connecting
+                                ? "Connecting…"
+                                : isConnected
+                                ? "Live"
+                                : "Disconnected"}
+                        </div>
                     </div>
+                </div>
+
+                {/* ── Participant tiles ────────────────────────── */}
+                <div className="flex-1 flex flex-col gap-3 p-3 min-h-0">
+                    {interviewMode === InterviewMode.PANEL_AI ? (
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-0">
+                            {/* Marcus Johnson */}
+                            <ParticipantTile
+                                displayName="Marcus"
+                                avatarLabel="MJ"
+                                avatarGradient="from-blue-600 to-indigo-700"
+                                ringColor="ring-blue-500"
+                                glowColor="shadow-blue-500/25"
+                                barColor="bg-blue-400"
+                                pulseColor="bg-blue-500"
+                                badgeColor="bg-blue-500/15 text-blue-300 border-blue-500/25"
+                                dotColor="bg-blue-400"
+                                isSpeaking={isMarcusSpeaking}
+                                statusLabel={
+                                    isMarcusSpeaking
+                                        ? "Speaking"
+                                        : isConnected
+                                        ? "Listening"
+                                        : "Connecting…"
+                                }
+                                avatarIcon={
+                                    <img
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc"
+                                        className="size-full rounded-full object-cover"
+                                        alt="Marcus"
+                                    />
+                                }
+                                className="min-h-0"
+                            />
+
+                            {/* Sarah Chen */}
+                            <ParticipantTile
+                                displayName="Sarah"
+                                avatarLabel="SC"
+                                avatarGradient="from-pink-600 to-rose-700"
+                                ringColor="ring-pink-500"
+                                glowColor="shadow-pink-500/25"
+                                barColor="bg-pink-400"
+                                pulseColor="bg-pink-500"
+                                badgeColor="bg-pink-500/15 text-pink-300 border-pink-500/25"
+                                dotColor="bg-pink-400"
+                                isSpeaking={isSarahSpeaking}
+                                statusLabel={
+                                    isSarahSpeaking
+                                        ? "Speaking"
+                                        : isConnected
+                                        ? "Listening"
+                                        : "Connecting…"
+                                }
+                                avatarIcon={
+                                    <img
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk"
+                                        className="size-full rounded-full object-cover"
+                                        alt="Sarah"
+                                    />
+                                }
+                                className="min-h-0"
+                            />
+
+                            {/* David Wright */}
+                            <ParticipantTile
+                                displayName="David"
+                                avatarLabel="DW"
+                                avatarGradient="from-amber-600 to-orange-700"
+                                ringColor="ring-amber-500"
+                                glowColor="shadow-amber-500/25"
+                                barColor="bg-amber-400"
+                                pulseColor="bg-amber-500"
+                                badgeColor="bg-amber-500/15 text-amber-300 border-amber-500/25"
+                                dotColor="bg-amber-400"
+                                isSpeaking={isDavidSpeaking}
+                                statusLabel={
+                                    isDavidSpeaking
+                                        ? "Speaking"
+                                        : isConnected
+                                        ? "Listening"
+                                        : "Connecting…"
+                                }
+                                avatarIcon={
+                                    <img
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI"
+                                        className="size-full rounded-full object-cover"
+                                        alt="David"
+                                    />
+                                }
+                                className="min-h-0"
+                            />
+
+                            {/* Candidate */}
+                            <ParticipantTile
+                                displayName={candidateName || "You"}
+                                avatarLabel="ME"
+                                avatarGradient="from-emerald-500 to-teal-600"
+                                ringColor="ring-emerald-500"
+                                glowColor="shadow-emerald-500/25"
+                                barColor="bg-emerald-400"
+                                pulseColor="bg-emerald-500"
+                                badgeColor="bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                                dotColor="bg-emerald-400"
+                                isSpeaking={isUserSpeaking}
+                                isMuted={isMuted}
+                                statusLabel={
+                                    isMuted ? "Muted" : isUserSpeaking ? "Speaking" : "Listening"
+                                }
+                                avatarIcon={<User className="size-8 text-white" />}
+                                className="min-h-0"
+                                isLocal
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col md:flex-row gap-3 min-h-0">
+                            {/* AI Interviewer — large dominant tile */}
+                            <ParticipantTile
+                                displayName="AI Interviewer"
+                                avatarLabel="AI"
+                                avatarGradient="from-indigo-500 via-violet-500 to-purple-600"
+                                ringColor="ring-indigo-500"
+                                glowColor="shadow-indigo-500/25"
+                                barColor="bg-indigo-400"
+                                pulseColor="bg-indigo-500"
+                                badgeColor="bg-indigo-500/15 text-indigo-300 border-indigo-500/25"
+                                dotColor="bg-indigo-400"
+                                isSpeaking={isAgentSpeaking}
+                                statusLabel={
+                                    isAgentSpeaking
+                                        ? "Speaking"
+                                        : isConnected
+                                        ? "Listening"
+                                        : "Connecting…"
+                                }
+                                avatarIcon={<BrainCircuit className="size-10 text-white" />}
+                                className="flex-1 min-h-0"
+                            />
+
+                            {/* User — smaller tile */}
+                            <ParticipantTile
+                                displayName={candidateName || "You"}
+                                avatarLabel="ME"
+                                avatarGradient="from-emerald-500 to-teal-600"
+                                ringColor="ring-emerald-500"
+                                glowColor="shadow-emerald-500/25"
+                                barColor="bg-emerald-400"
+                                pulseColor="bg-emerald-500"
+                                badgeColor="bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                                dotColor="bg-emerald-400"
+                                isSpeaking={isUserSpeaking}
+                                isMuted={isMuted}
+                                statusLabel={
+                                    isMuted ? "Muted" : isUserSpeaking ? "Speaking" : "Listening"
+                                }
+                                avatarIcon={<User className="size-8 text-white" />}
+                                className="flex-1 min-h-0"
+                                isLocal
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Bottom control bar ────────────────────────────────────── */}
+                <div className="flex items-center justify-center gap-4 py-4 px-6 border-t border-slate-800 bg-slate-955/40">
+                    {/* Mic toggle */}
+                    <ControlButton
+                        onClick={toggleMute}
+                        disabled={!isConnected}
+                        label={isMuted ? "Unmute" : "Mute"}
+                        active={!isMuted}
+                        activeClass="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25"
+                        inactiveClass="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20"
+                        icon={isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+                    />
+
+                    {/* End call */}
+                    <button
+                        onClick={onEndSession}
+                        title="End interview"
+                        className="flex flex-col items-center gap-1.5 group flex-shrink-0"
+                    >
+                        <div className="size-12 rounded-full bg-[#f43f5e]/10 hover:bg-[#f43f5e] text-[#f43f5e] hover:text-white flex items-center justify-center border border-[#f43f5e]/25 transition-all active:scale-95">
+                            <PhoneOff size={18} />
+                        </div>
+                        <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors">
+                            End Call
+                        </span>
+                    </button>
                 </div>
             </div>
 
-            {/* ── Participant tiles + transcript ────────────────────────── */}
-            <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 min-h-0">
-                {/* Participant tiles */}
-                {interviewMode === InterviewMode.PANEL_AI ? (
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-0">
-                        {/* Marcus Johnson */}
-                        <ParticipantTile
-                            displayName="Marcus"
-                            avatarLabel="MJ"
-                            avatarGradient="from-blue-600 to-indigo-700"
-                            ringColor="ring-blue-500"
-                            glowColor="shadow-blue-500/25"
-                            barColor="bg-blue-400"
-                            pulseColor="bg-blue-500"
-                            badgeColor="bg-blue-500/15 text-blue-300 border-blue-500/25"
-                            dotColor="bg-blue-400"
-                            isSpeaking={isMarcusSpeaking}
-                            statusLabel={
-                                isMarcusSpeaking
-                                    ? "Speaking"
-                                    : isConnected
-                                    ? "Listening"
-                                    : "Connecting…"
-                            }
-                            avatarIcon={
-                                <img
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtkhzmd3n507non6jInf7K0NM3nWA_t_08DZe4M_RQrKGeUEy5FGthJz81zQwJIWCpeKnyWEEHorz8Po47joiG6tuevxvZC-oWKc1zy5KcSU0NuKkemYdJ65kj6kiSsY5GR55ErvW3hRiTA5EZBz4xSr_zy5RfrZ6X16-NaMn8h-PWru4G3jX3G05zabAdFDKHuC6V4X1-uC_Sjl-Y6YtuYb2oyVaAl_ILU1qeiBTiT7OGMP79CoUV0hSDbz2dqGe9Rh8vaskDuoc"
-                                    className="size-full rounded-full object-cover"
-                                    alt="Marcus"
-                                />
-                            }
-                            className="min-h-0"
-                        />
-
-                        {/* Sarah Chen */}
-                        <ParticipantTile
-                            displayName="Sarah"
-                            avatarLabel="SC"
-                            avatarGradient="from-pink-600 to-rose-700"
-                            ringColor="ring-pink-500"
-                            glowColor="shadow-pink-500/25"
-                            barColor="bg-pink-400"
-                            pulseColor="bg-pink-500"
-                            badgeColor="bg-pink-500/15 text-pink-300 border-pink-500/25"
-                            dotColor="bg-pink-400"
-                            isSpeaking={isSarahSpeaking}
-                            statusLabel={
-                                isSarahSpeaking
-                                    ? "Speaking"
-                                    : isConnected
-                                    ? "Listening"
-                                    : "Connecting…"
-                            }
-                            avatarIcon={
-                                <img
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV25uqcrWjzm0uyImmy_Hv8judeMlCBAhNV7HbQwaedKzWlTKvYJfbh8cc9qKPY_NQQi0cRl5tWl1T2hjtom3VIztWUieLg60XBCpiyDw0PC1aZak87opH091cpOUys6-4d2EMc07hdlbwUjV_QtiNdKRU8uzHGf9LKKpcXBP7SvLi1EckD017J0cA6hbY0TaElB4HP-YsM4zCiphK2kM4t0lJK4dUMmtPviGrghTEG77OJfgpfEq4Gu0SaWvqxp9Kn1SIJcEn6pk"
-                                    className="size-full rounded-full object-cover"
-                                    alt="Sarah"
-                                />
-                            }
-                            className="min-h-0"
-                        />
-
-                        {/* David Wright */}
-                        <ParticipantTile
-                            displayName="David"
-                            avatarLabel="DW"
-                            avatarGradient="from-amber-600 to-orange-700"
-                            ringColor="ring-amber-500"
-                            glowColor="shadow-amber-500/25"
-                            barColor="bg-amber-400"
-                            pulseColor="bg-amber-500"
-                            badgeColor="bg-amber-500/15 text-amber-300 border-amber-500/25"
-                            dotColor="bg-amber-400"
-                            isSpeaking={isDavidSpeaking}
-                            statusLabel={
-                                isDavidSpeaking
-                                    ? "Speaking"
-                                    : isConnected
-                                    ? "Listening"
-                                    : "Connecting…"
-                            }
-                            avatarIcon={
-                                <img
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB17zDeUEnok2_UtbAFmM554O2SXBzjMiBm1jQID86EnetT6vTUNfk6LyPJJdIyDcx1xUZJqcXthryBDpWiqO3bFX9irYFfGJDdECbo9NhBkY28nm-knjk4iU-YZiU6HuBFdIIxlfpPocPer_K2g5RuO_lsiWG4RhOJcNemOuYQ_BwGbYm-W-r3BsCy4HF_VtCuFc8ijgQwjQMvmwAFH9gmZC74dOobzax5YFcwm18edgieAPeK9R_ZTcwB-e9wd0StAA1of3gaiBI"
-                                    className="size-full rounded-full object-cover"
-                                    alt="David"
-                                />
-                            }
-                            className="min-h-0"
-                        />
-
-                        {/* Candidate */}
-                        <ParticipantTile
-                            displayName={candidateName || "You"}
-                            avatarLabel="ME"
-                            avatarGradient="from-emerald-500 to-teal-600"
-                            ringColor="ring-emerald-500"
-                            glowColor="shadow-emerald-500/25"
-                            barColor="bg-emerald-400"
-                            pulseColor="bg-emerald-500"
-                            badgeColor="bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                            dotColor="bg-emerald-400"
-                            isSpeaking={isUserSpeaking}
-                            isMuted={isMuted}
-                            statusLabel={
-                                isMuted ? "Muted" : isUserSpeaking ? "Speaking" : "Listening"
-                            }
-                            avatarIcon={<User className="size-8 text-white" />}
-                            className="min-h-0"
-                            isLocal
-                        />
-                    </div>
-                ) : (
-                    <div className="flex-1 flex flex-col md:flex-row gap-3 min-h-0">
-                        {/* AI Interviewer — large dominant tile */}
-                        <ParticipantTile
-                            displayName="AI Interviewer"
-                            avatarLabel="AI"
-                            avatarGradient="from-indigo-500 via-violet-500 to-purple-600"
-                            ringColor="ring-indigo-500"
-                            glowColor="shadow-indigo-500/25"
-                            barColor="bg-indigo-400"
-                            pulseColor="bg-indigo-500"
-                            badgeColor="bg-indigo-500/15 text-indigo-300 border-indigo-500/25"
-                            dotColor="bg-indigo-400"
-                            isSpeaking={isAgentSpeaking}
-                            statusLabel={
-                                isAgentSpeaking
-                                    ? "Speaking"
-                                    : isConnected
-                                    ? "Listening"
-                                    : "Connecting…"
-                            }
-                            avatarIcon={<BrainCircuit className="size-10 text-white" />}
-                            className="flex-1 min-h-0"
-                        />
-
-                        {/* User — smaller tile */}
-                        <ParticipantTile
-                            displayName={candidateName || "You"}
-                            avatarLabel="ME"
-                            avatarGradient="from-emerald-500 to-teal-600"
-                            ringColor="ring-emerald-500"
-                            glowColor="shadow-emerald-500/25"
-                            barColor="bg-emerald-400"
-                            pulseColor="bg-emerald-500"
-                            badgeColor="bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                            dotColor="bg-emerald-400"
-                            isSpeaking={isUserSpeaking}
-                            isMuted={isMuted}
-                            statusLabel={
-                                isMuted ? "Muted" : isUserSpeaking ? "Speaking" : "Listening"
-                            }
-                            avatarIcon={<User className="size-8 text-white" />}
-                            className="flex-1 min-h-0"
-                            isLocal
-                        />
-                    </div>
-                )}
-
-                {/* Right panel: live transcript (toggleable) */}
-                {showTranscript && (
-                    <div className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 flex flex-col min-h-0 bg-card rounded-2xl overflow-hidden border border-border shadow-sm">
-                        <TranscriptPanel transcript={transcript} />
-                    </div>
-                )}
-            </div>
-
-            {/* ── Bottom control bar ────────────────────────────────────── */}
-            <div className="flex items-center justify-center gap-4 py-4 px-6 border-t border-border">
-                {/* Mic toggle */}
-                <ControlButton
-                    onClick={toggleMute}
-                    disabled={!isConnected}
-                    label={isMuted ? "Unmute" : "Mute"}
-                    active={!isMuted}
-                    activeClass="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25"
-                    inactiveClass="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20"
-                    icon={isMuted ? <MicOff size={18} /> : <Mic size={18} />}
-                />
-
-                {/* Transcript toggle */}
-                <ControlButton
-                    onClick={() => setShowTranscript((v) => !v)}
-                    label="Transcript"
-                    active={showTranscript}
-                    activeClass="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25"
-                    inactiveClass="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border"
-                    icon={<MessageSquare size={18} />}
-                    badge={
-                        transcript.length > 0 && !showTranscript
-                            ? String(Math.min(transcript.length, 99))
-                            : undefined
-                    }
-                />
-
-                {/* End call */}
-                <button
-                    onClick={onEndSession}
-                    title="End interview"
-                    className="flex flex-col items-center flex-shrink-0"
-                >
-                    <div className="size-11 rounded-full bg-ruby/10 hover:bg-ruby text-ruby hover:text-white flex items-center justify-center border border-ruby/25 transition-all">
-                        <PhoneOff size={18} />
-                    </div>
-                </button>
+            {/* Right Panel: Chat log & code submission panel */}
+            <div className="w-[450px] flex-shrink-0 flex flex-col min-h-0">
+                <ChatPanel messages={messages} onSend={sendMessage} />
             </div>
         </div>
     );
@@ -517,10 +506,10 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({
     return (
         <div
             className={cn(
-                "relative bg-card border border-border rounded-xl overflow-hidden",
+                "relative bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden",
                 "flex items-center justify-center",
                 "transition-all duration-200",
-                isSpeaking ? "border-primary ring-1 ring-primary/20 bg-primary/[0.02]" : "border-border/60",
+                isSpeaking ? "border-primary ring-1 ring-primary/20 bg-primary/[0.02]" : "border-slate-800/60",
                 className
             )}
         >
@@ -530,7 +519,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({
                 <div className="relative flex items-center justify-center">
                     <div
                         className={cn(
-                            "size-16 rounded-full bg-primary/10 text-primary flex items-center justify-center",
+                            "size-16 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center",
                             "transition-all duration-200 z-10 relative"
                         )}
                     >
@@ -557,7 +546,7 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <span className="text-[10px] text-muted-foreground font-medium">
+                        <span className="text-[10px] text-slate-400 font-medium">
                             {isMuted ? "Muted" : "Silent"}
                         </span>
                     )}
@@ -566,11 +555,11 @@ const ParticipantTile: React.FC<ParticipantTileProps> = ({
 
             {/* Name + role badge — bottom-left */}
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-background/80 backdrop-blur-sm border border-border/40 px-2 py-0.5 rounded-md">
-                    <span className="text-[11px] font-semibold text-foreground">{displayName}</span>
+                <div className="flex items-center gap-1 bg-slate-955/80 backdrop-blur-sm border border-slate-800/50 px-2 py-0.5 rounded-md">
+                    <span className="text-[11px] font-semibold text-slate-200">{displayName}</span>
                     {isMuted && <MicOff size={10} className="text-red-400 shrink-0" />}
                     {isLocal && !isMuted && (
-                        <span className="text-[9px] text-muted-foreground">(You)</span>
+                        <span className="text-[9px] text-slate-400">(You)</span>
                     )}
                 </div>
             </div>

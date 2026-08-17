@@ -20,7 +20,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -61,6 +61,7 @@ class ResponseInstance(Base):
     response_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     thinking_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     answer_length: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_followup: Mapped[bool] = mapped_column(Boolean, server_default="false", default=False, nullable=False)
 
     # ── Audio Signal Layer (Phase 4 — Whisper transcription) ──────────────────
     # transcribed_text is null until EvaluationWorker processes the session
@@ -72,16 +73,23 @@ class ResponseInstance(Base):
 
     # ── PerformanceSignal scores (populated after AI evaluation) ─────────────
     clarity_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    clarity_evidence: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     structure_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    structure_evidence: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     depth_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    depth_evidence: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     confidence_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    confidence_evidence: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     communication_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    communication_evidence: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     hesitation_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     technical_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # null for behavioral
+    technical_evidence: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     pressure_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     thinking_depth_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     overall_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     evaluation_explanation: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -33,6 +33,7 @@ class QuestionBank(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     content: Mapped[str] = mapped_column(String, nullable=False)
+    reference_facts: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     topic_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("topics.id"), nullable=False
     )

@@ -183,7 +183,32 @@ async def run_ingestion():
     async with db_session as db:
         logger.info("Starting ingestion of curated mock interview Q&A documents...")
         
-        for doc_data in CURATED_DOCUMENTS:
+        documents_to_ingest = list(CURATED_DOCUMENTS)
+        
+        import os
+        primer_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..", "..", "knowledge", "sources", "system_design", "system_design_primer.md"
+            )
+        )
+        if os.path.exists(primer_path):
+            logger.info(f"Found system design primer document at {primer_path}. Adding to ingestion list...")
+            with open(primer_path, "r", encoding="utf-8") as f:
+                primer_content = f.read()
+            documents_to_ingest.append({
+                "title": "System Design Primer Questions (donnemartin/system-design-primer & roadmap.sh)",
+                "source": "system_design/system_design_primer.md",
+                "source_type": "markdown",
+                "domain": "system_design",
+                "topic": "distributed_systems",
+                "difficulty": "HARD",
+                "content": primer_content
+            })
+        else:
+            logger.warning(f"System design primer document not found at {primer_path}!")
+        
+        for doc_data in documents_to_ingest:
             # Check if document already exists by title
             stmt = select(KnowledgeDocument).where(KnowledgeDocument.title == doc_data["title"])
             res = await db.execute(stmt)

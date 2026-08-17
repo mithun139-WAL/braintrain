@@ -139,11 +139,14 @@ async def register(db: AsyncSession, dto: RegisterRequest) -> MessageResponse:
     # Send confirmation email asynchronously
     if dto.email and confirmation_token:
         confirmation_url = _build_confirmation_url(confirmation_token)
-        await _email_provider.send_confirmation(
-            to_email=dto.email,
-            confirmation_url=confirmation_url,
-            display_name=dto.name,
-        )
+        try:
+            await _email_provider.send_confirmation(
+                to_email=dto.email,
+                confirmation_url=confirmation_url,
+                display_name=dto.name,
+            )
+        except Exception as exc:
+            logger.error("Failed to send registration confirmation email to %s: %s", dto.email, exc)
 
     return MessageResponse(
         message="Registration successful! Please check your email to confirm your account."
@@ -269,11 +272,14 @@ async def request_otp(db: AsyncSession, identifier: str) -> MessageResponse:
     )
     await db.commit()
 
-    # Deliver OTP — fire-and-forget style; transport errors propagate up
-    if is_email:
-        await _email_provider.send_otp(identifier, code)
-    else:
-        await _sms_provider.send_otp(identifier, code)
+    # Deliver OTP — fire-and-forget style; transport errors logged instead of crashing
+    try:
+        if is_email:
+            await _email_provider.send_otp(identifier, code)
+        else:
+            await _sms_provider.send_otp(identifier, code)
+    except Exception as exc:
+        logger.error("Failed to deliver OTP to %s: %s", identifier, exc)
 
     return MessageResponse(message="OTP sent successfully")
 

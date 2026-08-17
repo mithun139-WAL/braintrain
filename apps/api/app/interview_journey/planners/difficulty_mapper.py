@@ -1,5 +1,11 @@
 """
 Difficulty Mapper — maps round difficulty based on candidate and role signals.
+
+Key reads from company_signals:
+    "company_style" — set by company_signal_extractor.py (BIG_TECH / STARTUP /
+                      ENTERPRISE / STANDARD).
+    NOTE: "culture_style" is a separate key set only by jd_analyzer.py and is
+    NOT read here. Keep the two concepts distinct.
 """
 
 
@@ -22,19 +28,23 @@ def _base_difficulty(candidate_level: str, role_level: str) -> int:
     candidate = level_map.get(candidate_level, 3)
     role = level_map.get(role_level, 3)
 
-    diff = role - candidate
-    if diff > 0:
-        return role + 1
-    elif diff < -1:
+    if candidate < role:
+        # underqualified: scale up toward role's bar, capped at STAFF
+        gap = role - candidate
+        return min(role + min(gap, 1), 5)  # cap the boost at +1 regardless of gap size
+    else:
+        # at or above role level: calibrate to the role's actual bar
         return role
-    return candidate
 
 
 def _adjust_for_company(base: int, company_signals: dict) -> int:
+    # Reads "company_style" from company_signal_extractor.py output.
     style = company_signals.get("company_style", "STANDARD")
     if style == "BIG_TECH":
         return base + 1
     if style == "STARTUP":
+        # STARTUPs typically run leaner, more practical interviews.
+        # Intentionally no adjustment: difficulty is purely role/candidate-driven.
         return base
     return base
 

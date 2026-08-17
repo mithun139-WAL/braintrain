@@ -31,7 +31,7 @@ export function Logo({
             {showText && (
                 <span
                     className={cn(
-                        "font-extrabold tracking-tight text-charcoal dark:text-white",
+                        "font-extrabold tracking-tight text-foreground dark:text-white",
                         textClassName || "text-xl"
                     )}
                 >

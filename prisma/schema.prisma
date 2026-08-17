@@ -164,6 +164,7 @@ model interview_sessions {
   updated_at         DateTime             @default(now()) @db.Timestamptz(6)
   deleted_at         DateTime?            @db.Timestamptz(6)
   is_voice           Boolean
+  interview_category String?              @db.VarChar
   candidate_memories candidate_memories[]
   coaching_sessions  coaching_sessions[]
   evaluation_jobs    evaluation_jobs?

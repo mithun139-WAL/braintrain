@@ -40,6 +40,7 @@ class OpenAIQuestionGenerationProvider:
             difficulty=input.difficulty,
             interview_type=input.interview_type,
             existing_questions=input.existing_questions,
+            reference_facts=input.reference_facts,
         )
 
         try:
@@ -67,6 +68,7 @@ class OpenAIQuestionGenerationProvider:
                 input.topic_name,
                 parsed.estimated_difficulty,
             )
+            parsed.reference_facts = input.reference_facts
             return parsed
 
         except Exception as exc:
@@ -98,6 +100,7 @@ class OpenAIQuestionGenerationProvider:
 
             item = QuestionBank(
                 content=question.question_text,
+                reference_facts=question.reference_facts,
                 topic_id=input.topic_id,
                 difficulty=question.estimated_difficulty,
                 interview_type=input.interview_type,

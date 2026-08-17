@@ -32,6 +32,7 @@ class QuestionInstance(Base):
     )
     content: Mapped[str] = mapped_column(String, nullable=False)
     difficulty: Mapped[str] = mapped_column(String, nullable=False)  # DifficultyLevel string
+    reference_facts: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     sequence_order: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-based
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

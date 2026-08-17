@@ -9,9 +9,16 @@ Key responsibilities:
 
 Score flow:
   LLM → 6 content dimensions (clarity, structure, depth, confidence, communication, technical)
+  LLM → technical_accuracy_issues (list of factual contradictions against RAG context)
   Server → pressure_score (from response_time_ms)
   Server → thinking_depth_score (from thinking_time_ms)
   Server → overall_score (weighted formula, BEHAVIORAL vs TECHNICAL rubrics)
+
+RAG grounding:
+  For TECHNICAL sessions, InterviewKnowledgeRetriever retrieves up to 3 authoritative
+  chunks from the KB for each question. These are injected into EvaluationInput as
+  reference_facts and passed to the LLM provider, which is required to enumerate any
+  factual contradictions in the candidate's answer before scoring technicalScore.
 
 Aggregation: simple average across all questions in the session.
 
@@ -30,6 +37,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.factory import get_evaluation_provider, get_transcription_provider
 from app.ai.protocols import EvaluationInput, PerformanceSignal
+from app.ai.rag.retriever import InterviewKnowledgeRetriever
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.modules.evaluation import repository as repo
 from app.modules.evaluation.schemas import (
@@ -41,18 +49,20 @@ from app.usage import service as usage_svc
 
 logger = logging.getLogger(__name__)
 
+# Module-level retriever — stateless, safe to share across requests
+_retriever = InterviewKnowledgeRetriever()
+
 # ── Strength threshold ────────────────────────────────────────────────────────
 STRENGTH_THRESHOLD = 70.0
 
 DIMENSION_LABELS: dict[str, str] = {
-    "clarity":       "Clear and coherent communication",
-    "structure":     "Well-structured answers (STAR format)",
-    "depth":         "Strong depth and detail in responses",
-    "confidence":    "Confident and assertive delivery",
-    "communication": "Fluent communication with minimal fillers",
-    "hesitation":    "Composed delivery with minimal hesitation",
-    "technical":     "Solid technical knowledge",
-    "pressure":      "Calm and composed under time pressure",
+    "clarity":        "Clear and coherent communication",
+    "structure":      "Well-structured answers (STAR format)",
+    "depth":          "Strong depth and detail in responses",
+    "confidence":     "Confident and assertive delivery",
+    "communication":  "Fluent communication with minimal fillers",
+    "technical":      "Solid technical knowledge",
+    "pressure":       "Calm and composed under time pressure",
     "thinking_depth": "Deliberate and thoughtful before answering",
 }
 
@@ -70,7 +80,9 @@ async def analyze_session(
     session = await repo.get_session_for_user(db, session_id, user_id)
     if not session:
         raise NotFoundException("Session not found or forbidden.")
-    return await _run_analysis(db, session_id)
+    result = await _run_analysis(db, session_id)
+    await db.commit()
+    return result
 
 
 async def analyze_session_internal(
@@ -98,6 +110,11 @@ async def get_evaluation(
 
 
 # ── Core analysis pipeline ────────────────────────────────────────────────────
+
+# Evaluate at most this many responses per session. Long interviews with many
+# follow-ups can produce dozens of responses — beyond this the LLM context cost
+# and latency balloon while marginal scoring value drops.
+MAX_EVALUATION_RESPONSES = 10
 
 
 async def _run_analysis(
@@ -139,6 +156,12 @@ async def _run_analysis(
     ai_provider = get_evaluation_provider() if has_credits else _get_stub_evaluation()
     transcription_provider = get_transcription_provider() if has_credits else _get_stub_transcription()
 
+    # Resolve topic name for RAG queries (safe: selectinload loaded it above)
+    is_technical = (
+        session.interview_type and session.interview_type.upper() == "TECHNICAL"
+    )
+    topic_name: Optional[str] = session.topic.name if session.topic else None
+
     # 4. Per-response transcription + evaluation
     signals: list[PerformanceSignal] = []
     total_input_tokens = 0
@@ -147,91 +170,146 @@ async def _run_analysis(
 
     eval_start = time.monotonic()
 
+    # Cap responses evaluated to limit LLM cost/latency on long sessions.
+    # Take only the last MAX_EVALUATION_RESPONSES.
+    total_responses = sum(len(q.responses) for q in questions)
+    skip_count = max(0, total_responses - MAX_EVALUATION_RESPONSES)
+    if skip_count:
+        logger.warning(
+            "Session %s has %d responses — evaluating only the last %d",
+            session_id, total_responses, MAX_EVALUATION_RESPONSES,
+        )
+
+    response_idx = 0
     for q in questions:
-        response = q.responses[0]  # guaranteed by answered-only filter above
+        for response in q.responses:
+            response_idx += 1
+            if response_idx <= skip_count:
+                continue  # skip early responses, keep only the last N
 
-        # ── 4a: Audio transcription ──────────────────────────────────────────
-        transcribed_text: Optional[str] = None
-        audio_duration_seconds: Optional[float] = None
-        audio_processing_status: str = response.audio_processing_status
+            # ── 4a: Audio transcription ──────────────────────────────────────────
+            transcribed_text: Optional[str] = None
+            audio_duration_seconds: Optional[float] = None
+            audio_processing_status: str = response.audio_processing_status
 
-        if response.audio_url:
-            logger.debug(
-                "Transcribing audio for response %s | url: %s",
-                response.id,
-                response.audio_url,
+            if response.audio_url:
+                logger.debug(
+                    "Transcribing audio for response %s | url: %s",
+                    response.id,
+                    response.audio_url,
+                )
+                # Mark PROCESSING before API call
+                await repo.set_response_audio_processing(db, response.id, "PROCESSING")
+                await db.flush()
+
+                transcription = await transcription_provider.transcribe(response.audio_url)
+                transcribed_text = transcription.text or None
+                audio_duration_seconds = transcription.duration_seconds
+                audio_processing_status = "COMPLETED"
+
+                if transcription.estimated_cost_usd is not None:
+                    total_cost_usd += transcription.estimated_cost_usd
+
+                logger.info(
+                    "Audio transcribed for response %s | model=%s | words=%d | duration=%ss",
+                    response.id,
+                    transcription.model_used,
+                    len((transcription.text or "").split()),
+                    f"{audio_duration_seconds:.1f}" if audio_duration_seconds else "?",
+                )
+
+            # ── 4b: Merge text sources ───────────────────────────────────────────
+            # Transcribed text takes precedence (richer signal)
+            effective_text = (
+                transcribed_text.strip()
+                if transcribed_text and transcribed_text.strip()
+                else (response.answer_text or "")
             )
-            # Mark PROCESSING before API call
-            await repo.set_response_audio_processing(db, response.id, "PROCESSING")
-            await db.flush()
 
-            transcription = await transcription_provider.transcribe(response.audio_url)
-            transcribed_text = transcription.text or None
-            audio_duration_seconds = transcription.duration_seconds
-            audio_processing_status = "COMPLETED"
+            # ── 4c: RAG grounding context ────────────────────────────────────────
+            # Only retrieved for TECHNICAL sessions; behavioral sessions don't need
+            # factual cross-checking against the KB.
+            reference_facts: Optional[str] = None
+            if is_technical and has_credits:
+                # Skip retrieval for stub mode — not worth the DB round-trip for
+                # heuristic scoring that has no factual checking logic.
+                reference_facts = await _retriever.retrieve_context(
+                    db,
+                    query_text=q.content,
+                    topic=topic_name,
+                    difficulty=q.difficulty,
+                    top_k=3,
+                )
+                if reference_facts:
+                    logger.debug(
+                        "RAG: retrieved grounding context for question %s (%d chars)",
+                        q.id,
+                        len(reference_facts),
+                    )
 
-            if transcription.estimated_cost_usd is not None:
-                total_cost_usd += transcription.estimated_cost_usd
-
-            logger.info(
-                "Audio transcribed for response %s | model=%s | words=%d | duration=%ss",
-                response.id,
-                transcription.model_used,
-                len((transcription.text or "").split()),
-                f"{audio_duration_seconds:.1f}" if audio_duration_seconds else "?",
+            eval_input = EvaluationInput(
+                question_text=q.content,
+                answer_text=effective_text,
+                topic_name=topic_name or "",
+                interview_type=(
+                    session.interview_type.lower()
+                    if session.interview_type
+                    else "behavioral"
+                ),
+                difficulty=q.difficulty,
+                response_time_ms=response.response_time_ms,
+                thinking_time_ms=response.thinking_time_ms,
+                reference_facts=reference_facts,
             )
 
-        # ── 4b: Merge text sources ───────────────────────────────────────────
-        # Transcribed text takes precedence (richer signal)
-        effective_text = (
-            transcribed_text.strip()
-            if transcribed_text and transcribed_text.strip()
-            else (response.answer_text or "")
-        )
+            # ── 4d: LLM evaluation ───────────────────────────────────────────────
+            signal = await ai_provider.evaluate(eval_input)
+            signal.is_followup = response.is_followup
+            signals.append(signal)
 
-        eval_input = EvaluationInput(
-            question_text=q.content,
-            answer_text=effective_text,
-            topic_name="",  # not used in scoring; kept for interface compat
-            interview_type=(
-                session.interview_type.lower()
-                if session.interview_type
-                else "behavioral"
-            ),
-            difficulty=q.difficulty,
-            response_time_ms=response.response_time_ms,
-            thinking_time_ms=response.thinking_time_ms,
-        )
+            # Accumulate cost
+            if signal.cost_meta:
+                total_input_tokens += signal.cost_meta.input_tokens
+                total_output_tokens += signal.cost_meta.output_tokens
+                total_cost_usd += signal.cost_meta.estimated_cost_usd
 
-        # ── 4c: LLM evaluation ───────────────────────────────────────────────
-        signal = await ai_provider.evaluate(eval_input)
-        signals.append(signal)
+            # ── 4e: Build evaluation_explanation ────────────────────────────────
+            # Stores factual accuracy issues (from RAG) and low-score evidence
+            # (from conditional second call). Used for per-question audit trail.
+            explanation_parts: list[str] = []
+            if signal.evaluation_explanation:
+                explanation_parts.append(signal.evaluation_explanation)
+            if signal.technical_accuracy_issues:
+                issues_str = "; ".join(signal.technical_accuracy_issues)
+                explanation_parts.append(f"FACTUAL ISSUES: {issues_str}")
+            if signal.technical_accuracy_evidence:
+                explanation_parts.append(f"RAG: {signal.technical_accuracy_evidence}")
+            evaluation_explanation = " | ".join(explanation_parts)
 
-        # Accumulate cost
-        if signal.cost_meta:
-            total_input_tokens += signal.cost_meta.input_tokens
-            total_output_tokens += signal.cost_meta.output_tokens
-            total_cost_usd += signal.cost_meta.estimated_cost_usd
-
-        # ── 4d: Persist scores for this response ─────────────────────────────
-        await repo.update_response_scores(
-            db,
-            response.id,
-            transcribed_text=transcribed_text,
-            audio_duration_seconds=audio_duration_seconds,
-            audio_processing_status=audio_processing_status,
-            clarity_score=signal.clarity_score,
-            structure_score=signal.structure_score,
-            depth_score=signal.depth_score,
-            confidence_score=signal.confidence_score,
-            communication_score=signal.communication_score,
-            hesitation_score=signal.hesitation_score,
-            technical_score=signal.technical_score,
-            pressure_score=signal.pressure_score or 50.0,
-            thinking_depth_score=signal.thinking_depth_score or 50.0,
-            overall_score=signal.overall_score or 0.0,
-            evaluation_explanation=signal.evaluation_explanation,
-        )
+            # ── 4f: Persist scores for this response ─────────────────────────────
+            await repo.update_response_scores(
+                db,
+                response.id,
+                transcribed_text=transcribed_text,
+                audio_duration_seconds=audio_duration_seconds,
+                audio_processing_status=audio_processing_status,
+                clarity_score=signal.clarity_score,
+                clarity_evidence=signal.clarity_evidence,
+                structure_score=signal.structure_score,
+                structure_evidence=signal.structure_evidence,
+                depth_score=signal.depth_score,
+                depth_evidence=signal.depth_evidence,
+                confidence_score=signal.confidence_score,
+                confidence_evidence=signal.confidence_evidence,
+                communication_score=signal.communication_score,
+                communication_evidence=signal.communication_evidence,
+                technical_score=signal.technical_score,
+                technical_evidence=signal.technical_evidence,
+                pressure_score=signal.pressure_score or 50.0,
+                thinking_depth_score=signal.thinking_depth_score or 50.0,
+                overall_score=signal.overall_score or 0.0,
+                evaluation_explanation=evaluation_explanation,
+            )
 
     eval_duration_ms = int((time.monotonic() - eval_start) * 1000)
 
@@ -246,6 +324,13 @@ async def _run_analysis(
     model_used = last_meta.model_used if last_meta else "stub"
 
     # 6. Atomic: create EvaluationReport + set session ANALYZED
+    # Note: no db.commit() here — the caller (run_evaluation_tick) commits
+    # alongside mark_job_completed. This ensures the job's PROCESSING status
+    # is rolled back together with the report if anything fails after this
+    # point (see evaluation_worker.py). A separate commit here would
+    # prematurely persist the PROCESSING status before mark_job_completed,
+    # creating a zombie PROCESSING job that zombie recovery can't reliably
+    # recover.
     report = await repo.create_evaluation_report(
         db,
         session_id=session_id,
@@ -255,10 +340,11 @@ async def _run_analysis(
         depth_score=aggregated["depth_score"],
         confidence_score=aggregated["confidence_score"],
         communication_score=aggregated["communication_score"],
-        hesitation_score=aggregated["hesitation_score"],
         technical_score=aggregated["technical_score"],
         pressure_score=aggregated["pressure_score"],
         thinking_depth_score=aggregated["thinking_depth_score"],
+        first_answer_score=aggregated["first_answer_score"],
+        post_followup_score=aggregated["post_followup_score"],
         feedback_summary=aggregated["feedback_summary"],
         improvement_suggestions=aggregated["improvement_suggestions"],
         prompt_version=prompt_version,
@@ -272,7 +358,6 @@ async def _run_analysis(
         await usage_svc.consume_evaluation_credit(db, session.user_id)
 
     await repo.set_session_analyzed(db, session_id)
-    await db.commit()
 
     logger.info(
         "Session %s ANALYZED in %dms | Provider: %s | Overall: %.1f | Cost: $%.6f",
@@ -304,17 +389,22 @@ def _aggregate_signals(signals: list[PerformanceSignal]) -> dict:
     )
 
     agg = {
-        "overall_score":       avg("overall_score"),
-        "clarity_score":       avg("clarity_score"),
-        "structure_score":     avg("structure_score"),
-        "depth_score":         avg("depth_score"),
-        "confidence_score":    avg("confidence_score"),
-        "communication_score": avg("communication_score"),
-        "hesitation_score":    avg("hesitation_score"),
-        "technical_score":     technical_avg,
-        "pressure_score":      avg("pressure_score"),
+        "overall_score":        avg("overall_score"),
+        "clarity_score":        avg("clarity_score"),
+        "structure_score":      avg("structure_score"),
+        "depth_score":          avg("depth_score"),
+        "confidence_score":     avg("confidence_score"),
+        "communication_score":  avg("communication_score"),
+        "technical_score":      technical_avg,
+        "pressure_score":       avg("pressure_score"),
         "thinking_depth_score": avg("thinking_depth_score"),
     }
+
+    first_answers = [s.overall_score for s in signals if not s.is_followup and s.overall_score is not None]
+    followups = [s.overall_score for s in signals if s.is_followup and s.overall_score is not None]
+
+    agg["first_answer_score"] = sum(first_answers) / len(first_answers) if first_answers else None
+    agg["post_followup_score"] = sum(followups) / len(followups) if followups else None
 
     agg["feedback_summary"] = _build_feedback_summary(agg)
     agg["improvement_suggestions"] = _build_improvement_suggestions(agg)
@@ -393,16 +483,12 @@ def _to_response_schema(report) -> SessionEvaluationResponseSchema:
         ended_at=sorted_qs[-1].difficulty if sorted_qs else report.session.difficulty,
     )
 
-    # Invert hesitation for display: higher = better (less hesitation detected)
-    hesitation_display = max(0.0, 100.0 - (report.hesitation_score or 0.0))
-
     dimensions = EvaluationDimensionsSchema(
         clarity=report.clarity_score,
         structure=report.structure_score,
         depth=report.depth_score,
         confidence=report.confidence_score,
         communication=report.communication_score,
-        hesitation=hesitation_display,
         technical=report.technical_score,
         pressure=report.pressure_score or 50.0,
         thinking_depth=report.thinking_depth_score or 50.0,
@@ -416,6 +502,8 @@ def _to_response_schema(report) -> SessionEvaluationResponseSchema:
     return SessionEvaluationResponseSchema(
         session_id=report.session_id,
         overall_score=report.overall_score,
+        first_answer_score=report.first_answer_score,
+        post_followup_score=report.post_followup_score,
         summary=report.feedback_summary,
         dimensions=dimensions,
         strengths=strengths,
@@ -433,7 +521,6 @@ def _derive_strengths(dimensions: EvaluationDimensionsSchema) -> list[str]:
         "depth":          dimensions.depth,
         "confidence":     dimensions.confidence,
         "communication":  dimensions.communication,
-        "hesitation":     dimensions.hesitation,
         "technical":      dimensions.technical,
         "pressure":       dimensions.pressure,
         "thinking_depth": dimensions.thinking_depth,

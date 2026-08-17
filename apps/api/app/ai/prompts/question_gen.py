@@ -32,11 +32,19 @@ def build_question_gen_user_prompt(
     difficulty: str,
     interview_type: str,
     existing_questions: list[str] | None = None,
+    reference_facts: str | None = None,
 ) -> str:
     lines = [
         f"Generate ONE {interview_type} interview question about: {topic_name}",
         f"Required difficulty level: {difficulty}",
     ]
+
+    if reference_facts:
+        lines.append("")
+        lines.append("Base the question strictly on the following authoritative knowledge:")
+        lines.append("---")
+        lines.append(reference_facts.strip())
+        lines.append("---")
 
     if existing_questions:
         lines.append("")

@@ -20,13 +20,17 @@ class AnswerClassification(str, enum.Enum):
 
 class InterviewRoundType(str, enum.Enum):
     TECHNICAL = "TECHNICAL"
-    BEHAVIORAL = "BEHAVIORAL"
+    BEHAVIORAL = "BEHAVIORAL"      # kept for backward-compat with existing DB rows
     SYSTEM_DESIGN = "SYSTEM_DESIGN"
     CODING = "CODING"
     ARCHITECTURE = "ARCHITECTURE"
     HIRING_BAR = "HIRING_BAR"
     CULTURE_FIT = "CULTURE_FIT"
     HR = "HR"
+    RECRUITER_SCREEN = "RECRUITER_SCREEN"
+    HM_SCREEN = "HM_SCREEN"
+    FOUNDER_SCREEN = "FOUNDER_SCREEN"
+    PANEL_ROUND = "PANEL_ROUND"
 
 
 class PersonaType(str, enum.Enum):

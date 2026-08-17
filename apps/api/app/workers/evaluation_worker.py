@@ -15,6 +15,7 @@ Design decisions:
 
 Matches NestJS: apps/backend/src/modules/evaluation-job/evaluation-job.service.ts (worker logic)
 """
+import asyncio
 import logging
 import uuid
 
@@ -89,9 +90,22 @@ async def run_zombie_recovery() -> None:
     async with SessionLocal() as db:
         try:
             count = await eval_repo.recover_zombie_jobs(db)
-            await db.commit()
+            await _retry_commit(db)
             if count > 0:
                 logger.warning("Zombie recovery: reset %d job(s)", count)
         except Exception as exc:
             logger.error("Zombie recovery failed: %s", exc)
             await db.rollback()
+
+
+async def _retry_commit(db, retries: int = 3, delay: float = 1.0) -> None:
+    for attempt in range(retries):
+        try:
+            await db.commit()
+            return
+        except Exception as exc:
+            if attempt == retries - 1:
+                raise
+            logger.warning("Commit failed (attempt %d/%d): %s — retrying", attempt + 1, retries, exc)
+            await db.rollback()
+            await asyncio.sleep(delay)

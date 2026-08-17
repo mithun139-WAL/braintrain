@@ -45,6 +45,7 @@ export default function StartSessionPage() {
         adaptive,
         durationMinutes,
         isVoice,
+        interviewCategory,
         setTopicId,
         setInterviewType,
         setInterviewMode,
@@ -52,6 +53,7 @@ export default function StartSessionPage() {
         setAdaptive,
         setDurationMinutes,
         setIsVoice,
+        setInterviewCategory,
         nextStep,
         prevStep,
         reset
@@ -103,7 +105,8 @@ export default function StartSessionPage() {
             difficulty: difficulty as any,
             adaptive,
             durationMinutes,
-            isVoice
+            isVoice,
+            interviewCategory
         });
     };
 
@@ -236,11 +239,38 @@ export default function StartSessionPage() {
                                 </div>
                             )}
 
-                            {step === 2 && (
+                             {step === 2 && (
                                 <div className="space-y-6 animate-fade-in">
                                     <div className="space-y-1">
                                         <h2 className="text-display-md font-semibold text-foreground">Select Interview Style & Medium</h2>
                                         <p className="text-body-sm text-muted-foreground">Choose your communication mode and interviewer format.</p>
+                                    </div>
+
+                                    {/* Category Selection Option */}
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Interview Category</label>
+                                        <div className="grid grid-cols-2 gap-2 bg-muted/30 p-1 rounded-xl border border-border/40">
+                                            {[
+                                                { cat: "GENERAL", label: "General Q&A" },
+                                                { cat: "CODING", label: "Coding Snippet" },
+                                                { cat: "DSA", label: "DSA Challenge" },
+                                                { cat: "SYSTEM_DESIGN", label: "System Design" },
+                                            ].map((item) => (
+                                                <button
+                                                    key={item.cat}
+                                                    type="button"
+                                                    onClick={() => setInterviewCategory(item.cat as any)}
+                                                    className={cn(
+                                                        "py-2 rounded-lg text-xs font-semibold flex items-center justify-center transition-all",
+                                                        interviewCategory === item.cat
+                                                            ? "bg-card text-primary border border-border/50 shadow-sm"
+                                                            : "text-muted-foreground hover:text-foreground"
+                                                    )}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* Medium Selection Toggle */}

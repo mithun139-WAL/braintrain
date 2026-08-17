@@ -47,6 +47,8 @@ class EvaluationReport(Base):
     communication_score: Mapped[float] = mapped_column(Float, nullable=False)
     hesitation_score: Mapped[float] = mapped_column(Float, nullable=False)
     technical_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # null for behavioral
+    first_answer_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    post_followup_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # ── Behavioral timing signals ──────────────────────────────────────────────
     pressure_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)

@@ -7,7 +7,8 @@ export interface EvaluationDimensions {
     depth: number;
     confidence: number;
     communication: number;
-    hesitation: number;           // inverted: higher = better (less hesitation)
+    // hesitation removed in v1.1.0 — was always 100 (hardcoded 0.0 inverted).
+    // Composure signal is now covered by pressure + thinkingDepth.
     technical?: number;           // null for behavioral sessions
     pressure: number;             // server-computed from response_time_ms
     thinkingDepth: number;        // server-computed from thinking_time_ms
@@ -36,8 +37,10 @@ export interface PerformanceSignal {
     depthScore: number;
     confidenceScore: number;
     communicationScore: number;
-    hesitationScore: number;
+    // hesitationScore removed in v1.1.0 — see EvaluationDimensions comment above
     technicalScore?: number;
+    technicalAccuracyIssues?: string[];   // factual contradictions vs reference KB
+    technicalAccuracyEvidence?: string;   // "Reference facts confirm/contradict: ..."
     overallScore: number;
 }
 

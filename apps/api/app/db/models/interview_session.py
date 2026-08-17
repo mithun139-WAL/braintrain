@@ -48,9 +48,16 @@ class InterviewSession(Base):
     adaptive: Mapped[bool] = mapped_column(Boolean, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     is_voice: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    interview_category: Mapped[Optional[str]] = mapped_column(String, default="GENERAL", nullable=True)
 
     # Stores AI interviewer personality configuration (Panel mode etc.)
     personality_config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    # Interview plan: ordered topic coverage with per-topic depth/time budgets,
+    # generated at session start and mutated turn-by-turn (see
+    # app/ai/voice/planning/). Persisted so a reconnecting session resumes the
+    # same plan instead of regenerating one.
+    interview_plan: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     status: Mapped[str] = mapped_column(String, default=SessionStatus.CREATED, nullable=False)
 

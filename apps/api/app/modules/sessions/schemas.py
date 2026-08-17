@@ -17,6 +17,7 @@ SessionStatusLiteral = Literal["CREATED", "ACTIVE", "COMPLETED", "ANALYZED", "CA
 InterviewModeLiteral = Literal["ONE_ON_ONE_AI", "PANEL_AI", "HYBRID"]
 InterviewTypeLiteral = Literal["TECHNICAL", "BEHAVIORAL", "MIXED", "GROUP_DISCUSSION", "RAPID_FIRE"]
 DifficultyLiteral = Literal["EASY", "MEDIUM", "HARD"]
+InterviewCategoryLiteral = Literal["GENERAL", "CODING", "DSA", "SYSTEM_DESIGN"]
 
 
 # ── Request schemas ────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ class CreateSessionRequest(BaseModel):
     adaptive: bool
     duration_minutes: int
     is_voice: bool = True
+    interview_category: InterviewCategoryLiteral = "GENERAL"
     personality_config: Optional[Dict[str, Any]] = None
 
     @field_validator("duration_minutes")
@@ -85,6 +87,7 @@ class SessionResponse(BaseModel):
     adaptive: bool
     duration_minutes: int
     is_voice: bool = True
+    interview_category: Optional[str] = "GENERAL"
     personality_config: Optional[Dict[str, Any]] = None
     status: str
     started_at: Optional[datetime] = None
@@ -130,6 +133,7 @@ class SessionListItemResponse(BaseModel):
     adaptive: bool
     duration_minutes: int
     is_voice: bool = True
+    interview_category: Optional[str] = "GENERAL"
     status: str
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None

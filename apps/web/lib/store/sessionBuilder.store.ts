@@ -10,6 +10,7 @@ interface SessionBuilderState {
     adaptive: boolean;
     durationMinutes: number;
     isVoice: boolean;
+    interviewCategory: "GENERAL" | "CODING" | "DSA" | "SYSTEM_DESIGN";
 
     setTopicId: (id: string) => void;
     setInterviewType: (type: InterviewType) => void;
@@ -18,6 +19,7 @@ interface SessionBuilderState {
     setAdaptive: (adaptive: boolean) => void;
     setDurationMinutes: (minutes: number) => void;
     setIsVoice: (isVoice: boolean) => void;
+    setInterviewCategory: (category: "GENERAL" | "CODING" | "DSA" | "SYSTEM_DESIGN") => void;
     nextStep: () => void;
     prevStep: () => void;
     reset: () => void;
@@ -32,6 +34,7 @@ export const useSessionBuilderStore = create<SessionBuilderState>((set) => ({
     adaptive: true,
     durationMinutes: 30,
     isVoice: true,
+    interviewCategory: "GENERAL",
 
     setTopicId: (topicId) => set({ topicId }),
     setInterviewType: (interviewType) => set({ interviewType }),
@@ -40,6 +43,7 @@ export const useSessionBuilderStore = create<SessionBuilderState>((set) => ({
     setAdaptive: (adaptive) => set({ adaptive }),
     setDurationMinutes: (durationMinutes) => set({ durationMinutes }),
     setIsVoice: (isVoice) => set({ isVoice }),
+    setInterviewCategory: (interviewCategory) => set({ interviewCategory }),
     nextStep: () => set((state) => ({ step: state.step + 1 })),
     prevStep: () => set((state) => ({ step: Math.max(1, state.step - 1) })),
     reset: () => set({
@@ -51,5 +55,6 @@ export const useSessionBuilderStore = create<SessionBuilderState>((set) => ({
         adaptive: true,
         durationMinutes: 30,
         isVoice: true,
+        interviewCategory: "GENERAL",
     }),
 }));

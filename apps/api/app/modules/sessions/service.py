@@ -38,17 +38,24 @@ logger = logging.getLogger(__name__)
 
 
 def _build_session_response(session) -> SessionResponse:
+    topic_name = session.topic.name if session.topic else None
+    if session.personality_config and "journey_context" in session.personality_config:
+        journey_context = session.personality_config["journey_context"]
+        if "round_name" in journey_context:
+            topic_name = journey_context["round_name"]
+
     return SessionResponse(
         id=session.id,
         user_id=session.user_id,
         topic_id=session.topic_id,
-        topic_name=session.topic.name if session.topic else None,
+        topic_name=topic_name,
         interview_mode=session.interview_mode,
         interview_type=session.interview_type,
         difficulty=session.difficulty,
         adaptive=session.adaptive,
         duration_minutes=session.duration_minutes,
         is_voice=session.is_voice,
+        interview_category=session.interview_category,
         personality_config=session.personality_config,
         status=session.status,
         started_at=session.started_at,
@@ -56,7 +63,7 @@ def _build_session_response(session) -> SessionResponse:
         created_at=session.created_at,
         updated_at=session.updated_at,
         topic=(
-            TopicRefResponse(id=session.topic.id, name=session.topic.name)
+            TopicRefResponse(id=session.topic.id, name=topic_name)
             if session.topic
             else None
         ),
@@ -132,6 +139,7 @@ async def create_session(
         adaptive=dto.adaptive,
         duration_minutes=dto.duration_minutes,
         is_voice=dto.is_voice,
+        interview_category=dto.interview_category,
         personality_config=dto.personality_config,
     )
     await db.commit()
@@ -246,6 +254,12 @@ async def list_sessions(
     items = []
     for s in sessions:
         question_count = await repo.count_questions(db, s.id)
+        topic_name = s.topic.name if s.topic else None
+        if s.personality_config and "journey_context" in s.personality_config:
+            journey_context = s.personality_config["journey_context"]
+            if "round_name" in journey_context:
+                topic_name = journey_context["round_name"]
+
         items.append(
             SessionListItemResponse(
                 id=s.id,
@@ -257,13 +271,14 @@ async def list_sessions(
                 adaptive=s.adaptive,
                 duration_minutes=s.duration_minutes,
                 is_voice=s.is_voice,
+                interview_category=s.interview_category,
                 status=s.status,
                 started_at=s.started_at,
                 ended_at=s.ended_at,
                 created_at=s.created_at,
                 updated_at=s.updated_at,
                 topic=(
-                    TopicRefResponse(id=s.topic.id, name=s.topic.name) if s.topic else None
+                    TopicRefResponse(id=s.topic.id, name=topic_name) if s.topic else None
                 ),
                 evaluation=(
                     EvaluationScoreRefResponse(overall_score=s.evaluation.overall_score)

@@ -16,3 +16,5 @@ class InterviewState:
     pressure_level: str = "NORMAL"
     behavioral_signals: Optional[Any] = None
     target_duration_minutes: int = 15
+    interview_category: str = "GENERAL"
+    minutes_remaining: float = 15.0

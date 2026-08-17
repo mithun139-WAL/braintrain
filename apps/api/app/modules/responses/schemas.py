@@ -15,6 +15,7 @@ class SubmitResponseRequest(BaseModel):
     audio_url: Optional[str] = None
     response_time_ms: int
     thinking_time_ms: int
+    is_followup: bool = False
 
     @model_validator(mode="after")
     def at_least_one_input(self) -> "SubmitResponseRequest":
@@ -41,6 +42,7 @@ class ResponseInstanceResponse(BaseModel):
     response_time_ms: int
     thinking_time_ms: int
     answer_length: int
+    is_followup: bool
     audio_processing_status: str
     transcribed_text: Optional[str] = None
     overall_score: Optional[float] = None

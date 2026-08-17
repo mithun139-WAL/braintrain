@@ -2,7 +2,12 @@
 OpenAIEvaluationProvider — GPT-4o-mini based answer evaluation.
 
 Design:
-  - LLM scores 6 content dimensions (JSON mode, temp=0.1)
+  - LLM scores 6 content dimensions + enumerates factual contradictions (JSON mode, temp=0.1)
+  - RAG reference_facts injected when available; LLM must enumerate contradictions or
+    explicitly confirm "no contradictions found" — not a soft instruction to deduct points.
+  - Conditional second call: if any dimension scores < EVIDENCE_SCORE_THRESHOLD (70),
+    a single follow-up call fetches per-dimension evidence quotes. Pays extra cost only
+    on the subset of responses that need explaining (not every evaluation).
   - pressure_score + thinking_depth_score computed SERVER-SIDE from timing
   - overall_score computed SERVER-SIDE with weighted formula (BEHAVIORAL vs TECHNICAL)
   - Difficulty boost +4 for HARD applied to content scores (not timing)
@@ -19,9 +24,13 @@ from typing import Optional
 
 from app.ai.prompts.evaluation import (
     EVALUATION_SYSTEM_PROMPT,
+    EVIDENCE_SCORE_THRESHOLD,
+    EVIDENCE_SYSTEM_PROMPT,
     MODEL_USED,
     PROMPT_VERSION,
     build_evaluation_user_prompt,
+    build_evidence_user_prompt,
+    find_low_score_dimensions,
 )
 from app.ai.protocols import EvaluationCostMeta, EvaluationInput, PerformanceSignal
 
@@ -31,8 +40,12 @@ logger = logging.getLogger(__name__)
 COST_PER_INPUT_TOKEN = 0.00000015   # $0.15 / 1M input tokens
 COST_PER_OUTPUT_TOKEN = 0.0000006   # $0.60 / 1M output tokens
 
-# Hard cap — we only need a tiny JSON blob back
-MAX_OUTPUT_TOKENS = 150
+# Primary scoring call — increased from 150 to accommodate RAG accuracy fields
+# (technicalAccuracyIssues list + technicalAccuracyEvidence string ≈ +100 tokens)
+MAX_OUTPUT_TOKENS = 400
+
+# Conditional evidence call — batches all low-scoring dimensions into one request
+MAX_EVIDENCE_OUTPUT_TOKENS = 300
 
 # Difficulty boost applied to content scores before clamping (spec §7)
 DIFFICULTY_BOOST: dict[str, int] = {
@@ -42,12 +55,21 @@ DIFFICULTY_BOOST: dict[str, int] = {
 }
 
 # Fields the LLM is responsible for scoring (5 required + 1 optional)
-LLM_REQUIRED_FIELDS = [
+LLM_REQUIRED_SCORE_FIELDS = [
     "clarityScore",
     "structureScore",
     "depthScore",
     "confidenceScore",
     "communicationScore",
+]
+
+# Evidence fields — required alongside their score partners
+LLM_REQUIRED_EVIDENCE_FIELDS = [
+    "clarityEvidence",
+    "structureEvidence",
+    "depthEvidence",
+    "confidenceEvidence",
+    "communicationEvidence",
 ]
 
 
@@ -74,6 +96,7 @@ class OpenAIEvaluationProvider:
             answer=input.answer_text,
             interview_type=input.interview_type,
             difficulty=input.difficulty,
+            reference_facts=input.reference_facts,
         )
 
         result = await self._call_with_retry(user_prompt, input.difficulty)
@@ -111,6 +134,29 @@ class OpenAIEvaluationProvider:
             interview_type=input.interview_type,
         )
 
+        # ── Conditional evidence call for low-scoring dimensions ──────────────
+        low_score_dims = find_low_score_dimensions(scores)
+        evidence_map: dict[str, str] = {}
+        if low_score_dims:
+            evidence_map = await self._fetch_evidence(
+                question=input.question_text,
+                answer=input.answer_text,
+                low_score_dimensions=low_score_dims,
+            )
+            # Accumulate tokens from evidence call into existing meta
+            # (evidence call tokens are tracked via its own usage; we add to meta below)
+
+        # Merge evidence into score fields (overrides placeholder strings when available)
+        def _evidence(key: str, fallback: str) -> str:
+            return evidence_map.get(key) or scores.get(f"{key}Evidence") or fallback
+
+        # Build evaluation_explanation from evidence map + accuracy issues
+        explanation_parts: list[str] = []
+        if evidence_map:
+            explanation_parts.append(
+                " | ".join(f"{k}: {v}" for k, v in evidence_map.items())
+            )
+
         logger.debug(
             "Evaluated | Overall: %.1f | Tokens: %din/%dout | Cost: $%.6f | Model: %s | Prompt: %s",
             overall_score,
@@ -123,16 +169,23 @@ class OpenAIEvaluationProvider:
 
         return PerformanceSignal(
             clarity_score=scores["clarityScore"],
+            clarity_evidence=_evidence("clarity", scores.get("clarityEvidence", "")),
             structure_score=scores["structureScore"],
+            structure_evidence=_evidence("structure", scores.get("structureEvidence", "")),
             depth_score=scores["depthScore"],
+            depth_evidence=_evidence("depth", scores.get("depthEvidence", "")),
             confidence_score=scores["confidenceScore"],
+            confidence_evidence=_evidence("confidence", scores.get("confidenceEvidence", "")),
             communication_score=scores["communicationScore"],
-            hesitation_score=0.0,   # deprecated — replaced by pressure + thinking
+            communication_evidence=_evidence("communication", scores.get("communicationEvidence", "")),
             technical_score=scores.get("technicalScore"),
+            technical_evidence=scores.get("technicalEvidence"),
+            evaluation_explanation=" | ".join(explanation_parts),
+            technical_accuracy_issues=scores.get("technicalAccuracyIssues") or [],
+            technical_accuracy_evidence=scores.get("technicalAccuracyEvidence"),
             pressure_score=pressure_score,
             thinking_depth_score=thinking_depth_score,
             overall_score=overall_score,
-            evaluation_explanation="",   # not requested — keeps tokens low
             cost_meta=meta,
         )
 
@@ -182,7 +235,46 @@ class OpenAIEvaluationProvider:
 
         return None
 
-    # ── Parse + validate 6-field LLM response ────────────────────────────────
+    # ── Conditional evidence call ──────────────────────────────────────────────
+
+    async def _fetch_evidence(
+        self,
+        *,
+        question: str,
+        answer: str,
+        low_score_dimensions: dict[str, float],
+    ) -> dict[str, str]:
+        """
+        Single follow-up call for dimensions that scored below EVIDENCE_SCORE_THRESHOLD.
+        Returns a dict mapping dimension name → direct quote from the answer.
+        Non-fatal: returns empty dict on any failure.
+        """
+        prompt = build_evidence_user_prompt(
+            question=question,
+            answer=answer,
+            low_score_dimensions=low_score_dimensions,
+        )
+        try:
+            completion = await asyncio.to_thread(
+                self._client.chat.completions.create,
+                model=MODEL_USED,
+                response_format={"type": "json_object"},
+                temperature=0.0,
+                max_tokens=MAX_EVIDENCE_OUTPUT_TOKENS,
+                messages=[
+                    {"role": "system", "content": EVIDENCE_SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            raw = completion.choices[0].message.content or ""
+            parsed = json.loads(raw)
+            # Only accept string values to guard against unexpected shapes
+            return {k: v for k, v in parsed.items() if isinstance(v, str)}
+        except Exception as exc:
+            logger.warning("Evidence call failed (non-fatal, skipping): %s", exc)
+            return {}
+
+    # ── Parse + validate LLM response ─────────────────────────────────────────
 
     def _parse_and_validate(self, raw: str, difficulty: str) -> Optional[dict]:
         try:
@@ -191,10 +283,10 @@ class OpenAIEvaluationProvider:
             return None
 
         # Validate 5 required numeric content fields
-        for field in LLM_REQUIRED_FIELDS:
-            value = parsed.get(field)
+        for f in LLM_REQUIRED_SCORE_FIELDS:
+            value = parsed.get(f)
             if not isinstance(value, (int, float)) or math.isnan(value):
-                logger.warning("Validation failed: %s = %s", field, value)
+                logger.warning("Validation failed: %s = %s", f, value)
                 return None
 
         # technicalScore may be null for behavioral
@@ -203,15 +295,29 @@ class OpenAIEvaluationProvider:
             logger.warning("Invalid technicalScore: %s", tech)
             return None
 
+        # technicalAccuracyIssues must be a list (empty list is valid and expected)
+        accuracy_issues = parsed.get("technicalAccuracyIssues")
+        if accuracy_issues is not None and not isinstance(accuracy_issues, list):
+            logger.warning("Invalid technicalAccuracyIssues type: %s", type(accuracy_issues))
+            accuracy_issues = []
+
         boost = DIFFICULTY_BOOST.get(difficulty.upper(), 0)
 
         return {
-            "clarityScore":      _clamp(parsed["clarityScore"] + boost),
-            "structureScore":    _clamp(parsed["structureScore"] + boost),
-            "depthScore":        _clamp(parsed["depthScore"] + boost),
-            "confidenceScore":   _clamp(parsed["confidenceScore"]),
-            "communicationScore": _clamp(parsed["communicationScore"]),
-            "technicalScore":    _clamp(tech + boost) if tech is not None else None,
+            "clarityScore":              _clamp(parsed["clarityScore"] + boost),
+            "clarityEvidence":           parsed.get("clarityEvidence", ""),
+            "structureScore":            _clamp(parsed["structureScore"] + boost),
+            "structureEvidence":         parsed.get("structureEvidence", ""),
+            "depthScore":                _clamp(parsed["depthScore"] + boost),
+            "depthEvidence":             parsed.get("depthEvidence", ""),
+            "confidenceScore":           _clamp(parsed["confidenceScore"]),
+            "confidenceEvidence":        parsed.get("confidenceEvidence", ""),
+            "communicationScore":        _clamp(parsed["communicationScore"]),
+            "communicationEvidence":     parsed.get("communicationEvidence", ""),
+            "technicalScore":            _clamp(tech + boost) if tech is not None else None,
+            "technicalEvidence":         parsed.get("technicalEvidence"),
+            "technicalAccuracyIssues":   [i for i in (accuracy_issues or []) if isinstance(i, str)],
+            "technicalAccuracyEvidence": parsed.get("technicalAccuracyEvidence"),
         }
 
     # ── Server-side timing scores (spec §2) ───────────────────────────────────

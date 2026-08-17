@@ -20,6 +20,7 @@ from app.interview_journey.analyzers.jd_analyzer import analyze_jd
 from app.interview_journey.analyzers.resume_analyzer import analyze_resume
 from app.interview_journey.analyzers.verified_profile_builder import build_verified_profile
 from app.interview_journey.personas.persona_generator import generate_persona
+from app.interview_journey.planners.company_process_researcher import research_company_process
 from app.interview_journey.planners.difficulty_mapper import map_difficulty
 from app.interview_journey.planners.interview_strategy_generator import generate_strategy
 from app.interview_journey.planners.round_generator import generate_rounds
@@ -31,15 +32,22 @@ from app.modules.sessions.repository import create_session as create_interview_s
 logger = logging.getLogger(__name__)
 
 _ROUND_TYPE_INTERVIEW_MAP = {
-    "TECHNICAL": "TECHNICAL",
-    "SYSTEM_DESIGN": "TECHNICAL",
-    "CODING": "TECHNICAL",
-    "ARCHITECTURE": "TECHNICAL",
-    "HIRING_BAR": "TECHNICAL",
-    "BEHAVIORAL": "BEHAVIORAL",
-    "CULTURE_FIT": "BEHAVIORAL",
-    "HR": "BEHAVIORAL",
+    "TECHNICAL":        "TECHNICAL",
+    "SYSTEM_DESIGN":    "TECHNICAL",
+    "CODING":           "TECHNICAL",
+    "ARCHITECTURE":     "TECHNICAL",
+    "HIRING_BAR":       "TECHNICAL",
+    "BEHAVIORAL":       "BEHAVIORAL",
+    "CULTURE_FIT":      "BEHAVIORAL",
+    "HR":               "BEHAVIORAL",
+    # New round types added in v1.1 pipeline
+    "RECRUITER_SCREEN": "BEHAVIORAL",
+    "HM_SCREEN":        "BEHAVIORAL",
+    "FOUNDER_SCREEN":   "BEHAVIORAL",
+    "PANEL_ROUND":      "TECHNICAL",
+    "AI_FLUENCY":       "TECHNICAL",
 }
+
 
 
 async def analyze_and_plan(
@@ -54,10 +62,17 @@ async def analyze_and_plan(
     resume_analysis = analyze_resume(journey.resume_text)
     jd_analysis = analyze_jd(journey.job_description)
     company_signals = extract_company_signals(journey.company_name, journey.job_description)
+    
+    if company_signals.get("company_style", "STANDARD") == "STANDARD":
+        company_signals["company_style"] = jd_analysis.get("culture_style", "STANDARD")
 
     verified_profile = build_verified_profile(resume_analysis, jd_analysis, company_signals)
 
-    rounds = generate_rounds(resume_analysis, jd_analysis, company_signals)
+    rounds, process = await generate_pipeline_stages(
+        resume_analysis, jd_analysis, company_signals,
+        company_name=journey.company_name,
+        role_title=journey.role_title,
+    )
 
     prerequisites = await generate_prerequisites(resume_analysis, jd_analysis, company_signals)
 
@@ -72,6 +87,11 @@ async def analyze_and_plan(
         "weaknesses": resume_analysis["weaknesses"],
         "rounds": [],
         "prerequisites": prerequisites,
+        "process_research": {
+            "source": process["source"],
+            "confidence": process["confidence"],
+            "notes": process["notes"],
+        },
     }
 
     for idx, round_data in enumerate(rounds):
@@ -234,6 +254,28 @@ async def start_round(
         "session_context": session_context,
         "interview_session_id": str(interview_session.id),
     }
+
+
+async def generate_pipeline_stages(
+    resume_analysis: dict,
+    jd_analysis: dict,
+    company_signals: dict,
+    company_name: str | None,
+    role_title: str,
+) -> tuple[list[dict], dict]:
+    """
+    Assembles the full interview round sequence for a journey.
+
+    Calls research_company_process to get the stage order (archetype or, when
+    search is wired, real company data), then slots rounds from generate_rounds
+    into the sequence.
+
+    Returns (rounds, process) so callers can persist process metadata.
+    """
+    process = await research_company_process(company_name, role_title, company_signals)
+    all_rounds = generate_rounds(resume_analysis, jd_analysis, company_signals)
+    return all_rounds, process
+
 
 
 async def _resolve_journey_topic(db: AsyncSession) -> Topic:

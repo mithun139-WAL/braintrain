@@ -1,22 +1,22 @@
 """
 Dynamic Round Generator — creates realistic interview rounds based on
-resume analysis, JD analysis, and company context.
+resume analysis, JD analysis, and company context following the 5-stage image flow.
 """
-
 
 def generate_rounds(
     resume_analysis: dict,
     jd_analysis: dict,
     company_signals: dict,
 ) -> list[dict]:
-    role_category = jd_analysis.get("role_category", "GENERAL")
-    role_level = jd_analysis.get("role_level", "MID")
-    candidate_level = resume_analysis.get("candidate_level", "MID")
-
+    builders = [
+        _build_technical_screen_round,
+        _build_coding_round,
+        _build_system_design_round,
+        _build_behavioral_round,
+        _build_ai_fluency_round,
+    ]
     rounds = []
-
-    round_builders = _get_round_builders(role_category, role_level, candidate_level)
-    for builder in round_builders:
+    for builder in builders:
         round_data = builder(resume_analysis, jd_analysis, company_signals)
         rounds.append(round_data)
 
@@ -24,176 +24,80 @@ def generate_rounds(
     return rounds
 
 
-def _get_round_builders(
-    role_category: str,
-    role_level: str,
-    candidate_level: str,
-) -> list:
-    builders = [_build_behavioral_round]
-
-    if role_category == "FRONTEND":
-        builders.extend([
-            _build_frontend_core_round,
-            _build_frontend_architecture_round,
-            _build_frontend_system_design_round,
-        ])
-    elif role_category == "BACKEND":
-        builders.extend([
-            _build_backend_core_round,
-            _build_system_design_round,
-            _build_backend_deep_dive_round,
-        ])
-    elif role_category == "FULLSTACK":
-        builders.extend([
-            _build_frontend_core_round,
-            _build_backend_core_round,
-            _build_system_design_round,
-        ])
-    elif role_category == "DATA":
-        builders.extend([
-            _build_data_core_round,
-            _build_system_design_round,
-            _build_ml_deep_dive_round,
-        ])
-    elif role_category == "DEVOPS":
-        builders.extend([
-            _build_infrastructure_round,
-            _build_system_design_round,
-            _build_incident_response_round,
-        ])
-    else:
-        builders.extend([
-            _build_technical_core_round,
-            _build_system_design_round,
-        ])
-
-    if role_level in ("SENIOR", "STAFF") or candidate_level in ("SENIOR", "STAFF"):
-        builders.append(_build_hiring_bar_round)
-
-    return builders
-
-
-def _build_behavioral_round(
+def _build_technical_screen_round(
     resume_analysis: dict, jd_analysis: dict, company_signals: dict
 ) -> dict:
-    style = jd_analysis.get("culture_style", "STANDARD")
+    role_category = jd_analysis.get("role_category", "GENERAL")
+    must_have = jd_analysis.get("must_have_skills", [])
+    
+    relevant_techs = [s for s in must_have if len(s.split()) <= 2][:3]
+    if not relevant_techs:
+        relevant_techs = ["core programming tools"]
+
+    areas = [
+        "CS fundamentals",
+        "Role fit and experience walkthrough",
+        "Interview readiness and basic skills",
+    ]
+    if role_category == "FRONTEND":
+        areas.extend(["CSS/DOM basics", "JavaScript core concepts"])
+    elif role_category == "BACKEND":
+        areas.extend(["Databases/SQL basics", "HTTP/API structure"])
+    elif role_category == "FULLSTACK":
+        areas.extend(["Frontend/Backend basics", "HTTP/Web fundamentals"])
+    else:
+        areas.extend(["Basic software engineering principles"])
+    
+    areas.extend(relevant_techs)
+
     return {
-        "name": "Behavioral & Cultural Fit",
-        "round_type": "BEHAVIORAL",
+        "name": "Technical Screen",
+        "round_type": "RECRUITER_SCREEN",
         "focus": {
-            "areas": ["leadership", "collaboration", "conflict resolution", "communication"],
-            "style_specific": style,
+            "areas": areas,
         },
-        "difficulty": "MEDIUM",
+        "difficulty": "EASY",
         "estimated_duration_minutes": 30,
         "goals": [
-            "Assess communication clarity",
-            "Evaluate collaboration patterns",
-            "Understand decision-making process",
-            "Gauge cultural alignment",
+            "Assess core CS fundamentals and role readiness",
+            "Verify experience matching the job description",
+            "Evaluate communication skills and high-level technical grounding",
         ],
     }
 
 
-def _build_frontend_core_round(
+def _build_coding_round(
     resume_analysis: dict, jd_analysis: dict, company_signals: dict
 ) -> dict:
+    must_have = jd_analysis.get("must_have_skills", [])
+    tech_stack = resume_analysis.get("verified_technologies", [])
+    
+    lang = "Clean coding language"
+    languages = ["Python", "TypeScript", "JavaScript", "Go", "Rust", "Java", "C++", "Ruby", "Kotlin", "Swift"]
+    for l in languages:
+        if any(l.lower() in skill.lower() for skill in must_have) or any(l.lower() in t.lower() for t in tech_stack):
+            lang = l
+            break
+
+    areas = [
+        "Problem-solving speed",
+        "Coding accuracy and style",
+        "Data structures and algorithms",
+        f"Hands-on implementation in {lang}",
+    ]
+
     return {
-        "name": "Frontend Fundamentals",
-        "round_type": "TECHNICAL",
+        "name": "Coding",
+        "round_type": "CODING",
         "focus": {
-            "areas": [
-                "core JavaScript/TypeScript",
-                "component architecture",
-                "state management",
-                "rendering patterns",
-                "CSS/styling architecture",
-            ],
+            "areas": areas,
         },
         "difficulty": "MEDIUM",
-        "estimated_duration_minutes": 45,
-        "goals": [
-            "Verify frontend fundamentals depth",
-            "Evaluate component decomposition",
-            "Assess state management understanding",
-            "Test rendering optimization knowledge",
-        ],
-    }
-
-
-def _build_frontend_architecture_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Frontend Architecture",
-        "round_type": "ARCHITECTURE",
-        "focus": {
-            "areas": [
-                "application architecture",
-                "performance optimization",
-                "accessibility",
-                "bundling and build systems",
-                "error handling patterns",
-            ],
-        },
-        "difficulty": "HARD",
         "estimated_duration_minutes": 60,
         "goals": [
-            "Evaluate architectural thinking",
-            "Assess performance optimization skills",
-            "Test accessibility knowledge",
-            "Understand build pipeline experience",
-        ],
-    }
-
-
-def _build_frontend_system_design_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Frontend System Design",
-        "round_type": "SYSTEM_DESIGN",
-        "focus": {
-            "areas": [
-                "frontend architecture at scale",
-                "micro-frontends",
-                "caching strategies",
-                "performance budgets",
-                "monitoring and observability",
-            ],
-        },
-        "difficulty": "HARD",
-        "estimated_duration_minutes": 45,
-        "goals": [
-            "Assess large-scale frontend design",
-            "Evaluate trade-off reasoning",
-            "Test caching and performance strategy",
-        ],
-    }
-
-
-def _build_backend_core_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Backend Engineering",
-        "round_type": "TECHNICAL",
-        "focus": {
-            "areas": [
-                "API design",
-                "database modeling",
-                "performance",
-                "error handling",
-                "testing strategies",
-            ],
-        },
-        "difficulty": "MEDIUM",
-        "estimated_duration_minutes": 45,
-        "goals": [
-            "Verify backend fundamentals",
-            "Evaluate API design decisions",
-            "Assess database knowledge",
-            "Test error handling patterns",
+            "Verify clean, correct, and bug-free code construction under pressure",
+            "Evaluate time complexity and space complexity optimization",
+            "Assess edge-case handling and overall problem-solving approach",
         ],
     }
 
@@ -201,199 +105,94 @@ def _build_backend_core_round(
 def _build_system_design_round(
     resume_analysis: dict, jd_analysis: dict, company_signals: dict
 ) -> dict:
+    role_category = jd_analysis.get("role_category", "GENERAL")
+    
+    areas = ["Scalable system design", "Architecture decisions and trade-offs"]
+    if role_category == "FRONTEND":
+        areas.extend(["Frontend architecture at scale", "Micro-frontends & state routing", "Performance budget optimization"])
+    elif role_category in ("BACKEND", "FULLSTACK"):
+        areas.extend(["Distributed systems architecture", "Database selection and caching", "Data consistency & partition tolerance"])
+    elif role_category == "DATA":
+        areas.extend(["Data pipeline design", "ETL/Batch/Stream processing", "Data warehousing at scale"])
+    elif role_category == "DEVOPS":
+        areas.extend(["Infrastructure scalability", "CI/CD & high availability", "Observability/alerting architecture"])
+    else:
+        areas.extend(["High-level component interaction", "API design and data consistency"])
+
     return {
         "name": "System Design",
         "round_type": "SYSTEM_DESIGN",
         "focus": {
-            "areas": [
-                "distributed systems",
-                "scalability",
-                "data flow",
-                "trade-off analysis",
-                "reliability patterns",
-            ],
+            "areas": areas,
         },
         "difficulty": "HARD",
         "estimated_duration_minutes": 60,
         "goals": [
-            "Evaluate system-level thinking",
-            "Assess scalability knowledge",
-            "Test trade-off articulation",
-            "Understand reliability design",
+            "Evaluate ability to design scalable, fault-tolerant, and reliable systems",
+            "Verify trade-off analysis and justification of architectural choices",
+            "Assess data flow and boundary component design matching JD complexity",
         ],
     }
 
 
-def _build_backend_deep_dive_round(
+def _build_behavioral_round(
     resume_analysis: dict, jd_analysis: dict, company_signals: dict
 ) -> dict:
+    culture = jd_analysis.get("culture_style", "STANDARD")
+    areas = [
+        "STAR method storytelling",
+        "Leadership and collaboration",
+        "Conflict resolution and team dynamics",
+    ]
+    if culture == "STARTUP":
+        areas.extend(["Handling ambiguity", "Pace of delivery & rapid ownership"])
+    elif culture == "ENTERPRISE":
+        areas.extend(["Process-driven execution", "Compliance and stability focus"])
+    else:
+        areas.extend(["Career motivation", "Ownership and accountability"])
+
     return {
-        "name": "Backend Deep Dive",
-        "round_type": "TECHNICAL",
+        "name": "Behavioral",
+        "round_type": "BEHAVIORAL",
         "focus": {
-            "areas": [
-                "concurrency",
-                "distributed transactions",
-                "caching strategies",
-                "message queues",
-                "observability",
-            ],
-        },
-        "difficulty": "HARD",
-        "estimated_duration_minutes": 45,
-        "goals": [
-            "Evaluate concurrency understanding",
-            "Assess distributed systems knowledge",
-            "Test caching strategy design",
-        ],
-    }
-
-
-def _build_hiring_bar_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Hiring Bar / Leadership",
-        "round_type": "HIRING_BAR",
-        "focus": {
-            "areas": [
-                "technical leadership",
-                "mentorship",
-                "cross-functional influence",
-                "technical vision",
-                "conflict navigation",
-            ],
-        },
-        "difficulty": "HARD",
-        "estimated_duration_minutes": 45,
-        "goals": [
-            "Assess leadership maturity",
-            "Evaluate cross-functional impact",
-            "Test technical vision articulation",
-            "Gauge conflict resolution approach",
-        ],
-    }
-
-
-def _build_data_core_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Data Engineering",
-        "round_type": "TECHNICAL",
-        "focus": {
-            "areas": [
-                "data modeling",
-                "ETL pipelines",
-                "query optimization",
-                "data warehousing",
-                "data quality",
-            ],
+            "areas": areas,
+            "style_specific": culture,
         },
         "difficulty": "MEDIUM",
         "estimated_duration_minutes": 45,
         "goals": [
-            "Verify data engineering fundamentals",
-            "Evaluate pipeline design",
-            "Assess data modeling skills",
+            "Assess team and culture fit based on past actions",
+            "Evaluate candidate's communication style and self-reflection",
+            "Verify STAR format structure (Situation, Task, Action, Result) in storytelling",
         ],
     }
 
 
-def _build_ml_deep_dive_round(
+def _build_ai_fluency_round(
     resume_analysis: dict, jd_analysis: dict, company_signals: dict
 ) -> dict:
-    return {
-        "name": "ML System Design",
-        "round_type": "SYSTEM_DESIGN",
-        "focus": {
-            "areas": [
-                "model deployment",
-                "feature engineering",
-                "training pipelines",
-                "model monitoring",
-            ],
-        },
-        "difficulty": "HARD",
-        "estimated_duration_minutes": 60,
-        "goals": [
-            "Evaluate ML system design",
-            "Assess production ML knowledge",
-            "Test data pipeline understanding",
-        ],
-    }
+    tech_stack = resume_analysis.get("verified_technologies", [])
+    primary_tech = tech_stack[0] if tech_stack else "modern software frameworks"
+    
+    areas = [
+        "Building with AI APIs (e.g. Gemini, OpenAI)",
+        "Prompt engineering techniques",
+        "AI-assisted code generation & debugging",
+        f"Integrating AI tools with {primary_tech}",
+    ]
 
-
-def _build_infrastructure_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
     return {
-        "name": "Infrastructure & Platform",
-        "round_type": "TECHNICAL",
+        "name": "AI Fluency",
+        "round_type": "AI_FLUENCY",
         "focus": {
-            "areas": [
-                "containerization",
-                "orchestration",
-                "CI/CD pipelines",
-                "infrastructure as code",
-                "monitoring and alerting",
-            ],
+            "areas": areas,
         },
         "difficulty": "MEDIUM",
-        "estimated_duration_minutes": 45,
+        "estimated_duration_minutes": 30,
         "goals": [
-            "Verify infrastructure knowledge",
-            "Evaluate CI/CD pipeline design",
-            "Assess monitoring strategy",
-        ],
-    }
-
-
-def _build_incident_response_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Incident Response & Reliability",
-        "round_type": "TECHNICAL",
-        "focus": {
-            "areas": [
-                "incident management",
-                "runbooks",
-                "post-mortems",
-                "SLOs and SLIs",
-                "chaos engineering",
-            ],
-        },
-        "difficulty": "HARD",
-        "estimated_duration_minutes": 45,
-        "goals": [
-            "Assess incident response maturity",
-            "Evaluate reliability engineering",
-            "Test SLO/SLI framework knowledge",
-        ],
-    }
-
-
-def _build_technical_core_round(
-    resume_analysis: dict, jd_analysis: dict, company_signals: dict
-) -> dict:
-    return {
-        "name": "Technical Core",
-        "round_type": "TECHNICAL",
-        "focus": {
-            "areas": [
-                "algorithms and data structures",
-                "problem solving",
-                "coding",
-                "system thinking",
-            ],
-        },
-        "difficulty": "MEDIUM",
-        "estimated_duration_minutes": 60,
-        "goals": [
-            "Evaluate problem-solving approach",
-            "Assess coding ability",
-            "Test algorithmic thinking",
+            "Verify ability to leverage AI agents & tools to improve development speed",
+            "Assess prompt engineering capabilities and model steering",
+            "Evaluate understanding of LLM application design pattern trade-offs",
         ],
     }
 
@@ -404,8 +203,6 @@ def _enrich_rounds_with_context(
     jd_analysis: dict,
 ) -> None:
     tech_stack = resume_analysis.get("verified_technologies", [])
-    jd_focus = jd_analysis.get("likely_interview_focus", [])
-
     for round_data in rounds:
         round_focus = round_data.get("focus", {})
         areas = round_focus.get("areas", [])

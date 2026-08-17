@@ -20,6 +20,7 @@ from app.db.models.enums import EvaluationJobStatus
 from app.db.models.interview_session import InterviewSession
 from app.db.models.question_instance import QuestionInstance
 from app.db.models.response_instance import ResponseInstance
+from app.db.models.topic import Topic  # noqa: F401 — needed for selectinload of InterviewSession.topic
 
 # ── Retry backoff delays per attempt (spec §4) ────────────────────────────────
 # attempt 1 → 30s, attempt 2 → 2 min, attempt 3 → 10 min
@@ -41,14 +42,17 @@ ZOMBIE_THRESHOLD_SECONDS = 10 * 60  # 10 minutes
 async def get_session_for_evaluation(
     db: AsyncSession, session_id: uuid.UUID
 ) -> Optional[InterviewSession]:
-    """Load session with evaluation relationship (to check if already analyzed)."""
+    """Load session with evaluation + topic relationships for evaluation pipeline."""
     result = await db.execute(
         select(InterviewSession)
         .where(
             InterviewSession.id == session_id,
             InterviewSession.deleted_at.is_(None),
         )
-        .options(selectinload(InterviewSession.evaluation))
+        .options(
+            selectinload(InterviewSession.evaluation),
+            selectinload(InterviewSession.topic),
+        )
     )
     return result.scalar_one_or_none()
 
@@ -105,6 +109,7 @@ async def set_response_audio_processing(
         update(ResponseInstance)
         .where(ResponseInstance.id == response_id)
         .values(audio_processing_status=status)
+        .execution_options(synchronize_session=False)
     )
 
 
@@ -116,18 +121,25 @@ async def update_response_scores(
     audio_duration_seconds: Optional[float],
     audio_processing_status: str,
     clarity_score: float,
+    clarity_evidence: Optional[str],
     structure_score: float,
+    structure_evidence: Optional[str],
     depth_score: float,
+    depth_evidence: Optional[str],
     confidence_score: float,
+    confidence_evidence: Optional[str],
     communication_score: float,
-    hesitation_score: float,
+    communication_evidence: Optional[str],
     technical_score: Optional[float],
+    technical_evidence: Optional[str],
     pressure_score: float,
     thinking_depth_score: float,
     overall_score: float,
     evaluation_explanation: str,
 ) -> None:
-    """Persist all evaluation scores + audio fields for a single response."""
+    """Persist all evaluation scores + audio fields for a single response.
+    hesitation_score column intentionally excluded — see PerformanceSignal comment.
+    """
     await db.execute(
         update(ResponseInstance)
         .where(ResponseInstance.id == response_id)
@@ -136,17 +148,23 @@ async def update_response_scores(
             audio_duration_seconds=audio_duration_seconds,
             audio_processing_status=audio_processing_status,
             clarity_score=clarity_score,
+            clarity_evidence=clarity_evidence,
             structure_score=structure_score,
+            structure_evidence=structure_evidence,
             depth_score=depth_score,
+            depth_evidence=depth_evidence,
             confidence_score=confidence_score,
+            confidence_evidence=confidence_evidence,
             communication_score=communication_score,
-            hesitation_score=hesitation_score,
+            communication_evidence=communication_evidence,
             technical_score=technical_score,
+            technical_evidence=technical_evidence,
             pressure_score=pressure_score,
             thinking_depth_score=thinking_depth_score,
             overall_score=overall_score,
             evaluation_explanation=evaluation_explanation,
         )
+        .execution_options(synchronize_session=False)
     )
 
 
@@ -163,18 +181,20 @@ async def create_evaluation_report(
     depth_score: float,
     confidence_score: float,
     communication_score: float,
-    hesitation_score: float,
     technical_score: Optional[float],
-    pressure_score: float,
-    thinking_depth_score: float,
+    pressure_score: Optional[float],
+    thinking_depth_score: Optional[float],
+    first_answer_score: Optional[float],
+    post_followup_score: Optional[float],
     feedback_summary: str,
     improvement_suggestions: dict,
     prompt_version: str,
     model_used: str,
     input_tokens: Optional[int],
-    output_tokens: Optional[int],
     estimated_cost_usd: Optional[float],
+    output_tokens: Optional[int],
 ) -> EvaluationReport:
+    # hesitation_score column intentionally left NULL — see PerformanceSignal comment.
     report = EvaluationReport(
         session_id=session_id,
         overall_score=overall_score,
@@ -183,10 +203,11 @@ async def create_evaluation_report(
         depth_score=depth_score,
         confidence_score=confidence_score,
         communication_score=communication_score,
-        hesitation_score=hesitation_score,
         technical_score=technical_score,
         pressure_score=pressure_score,
         thinking_depth_score=thinking_depth_score,
+        first_answer_score=first_answer_score,
+        post_followup_score=post_followup_score,
         feedback_summary=feedback_summary,
         improvement_suggestions=improvement_suggestions,
         prompt_version=prompt_version,
@@ -223,6 +244,7 @@ async def set_session_analyzed(db: AsyncSession, session_id: uuid.UUID) -> None:
         update(InterviewSession)
         .where(InterviewSession.id == session_id)
         .values(status="ANALYZED")
+        .execution_options(synchronize_session=False)
     )
 
 
@@ -272,6 +294,7 @@ async def mark_job_completed(db: AsyncSession, job_id: uuid.UUID) -> None:
             status=EvaluationJobStatus.COMPLETED,
             evaluation_completed_at=datetime.now(timezone.utc),
         )
+        .execution_options(synchronize_session=False)
     )
 
 
@@ -342,6 +365,7 @@ async def recover_zombie_jobs(db: AsyncSession) -> int:
             last_error="Recovered from zombie state (worker crashed mid-execution)",
             next_retry_at=retry_at,
         )
+        .execution_options(synchronize_session=False)
     )
     count = result.rowcount
     if count > 0:

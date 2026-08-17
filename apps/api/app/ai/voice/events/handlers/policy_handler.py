@@ -38,7 +38,7 @@ class PolicyHandler:
             logger.error("policy_handler | failed to adjust difficulty: %s", exc)
 
         # 2. Decide next action using TurnPolicy
-        decision = self.turn_policy.decide_next_action(self.state)
+        decision = await self.turn_policy.decide_next_action(self.state)
         
         if tracker:
             tracker.track_stage_end("policy")
